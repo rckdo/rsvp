@@ -1,1 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RSVP · Lorraine &amp; Richard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:wght@400;500;600&family=Marcellus&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    background: #e7e0d2;
+    color: #3b382f;
+    font-family: 'Cormorant Garamond', serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px;
+    overflow: hidden;
+  }
 
+  /* ---- Ambient "dreamy" environment (behind the card) ---- */
+  /* Warm sky: pooled light that drifts slowly across the page. */
+  .sky {
+    position: fixed;
+    inset: -12%;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(42% 38% at 26% 22%, rgba(224, 188, 128, 0.42), transparent 72%),
+      radial-gradient(40% 36% at 78% 74%, rgba(159, 124, 89, 0.30), transparent 72%),
+      radial-gradient(46% 50% at 62% 40%, rgba(122, 124, 71, 0.18), transparent 74%),
+      radial-gradient(38% 34% at 12% 82%, rgba(201, 154, 63, 0.20), transparent 72%),
+      #e7e0d2;
+    animation: sky-drift 30s ease-in-out infinite alternate;
+  }
+  @keyframes sky-drift {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(2.5%, -2%, 0) scale(1.08); }
+  }
+
+  /* Soft warm glow that breathes behind the card. */
+  .glow {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 540px;
+    height: 720px;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(closest-side, rgba(244, 226, 188, 0.55), rgba(244, 226, 188, 0) 76%);
+    filter: blur(24px);
+    animation: breathe 9s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+    50%      { opacity: 0.8; transform: translate(-50%, -50%) scale(1.06); }
+  }
+
+  /* Dust motes drifting up through the light (spawned in JS). */
+  .motes { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .mote {
+    position: absolute;
+    bottom: -40px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 248, 232, 0.95), rgba(255, 248, 232, 0) 70%);
+    filter: blur(0.6px);
+    opacity: 0;
+    will-change: transform, opacity;
+    animation: drift linear infinite;
+  }
+  @keyframes drift {
+    0%   { opacity: 0; transform: translateY(0) translateX(0) scale(0.7); }
+    12%  { opacity: var(--o, 0.4); }
+    88%  { opacity: var(--o, 0.4); }
+    100% { opacity: 0; transform: translateY(-108vh) translateX(26px) scale(1.15); }
+  }
+
+  /* ---- The RSVP card (3.5 x 5 in) ---- */
+  .card {
+    width: 350px;
+    min-height: 500px;
+    background: #efe6d3;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 18px 44px rgba(59, 56, 47, 0.20);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+    /* soft entrance, then a gentle perpetual float — as if resting on air */
+    animation: card-in 1.2s cubic-bezier(0.22, 1, 0.36, 1) both, float 9s ease-in-out 1.2s infinite;
+  }
+  /* settle while the guest is writing, drift again when idle */
+  .card:focus-within { animation-play-state: paused, paused; }
+
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(24px) scale(0.985); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0);    box-shadow: 0 18px 44px rgba(59, 56, 47, 0.20); }
+    50%      { transform: translateY(-7px); box-shadow: 0 28px 56px rgba(59, 56, 47, 0.24); }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  /* quilt blocks bloom in with a stagger (delays set in JS) */
+  @keyframes bloom {
+    from { opacity: 0; transform: scale(0.6); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .band .block { animation: bloom 0.6s ease both; }
+
+  /* ---- Quilt band (built by JS to mirror the design exactly) ---- */
+  .band {
+    background: #e0cfa4;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    padding: 11px 0;
+    overflow: hidden;
+    flex: 0 0 auto;
+  }
+  .band .block { flex: 0 0 auto; }
+  .band .block .cell { width: 100%; height: 100%; }
+
+  /* ---- Card body ---- */
+  .body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 34px 40px 30px;
+    animation: rise 0.6s ease both;
+  }
+
+  .head { text-align: center; }
+  .head .title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: 30px;
+    letter-spacing: 0.08em;
+    color: #4a3f2f;
+    margin: 0;
+  }
+  .head .sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 17px;
+    color: #8a7256;
+    margin-top: 6px;
+  }
+
+  form { margin-top: 30px; }
+
+  .field { display: flex; align-items: baseline; gap: 8px; }
+  .field + .field { margin-top: 26px; }
+  .field .label {
+    font-family: 'Marcellus', serif;
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #9e5a30;
+    flex: 0 0 auto;
+  }
+  .field input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    border-bottom: 1px solid #b9a888;
+    background: transparent;
+    height: 22px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px;
+    color: #4a3f2f;
+    padding: 0 2px 2px;
+  }
+  .field input[type="text"]:focus {
+    outline: none;
+    border-bottom-color: #a34a2c;
+  }
+
+  .choices {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+    font-size: 19px;
+    color: #5c5241;
+  }
+  .choice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .choice input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .choice .box {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid #a34a2c;
+    flex: 0 0 auto;
+    position: relative;
+    transition: background 0.12s ease;
+  }
+  .choice input:checked + .box { background: #a34a2c; }
+  .choice input:checked + .box::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 0.5px;
+    width: 5px;
+    height: 9px;
+    border: solid #efe6d3;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .choice input:focus-visible + .box {
+    outline: 2px solid #7a7c47;
+    outline-offset: 2px;
+  }
+
+  .submit {
+    margin-top: 30px;
+    align-self: center;
+    font-family: 'Marcellus', serif;
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #efe6d3;
+    background: #a34a2c;
+    border: none;
+    padding: 12px 30px;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .submit:hover {
+    background: #8a3f26;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(59, 56, 47, 0.22);
+  }
+  .submit:active { transform: translateY(0); }
+  .submit:focus-visible { outline: 2px solid #7a7c47; outline-offset: 3px; }
+
+  /* text link (e.g. "Change reply") */
+  .link {
+    margin-top: 16px;
+    align-self: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    color: #8a7256;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.2s ease;
+  }
+  .link:hover { color: #a34a2c; }
+  .link:focus-visible { outline: 2px solid #7a7c47; outline-offset: 3px; }
+
+  /* ---- Review + confirmation panels ---- */
+  .panel {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+  }
+  /* only one panel visible at a time; the shown one rises in gently */
+  .card.reviewing .body { display: none; }
+  .card.reviewing .review { display: flex; animation: rise 0.55s ease both; }
+  .card.sent .body { display: none; }
+  .card.sent .thanks { display: flex; animation: rise 0.55s ease both; }
+
+  .eyebrow {
+    font-family: 'Marcellus', serif;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #9e5a30;
+  }
+  .review .name {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: 26px;
+    color: #4a3f2f;
+    margin-top: 18px;
+  }
+  .review .status {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 19px;
+    color: #8a7256;
+    margin-top: 4px;
+  }
+
+  .thanks .title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: 28px;
+    color: #4a3f2f;
+    margin: 0;
+  }
+  .thanks .rule { width: 40px; height: 2px; background: #7a7c47; margin: 18px 0; }
+  .thanks p {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px;
+    line-height: 1.5;
+    color: #5c5241;
+    margin: 0;
+    max-width: 240px;
+  }
+
+  /* Respect users who prefer less motion — hold everything still. */
+  @media (prefers-reduced-motion: reduce) {
+    .card, .body, .band .block,
+    .card.reviewing .review, .card.sent .thanks,
+    .sky, .glow { animation: none; }
+    .motes { display: none; }
+    .submit, .link { transition: none; }
+    .submit:hover { transform: none; box-shadow: none; }
+  }
+
+  @media print {
+    @page { size: 3.5in 5in; margin: 0; }
+    body { background: #fff; padding: 0; }
+    .card { box-shadow: none; width: 3.5in; height: 5in; animation: none; }
+    .submit, .link { display: none; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+  <div class="sky" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+  <div class="motes" id="motes" aria-hidden="true"></div>
+
+  <main class="card" id="card">
+    <div class="band" id="band" aria-hidden="true"></div>
+
+    <div class="body">
+      <div class="head">
+        <h1 class="title">R.S.V.P.</h1>
+        <div class="sub">We hope you can join us</div>
+      </div>
+
+      <form id="rsvp-form" novalidate>
+        <label class="field">
+          <span class="label">Name</span>
+          <input type="text" name="name" autocomplete="name" required>
+        </label>
+
+        <div class="choices" role="radiogroup" aria-label="Will you attend?">
+          <label class="choice">
+            <input type="radio" name="attending" value="accepts" required>
+            <span class="box" aria-hidden="true"></span>
+            <span>Joyfully accepts</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="attending" value="declines">
+            <span class="box" aria-hidden="true"></span>
+            <span>Regretfully declines</span>
+          </label>
+        </div>
+
+        <button type="submit" class="submit">Send reply</button>
+      </form>
+    </div>
+
+    <div class="panel review">
+      <div class="eyebrow">Please confirm</div>
+      <div class="name" id="review-name"></div>
+      <div class="status" id="review-status"></div>
+      <button type="button" class="submit" id="confirm-btn">Confirm</button>
+      <button type="button" class="link" id="change-btn">Change reply</button>
+    </div>
+
+    <div class="panel thanks">
+      <h2 class="title" id="thanks-title"></h2>
+      <div class="rule"></div>
+      <p id="thanks-msg"></p>
+    </div>
+  </main>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------------------------------------------------------------
+     Quilt band — ported verbatim from the locked design (2A) so the
+     card matches pixel-for-pixel. band(7, offset 1, 44px cells).
+     --------------------------------------------------------------- */
+  var CREAM = '#efe6d3';
+
+  function hstBg(dir, a, b) {
+    switch (dir) {
+      case 'tl': return 'linear-gradient(to bottom right, ' + a + ' 0 50%, ' + b + ' 50% 100%)';
+      case 'br': return 'linear-gradient(to bottom right, ' + b + ' 0 50%, ' + a + ' 50% 100%)';
+      case 'tr': return 'linear-gradient(to bottom left, ' + a + ' 0 50%, ' + b + ' 50% 100%)';
+      case 'bl': return 'linear-gradient(to bottom left, ' + b + ' 0 50%, ' + a + ' 50% 100%)';
+    }
+  }
+  function grid(cols, rows) {
+    return { display: 'grid', gridTemplateColumns: 'repeat(' + cols + ',1fr)', gridTemplateRows: 'repeat(' + rows + ',1fr)' };
+  }
+  function pinwheel(a, b) { return { wrap: grid(2, 2), cells: ['tr', 'br', 'tl', 'bl'].map(function (d) { return hstBg(d, a, b); }) }; }
+  function dishes(a, b)   { return { wrap: grid(2, 2), cells: ['br', 'bl', 'tr', 'tl'].map(function (d) { return hstBg(d, a, b); }) }; }
+  function geese(a, b)    { return { wrap: grid(2, 2), cells: ['tr', 'tl', 'tr', 'tl'].map(function (d) { return hstBg(d, a, b); }) }; }
+  function nine(a, b)     { return { wrap: grid(3, 3), cells: [a, b, a, b, a, b, a, b, a] }; }
+  function hourglass(a, b){ return { wrap: grid(1, 1), cells: ['conic-gradient(' + a + ' 0 45deg, ' + b + ' 45deg 135deg, ' + a + ' 135deg 225deg, ' + b + ' 225deg 315deg, ' + a + ' 315deg)'] }; }
+
+  var builders = [
+    function () { return geese('#a34a2c', CREAM); },
+    function () { return pinwheel('#7a7c47', CREAM); },
+    function () { return dishes('#c99a3f', CREAM); },
+    function () { return nine('#bf6a43', CREAM); },
+    function () { return hourglass('#4a3f2f', CREAM); }
+  ];
+
+  function band(count, offset, px) {
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < count; i++) {
+      var blk = builders[(i + offset) % builders.length]();
+      var wrap = document.createElement('div');
+      wrap.className = 'block';
+      Object.assign(wrap.style, blk.wrap, { width: px + 'px', height: px + 'px' });
+      blk.cells.forEach(function (bg) {
+        var cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.style.background = bg;
+        wrap.appendChild(cell);
+      });
+      frag.appendChild(wrap);
+    }
+    return frag;
+  }
+
+  var bandEl = document.getElementById('band');
+  bandEl.appendChild(band(7, 1, 44));
+  // stagger the bloom so the quilt assembles gently, left to right
+  Array.prototype.forEach.call(bandEl.children, function (blk, i) {
+    blk.style.animationDelay = (0.35 + i * 0.09) + 's';
+  });
+
+  /* ---------------------------------------------------------------
+     Dreamy ambience: soft dust motes drifting up through the light.
+     Negative delays start them mid-flight so the air is already alive.
+     --------------------------------------------------------------- */
+  (function motes() {
+    var host = document.getElementById('motes');
+    if (!host || !window.matchMedia || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var COUNT = 16;
+    for (var i = 0; i < COUNT; i++) {
+      var m = document.createElement('span');
+      m.className = 'mote';
+      var size = 6 + Math.random() * 12;
+      var dur = 16 + Math.random() * 18;
+      m.style.left = (Math.random() * 100).toFixed(2) + '%';
+      m.style.width = size.toFixed(1) + 'px';
+      m.style.height = size.toFixed(1) + 'px';
+      m.style.animationDuration = dur.toFixed(1) + 's';
+      m.style.animationDelay = (-Math.random() * dur).toFixed(1) + 's';
+      m.style.setProperty('--o', (0.22 + Math.random() * 0.33).toFixed(2));
+      host.appendChild(m);
+    }
+  })();
+
+  /* ---------------------------------------------------------------
+     Reply flow: fill -> review -> confirm. Nothing is stored until
+     the guest confirms. No backend yet — confirmed replies are kept
+     in the browser (localStorage). Wire the confirm step to a form
+     endpoint / email when you have one.
+     --------------------------------------------------------------- */
+  var form = document.getElementById('rsvp-form');
+  var card = document.getElementById('card');
+  var reviewName = document.getElementById('review-name');
+  var reviewStatus = document.getElementById('review-status');
+  var confirmBtn = document.getElementById('confirm-btn');
+  var changeBtn = document.getElementById('change-btn');
+  var title = document.getElementById('thanks-title');
+  var msg = document.getElementById('thanks-msg');
+
+  var STATUS = { accepts: 'Joyfully accepts', declines: 'Regretfully declines' };
+  var CONFIRM = {
+    accepts:  { title: 'Wonderful',      msg: 'We look forward to seeing you there.' },
+    declines: { title: 'We’ll miss you', msg: 'Sorry that we won’t see you there.' }
+  };
+
+  var pending = null;
+
+  // Step 1 -> 2: validate, then show the review panel (no save yet).
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var data = {
+      name: form.name.value.trim(),
+      attending: (form.attending.value || ''),
+      at: new Date().toISOString()
+    };
+    if (!data.name) { form.name.focus(); return; }
+    if (!data.attending) { form.attending[0].focus(); return; }
+
+    pending = data;
+    reviewName.textContent = data.name;
+    reviewStatus.textContent = STATUS[data.attending];
+    card.classList.add('reviewing');
+    confirmBtn.focus();
+  });
+
+  // Back to editing.
+  changeBtn.addEventListener('click', function () {
+    card.classList.remove('reviewing');
+  });
+
+  // Step 2 -> 3: commit the reply and show the closing message.
+  confirmBtn.addEventListener('click', function () {
+    if (!pending) return;
+    try {
+      var all = JSON.parse(localStorage.getItem('rsvp-replies') || '[]');
+      all.push(pending);
+      localStorage.setItem('rsvp-replies', JSON.stringify(all));
+    } catch (err) { /* storage unavailable — closing message still shows */ }
+
+    var c = CONFIRM[pending.attending];
+    title.textContent = c.title;
+    msg.textContent = c.msg;
+    card.classList.remove('reviewing');
+    card.classList.add('sent');
+  });
+})();
+</script>
+</body>
+</html>
