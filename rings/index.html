@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<!--
+  The Rings : Lorraine & Richard
+  Guide page for wedding ring shopping in Birmingham's Jewellery Quarter:
+  map of jewellers and food nearby, plus ring knowledge (symbolism, metals,
+  profiles, hallmarks, practical checklist).
+
+  Static, ungated, no database. Map is Leaflet + OpenStreetMap via CDN.
+  Listings are a starting point from general knowledge: names and pin
+  positions are approximate, so use the Google Maps link in each popup
+  and check opening days (many JQ shops close Sunday and Monday).
+
+  v1.0 (25/07/2026): Initial build.
+-->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Rings : Lorraine &amp; Richard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --ink:#26332c;
+    --forest:#2f4a3c;
+    --sage:#6f8a77;
+    --gold:#a3762f;
+    --paper:#eef1ea;
+    --card:#fbfaf5;
+    --line:#dce0d6;
+    --line-strong:#c6cdbe;
+    --shadow:0 1px 2px rgba(38,51,44,.05);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Karla',system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:0 20px 96px}
+
+  header{
+    background:var(--forest);
+    color:#f2f0e6;
+    margin:0 -20px 28px;
+    padding:40px 24px 34px;
+    text-align:center;
+  }
+  header .names{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;
+    font-size:clamp(34px,7vw,50px);
+    line-height:1;
+    margin:0;
+    letter-spacing:.5px;
+  }
+  header .amp{color:#c9a86a;font-style:italic;font-weight:500}
+  header .meta{margin:14px auto 0;max-width:60ch;color:#cdd6c9;font-size:15px}
+  header .venue{color:#eef0e6;font-weight:500}
+
+  .quilt{
+    display:flex;justify-content:center;align-items:center;gap:6px;
+    padding:10px 0;background:#e0cfa4;overflow:hidden;
+  }
+  #quilt-top{margin:-40px -24px 30px}
+  #quilt-bottom{margin:30px -24px -34px}
+  .quilt .block{flex:0 0 auto}
+  .quilt .cell{width:100%;height:100%}
+
+  h2.sec{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;font-size:30px;color:var(--forest);
+    margin:38px 0 6px;line-height:1.1;
+  }
+  p.sec-sub{font-size:14.5px;color:var(--sage);margin:0 0 16px}
+
+  #map{
+    height:440px;
+    border-radius:14px;
+    border:1px solid var(--line);
+    box-shadow:var(--shadow);
+    z-index:1;
+  }
+  .legend{
+    display:flex;gap:18px;flex-wrap:wrap;
+    font-size:13.5px;color:var(--sage);
+    margin:10px 2px 0;
+  }
+  .legend .dot{
+    display:inline-block;width:11px;height:11px;border-radius:50%;
+    margin-right:6px;vertical-align:baseline;
+  }
+  .leaflet-popup-content{font-family:'Karla',sans-serif;font-size:13.5px;line-height:1.5}
+  .leaflet-popup-content b{color:var(--forest)}
+  .leaflet-popup-content a{color:var(--gold)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:640px){.grid{grid-template-columns:1fr}}
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px 20px;
+    box-shadow:var(--shadow);
+  }
+  .card h3{
+    font-family:'Karla',sans-serif;
+    font-size:12px;text-transform:uppercase;letter-spacing:.09em;
+    color:var(--gold);margin:0 0 8px;
+  }
+  .card p{font-size:14.5px;margin:0 0 10px;color:var(--ink)}
+  .card p:last-child{margin-bottom:0}
+  .card p b{color:var(--forest)}
+  .card ul{margin:0;padding-left:18px;font-size:14.5px}
+  .card li{margin-bottom:6px}
+  .card li:last-child{margin-bottom:0}
+  .card a{color:var(--gold)}
+  .card .note{font-size:13px;color:var(--sage)}
+  .card.wide{grid-column:1 / -1}
+  .flag{
+    display:inline-block;font-size:11px;font-weight:700;
+    letter-spacing:.04em;text-transform:uppercase;
+    background:#eddfca;color:#8a5e1c;
+    border-radius:999px;padding:2px 9px;margin-left:6px;vertical-align:middle;
+  }
+
+  footer{margin-top:44px;text-align:center;color:var(--sage);font-size:13.5px}
+  footer a{color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="quilt" id="quilt-top" aria-hidden="true"></div>
+    <h1 class="names">Lorraine <span class="amp">&amp;</span> Richard</h1>
+    <p class="meta">
+      <span class="venue">The Rings</span><br>
+      Jewellery Quarter, Birmingham
+    </p>
+    <div class="quilt" id="quilt-bottom" aria-hidden="true"></div>
+  </header>
+
+  <div class="card wide">
+    <h3>Before you go</h3>
+    <p><b>Timing matters more than anything else on this page.</b> With the ceremony on 21 September, aim to choose by mid-August: made-to-order rings typically take 3 to 6 weeks, engraving adds 1 to 2 more, and you want them home with time to check the fit. Off-the-shelf in a standard size can be same-day, so there is a fallback either way.</p>
+    <p class="note">Most Jewellery Quarter shops close on Sundays and many on Mondays; Saturday is the big day. Ring (pun intended) ahead for anywhere you are making a special trip for. Listings below are a starting point, not gospel: check names and hours before travelling.</p>
+  </div>
+
+  <h2 class="sec">The map</h2>
+  <p class="sec-sub">Gold pins are ring places, green are food and drink, dark are landmarks worth knowing. Tap a pin for the detail and a Google Maps link.</p>
+  <div id="map"></div>
+  <div class="legend">
+    <span><span class="dot" style="background:#a3762f"></span>Rings</span>
+    <span><span class="dot" style="background:#3c6b3f"></span>Food &amp; drink</span>
+    <span><span class="dot" style="background:#26332c"></span>Landmarks</span>
+  </div>
+
+  <h2 class="sec">Where to buy</h2>
+  <p class="sec-sub">The Quarter makes around 40% of the UK's jewellery, so you are shopping at the source: trade prices, on-site workshops, and people who make rings rather than just sell them.</p>
+  <div class="grid">
+    <div class="card">
+      <h3>The Vyse Street cluster</h3>
+      <p>The dense stretch between the <b>Chamberlain Clock</b> and the Jewellery Quarter station is wall-to-wall ring retailers, dozens of them, from diamond specialists to plain-band makers. The efficient plan: walk it once without buying, shortlist three, then go back.</p>
+      <p class="note">Prices for the same spec vary noticeably between neighbouring shops, so comparing is genuinely worth the hour.</p>
+    </div>
+    <div class="card">
+      <h3>Named starting points</h3>
+      <ul>
+        <li><b>Marlows Diamonds</b> (Vyse St): one of the biggest, strong on wedding bands alongside diamonds.</li>
+        <li><b>Charles Green &amp; Son</b>: historic Birmingham makers, wedding rings since the 1820s.</li>
+        <li><b>Hockley Mint</b>: major JQ wedding-ring manufacturer; their rings are stocked by independents across the Quarter.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Make your own <span class="flag">idea</span></h3>
+      <p>Several JQ workshops (the <b>Argent Centre</b> on Frederick Street is the hub) run <b>make-your-own-wedding-rings days</b>: you each make the other's ring under a goldsmith's guidance. A day out, a story for the ceremony, and the rings mean more.</p>
+      <p class="note">These book up and need lead time for hallmarking, so if it appeals, book now.</p>
+    </div>
+    <div class="card">
+      <h3>Hallmarking</h3>
+      <p>UK rings over the weight thresholds must be hallmarked, and the <b>Birmingham Assay Office</b>, the busiest in the world, is right there in the Quarter (its mark is an anchor). Any ring bought or made in the JQ will carry it: maker's mark, fineness (750 = 18ct, 950 = platinum), anchor, and year letter.</p>
+    </div>
+  </div>
+
+  <h2 class="sec">Ring knowledge</h2>
+  <p class="sec-sub">Enough to walk in confident and not get upsold.</p>
+  <div class="grid">
+    <div class="card">
+      <h3>Symbolism</h3>
+      <p>The unbroken circle, no beginning and no end, has stood for permanence since ancient Egypt. The fourth finger of the left hand comes from the Roman <b>vena amoris</b>, the "vein of love" once believed to run straight to the heart. Wrong anatomy, right sentiment, and two thousand years of momentum.</p>
+      <p class="note">Your ring words at the ceremony (F or G on the tracker) say exactly this: a lasting reminder of the promises made.</p>
+    </div>
+    <div class="card">
+      <h3>Metals</h3>
+      <ul>
+        <li><b>Yellow gold</b>: the classic; 18ct is richer in colour, 9ct is harder-wearing and cheaper.</li>
+        <li><b>White gold</b>: rhodium-plated; expect re-plating every few years.</li>
+        <li><b>Rose gold</b>: warm, wears well, suits vintage looks.</li>
+        <li><b>Platinum</b>: naturally white, dense, hypoallergenic, needs no plating; the buy-once option.</li>
+        <li><b>Titanium / tungsten</b>: cheap and tough but <b>cannot be resized</b>; think hard before committing.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Profile and fit</h3>
+      <p>The profile is the cross-section: <b>court</b> (rounded inside and out, the most comfortable), <b>D-shape</b> (flat inside, domed out), <b>flat</b> (modern, squarer feel). Width from 2mm (delicate) to 6mm+ (statement); try the width with the profile, they change each other.</p>
+      <p class="note">Get sized at the end of the day when fingers are warmest and largest, and wear it around the shop for ten minutes before deciding.</p>
+    </div>
+    <div class="card">
+      <h3>Practical checklist</h3>
+      <ul>
+        <li>Confirm <b>resizing policy</b> (free first resize is common).</li>
+        <li>Engraving: date or initials inside; ask the lead time.</li>
+        <li>Ask for the <b>hallmark</b> and a receipt with the spec.</li>
+        <li>Check it against the ring words: who carries them forward on the day is on the tracker.</li>
+        <li>Add them to home insurance once bought.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="sec">Food and drink nearby</h2>
+  <p class="sec-sub">Make a day of it. All within a ten-minute walk of the Chamberlain Clock.</p>
+  <div class="grid">
+    <div class="card">
+      <h3>Pubs with history</h3>
+      <ul>
+        <li><b>The Rose Villa Tavern</b>: Victorian tiled beauty at the Vyse St / Warstone Lane corner, proper pub food.</li>
+        <li><b>1000 Trades</b> (Frederick St): craft beer, rotating kitchen residencies, JQ institution.</li>
+        <li><b>The Button Factory</b> (Frederick St): big terrace, relaxed menu, good for a sunny afternoon.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Proper meals</h3>
+      <ul>
+        <li><b>Otto</b> (Caroline St): wood-fired pizza, casual and excellent.</li>
+        <li><b>The Wilderness</b>: tasting-menu fine dining if the ring shopping goes well enough to celebrate.</li>
+        <li><b>St Paul's Square</b>: the Georgian square is ringed with restaurants and bars; wander and pick.</li>
+      </ul>
+      <p class="note">Evenings: The Jam House on the square does live music and dinner.</p>
+    </div>
+  </div>
+
+  <footer>
+    <p>Pin positions are approximate; use each popup's map link for directions.<br>
+    <a href="/tracker/">Back to the tracker</a> &middot; <a href="/">The invitation</a></p>
+  </footer>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* Quilt bands, same builders as the tracker */
+(function quilt(){
+  const CREAM = "#efe6d3";
+  function hstBg(dir, a, b){
+    switch(dir){
+      case "tl": return "linear-gradient(to bottom right, " + a + " 0 50%, " + b + " 50% 100%)";
+      case "br": return "linear-gradient(to bottom right, " + b + " 0 50%, " + a + " 50% 100%)";
+      case "tr": return "linear-gradient(to bottom left, " + a + " 0 50%, " + b + " 50% 100%)";
+      case "bl": return "linear-gradient(to bottom left, " + b + " 0 50%, " + a + " 50% 100%)";
+    }
+  }
+  function grid(c, r){
+    return { display:"grid", gridTemplateColumns:"repeat(" + c + ",1fr)", gridTemplateRows:"repeat(" + r + ",1fr)" };
+  }
+  const builders = [
+    ()=>({ wrap:grid(2,2), cells:["tr","tl","tr","tl"].map(d=>hstBg(d, "#a34a2c", CREAM)) }),
+    ()=>({ wrap:grid(2,2), cells:["tr","br","tl","bl"].map(d=>hstBg(d, "#7a7c47", CREAM)) }),
+    ()=>({ wrap:grid(2,2), cells:["br","bl","tr","tl"].map(d=>hstBg(d, "#c99a3f", CREAM)) }),
+    ()=>({ wrap:grid(3,3), cells:["#bf6a43",CREAM,"#bf6a43",CREAM,"#bf6a43",CREAM,"#bf6a43",CREAM,"#bf6a43"] }),
+    ()=>({ wrap:grid(1,1), cells:["conic-gradient(#4a3f2f 0 45deg, " + CREAM + " 45deg 135deg, #4a3f2f 135deg 225deg, " + CREAM + " 225deg 315deg, #4a3f2f 315deg)"] }),
+  ];
+  function fill(el, offset){
+    if(!el) return;
+    const px = 34;
+    for(let i = 0; i < 40; i++){
+      const blk = builders[(i + offset) % builders.length]();
+      const wrap = document.createElement("div");
+      wrap.className = "block";
+      Object.assign(wrap.style, blk.wrap, { width:px + "px", height:px + "px" });
+      blk.cells.forEach(bg=>{
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.style.background = bg;
+        wrap.appendChild(cell);
+      });
+      el.appendChild(wrap);
+    }
+  }
+  fill(document.getElementById("quilt-top"), 2);
+  fill(document.getElementById("quilt-bottom"), 4);
+})();
+
+/* The map */
+(function(){
+  if(typeof L === "undefined"){
+    document.getElementById("map").innerHTML =
+      '<p style="padding:20px;color:#6f8a77">The map script did not load. Check your connection and reload.</p>';
+    return;
+  }
+  const map = L.map("map", { scrollWheelZoom: false }).setView([52.4874, -1.9085], 16);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  const COLORS = { ring:"#a3762f", food:"#3c6b3f", mark:"#26332c" };
+  function gmaps(q){
+    return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q + " Birmingham Jewellery Quarter");
+  }
+  const places = [
+    ["ring", 52.4886, -1.9105, "Marlows Diamonds", "Vyse Street. One of the biggest diamond and wedding-band retailers in the Quarter."],
+    ["ring", 52.4892, -1.9074, "Charles Green & Son", "Historic Birmingham makers; wedding rings since the 1820s."],
+    ["ring", 52.4870, -1.9120, "Hockley Mint", "Major wedding-ring manufacturer; stocked across the Quarter's independents."],
+    ["ring", 52.4883, -1.9108, "Vyse Street cluster", "Dozens of ring retailers between the clock and the station. Walk, shortlist, return."],
+    ["ring", 52.4855, -1.9084, "Argent Centre workshops", "Frederick Street. Make-your-own-wedding-rings days with a goldsmith."],
+    ["mark", 52.4877, -1.9107, "Chamberlain Clock", "The Quarter's landmark and the natural meeting point."],
+    ["mark", 52.4900, -1.9113, "Museum of the Jewellery Quarter", "A preserved working factory, wonderful if there's time."],
+    ["mark", 52.4879, -1.9139, "Birmingham Assay Office", "Where the anchor hallmark comes from; the world's busiest."],
+    ["mark", 52.4890, -1.9096, "Jewellery Quarter station", "Trains and tram from the city centre."],
+    ["food", 52.4877, -1.9110, "The Rose Villa Tavern", "Victorian tiled pub on the clock corner; proper pub food."],
+    ["food", 52.4862, -1.9089, "1000 Trades", "Craft beer and rotating kitchen residencies."],
+    ["food", 52.4867, -1.9095, "The Button Factory", "Terrace, relaxed menu, sunny-afternoon spot."],
+    ["food", 52.4855, -1.9040, "Otto", "Wood-fired pizza on Caroline Street."],
+    ["food", 52.4880, -1.9095, "The Wilderness", "Tasting-menu fine dining for a celebration."],
+    ["food", 52.4851, -1.9048, "St Paul's Square", "Georgian square ringed with restaurants and bars; The Jam House for live music."],
+  ];
+  places.forEach(([kind, lat, lng, name, blurb])=>{
+    L.circleMarker([lat, lng], {
+      radius: 9,
+      color: "#fbfaf5",
+      weight: 2,
+      fillColor: COLORS[kind],
+      fillOpacity: 0.95
+    }).addTo(map).bindPopup(
+      "<b>" + name + "</b><br>" + blurb +
+      '<br><a href="' + gmaps(name) + '" target="_blank" rel="noopener">Open in Google Maps</a>'
+    );
+  });
+})();
+</script>
+</body>
+</html>
