@@ -77,7 +77,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wedding Tracker : Richard &amp; Lorraine</title>
+<title>Wedding Tracker : Lorraine &amp; Richard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
@@ -384,14 +384,17 @@
   }
   .editor .chk input{accent-color:var(--forest);width:15px;height:15px;margin:0}
 
-  /* right-hand chip column: assign on top, tag beneath, edit under */
+  /* title line: item title left, chips right (tag before assign),
+     note and answers run full width beneath */
+  .topline{display:flex;align-items:flex-start;gap:10px}
+  .topline .t{flex:1 1 auto}
   .chips{
     flex:0 0 auto;
-    align-self:flex-start;
     display:flex;
-    flex-direction:column;
-    align-items:flex-end;
+    align-items:center;
     gap:6px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
   }
   .chips .mvrow{display:flex;gap:4px}
 
@@ -517,7 +520,7 @@
 
 <div id="splash">
   <div class="splash-card">
-    <h1>Richard <span class="amp">&amp;</span> Lorraine</h1>
+    <h1>Lorraine <span class="amp">&amp;</span> Richard</h1>
     <p>Enter the code to open the tracker</p>
     <div class="dots" id="dots">
       <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
@@ -530,7 +533,7 @@
 <div class="wrap">
   <header>
     <div class="quilt" id="quilt-top" aria-hidden="true"></div>
-    <h1 class="names">Richard <span class="amp">&amp;</span> Lorraine</h1>
+    <h1 class="names">Lorraine <span class="amp">&amp;</span> Richard</h1>
     <p class="meta">
       <span class="venue">Temple of Minerva, Royal Victoria Park</span><br>
       Monday 21 September 2026 &middot; 13:00
@@ -1075,8 +1078,11 @@ function render(){
       }
       html += `<li class="item ${isDone?"done":""}" data-id="${it.id}">
         <span class="box" role="checkbox" tabindex="0" aria-checked="${isDone}">${CHECK}</span>
-        <span class="txt"><span class="t">${it.t}</span>${note}${answers}</span>
-        <span class="chips">${assign}${tag}<button class="edit-btn" type="button" aria-label="Edit item">edit</button><span class="mvrow">${mv}</span></span>
+        <span class="txt">
+          <span class="topline"><span class="t">${it.t}</span>
+          <span class="chips">${tag}${assign}<button class="edit-btn" type="button" aria-label="Edit item">edit</button><span class="mvrow">${mv}</span></span></span>
+          ${note}${answers}
+        </span>
       </li>`;
     });
     html += `</ul><div class="add-row"><button class="add-item" type="button" data-sec="${sec.id}">+ Add an item</button></div>`;
