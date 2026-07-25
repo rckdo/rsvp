@@ -45,9 +45,11 @@
   }
   .wrap{max-width:860px;margin:0 auto;padding:0 20px 96px}
 
+  /* inverted header vs the tracker: light ground, forest text,
+     dark quilt bands framing it */
   header{
-    background:var(--forest);
-    color:#f2f0e6;
+    background:#f2ecdb;
+    color:var(--forest);
     margin:0 -20px 28px;
     padding:40px 24px 34px;
     text-align:center;
@@ -60,13 +62,13 @@
     margin:0;
     letter-spacing:.5px;
   }
-  header .amp{color:#c9a86a;font-style:italic;font-weight:500}
-  header .meta{margin:14px auto 0;max-width:60ch;color:#cdd6c9;font-size:15px}
-  header .venue{color:#eef0e6;font-weight:500}
+  header .amp{color:var(--gold);font-style:italic;font-weight:500}
+  header .meta{margin:14px auto 0;max-width:60ch;color:var(--sage);font-size:15px}
+  header .venue{color:var(--forest);font-weight:700}
 
   .quilt{
     display:flex;justify-content:center;align-items:center;gap:6px;
-    padding:10px 0;background:#e0cfa4;overflow:hidden;
+    padding:10px 0;background:var(--forest);overflow:hidden;
   }
   #quilt-top{margin:-40px -24px 30px}
   #quilt-bottom{margin:30px -24px -34px}
@@ -147,9 +149,9 @@
   </header>
 
   <div class="card wide">
-    <h3>Before you go</h3>
-    <p><b>Timing matters more than anything else on this page.</b> With the ceremony on 21 September, aim to choose by mid-August: made-to-order rings typically take 3 to 6 weeks, engraving adds 1 to 2 more, and you want them home with time to check the fit. Off-the-shelf in a standard size can be same-day, so there is a fallback either way.</p>
-    <p class="note">Most Jewellery Quarter shops close on Sundays and many on Mondays; Saturday is the big day. Ring (pun intended) ahead for anywhere you are making a special trip for. Listings below are a starting point, not gospel: check names and hours before travelling.</p>
+    <h3>Going on a Monday</h3>
+    <p><b>Monday works.</b> The Quarter's shops trade Monday to Saturday; Sunday is the quiet day. Checked for a Monday visit: <b>Marlows is open 7 days</b>, the <b>Rose Villa Tavern</b> and <b>Button Factory</b> serve from midday, <b>1000 Trades from 4pm</b> and <b>Otto from 5pm</b>. Off the menu on Mondays: the <b>Museum of the Jewellery Quarter</b> (Thu to Sat only) and <b>The Wilderness</b> (closed Mon and Tue). Makers and workshops (Charles Green, Hockley Mint, the Argent Centre) are weekday businesses but appointment-led, so phone before setting off.</p>
+    <p class="note">Timing: made-to-order is 3 to 6 weeks plus engraving, so choosing or ordering this Monday lands comfortably before 21 September. Every pin below carries its Monday status.</p>
   </div>
 
   <h2 class="sec">The map</h2>
@@ -172,8 +174,8 @@
     <div class="card">
       <h3>Named starting points</h3>
       <ul>
-        <li><b>Marlows Diamonds</b> (Vyse St): one of the biggest, strong on wedding bands alongside diamonds.</li>
-        <li><b>Charles Green &amp; Son</b>: historic Birmingham makers, wedding rings since the 1820s.</li>
+        <li><b>Marlows Diamonds</b> (16 Vyse St): one of the biggest, strong on wedding bands alongside diamonds. Open 7 days.</li>
+        <li><b>Charles Green &amp; Son</b>: historic Birmingham makers, wedding rings since the 1820s. Weekdays, appointment-led.</li>
         <li><b>Hockley Mint</b>: major JQ wedding-ring manufacturer; their rings are stocked by independents across the Quarter.</li>
       </ul>
     </div>
@@ -229,19 +231,19 @@
     <div class="card">
       <h3>Pubs with history</h3>
       <ul>
-        <li><b>The Rose Villa Tavern</b>: Victorian tiled beauty at the Vyse St / Warstone Lane corner, proper pub food.</li>
-        <li><b>1000 Trades</b> (Frederick St): craft beer, rotating kitchen residencies, JQ institution.</li>
-        <li><b>The Button Factory</b> (Frederick St): big terrace, relaxed menu, good for a sunny afternoon.</li>
+        <li><b>The Rose Villa Tavern</b>: Victorian tiled beauty at the Vyse St / Warstone Lane corner, proper pub food. Mondays from midday.</li>
+        <li><b>1000 Trades</b> (Frederick St): craft beer, rotating kitchen residencies, JQ institution. Mondays from 4pm.</li>
+        <li><b>The Button Factory</b> (Frederick St): big terrace, relaxed menu, good for a sunny afternoon. Mondays from midday.</li>
       </ul>
     </div>
     <div class="card">
       <h3>Proper meals</h3>
       <ul>
-        <li><b>Otto</b> (Caroline St): wood-fired pizza, casual and excellent.</li>
-        <li><b>The Wilderness</b>: tasting-menu fine dining if the ring shopping goes well enough to celebrate.</li>
+        <li><b>Otto</b> (Caroline St): wood-fired pizza, casual and excellent. Mondays from 5pm, evenings only.</li>
+        <li><b>The Wilderness</b>: tasting-menu fine dining, but <b>closed Mondays and Tuesdays</b>; one for a return trip.</li>
         <li><b>St Paul's Square</b>: the Georgian square is ringed with restaurants and bars; wander and pick.</li>
       </ul>
-      <p class="note">Evenings: The Jam House on the square does live music and dinner.</p>
+      <p class="note">Monday lunch plan: Rose Villa Tavern or the Button Factory, both open from noon.</p>
     </div>
   </div>
 
@@ -295,52 +297,105 @@
   fill(document.getElementById("quilt-bottom"), 4);
 })();
 
-/* The map */
-(function(){
-  if(typeof L === "undefined"){
-    document.getElementById("map").innerHTML =
-      '<p style="padding:20px;color:#6f8a77">The map script did not load. Check your connection and reload.</p>';
-    return;
-  }
-  const map = L.map("map", { scrollWheelZoom: false }).setView([52.4874, -1.9085], 16);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(map);
+/* The map.
+   Renders with Google Maps when a key is set below, otherwise falls
+   back to Leaflet + OpenStreetMap (no key needed). To go Google:
+   console.cloud.google.com > create project > enable "Maps JavaScript
+   API" > create an API key (restrict it to lorraine-richard.rsvp) and
+   paste it here. The free tier covers this traffic many times over. */
+const GOOGLE_MAPS_KEY = "";
 
+(function(){
+  const CENTER = { lat: 52.4874, lng: -1.9085 };
   const COLORS = { ring:"#a3762f", food:"#3c6b3f", mark:"#26332c" };
+  const MON = { open:"#3c6b3f", late:"#a3762f", closed:"#a3512f", check:"#a3762f" };
+
   function gmaps(q){
     return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q + " Birmingham Jewellery Quarter");
   }
+  // [kind, lat, lng, name, blurb, mondayStatusKind, mondayText]
   const places = [
-    ["ring", 52.4886, -1.9105, "Marlows Diamonds", "Vyse Street. One of the biggest diamond and wedding-band retailers in the Quarter."],
-    ["ring", 52.4892, -1.9074, "Charles Green & Son", "Historic Birmingham makers; wedding rings since the 1820s."],
-    ["ring", 52.4870, -1.9120, "Hockley Mint", "Major wedding-ring manufacturer; stocked across the Quarter's independents."],
-    ["ring", 52.4883, -1.9108, "Vyse Street cluster", "Dozens of ring retailers between the clock and the station. Walk, shortlist, return."],
-    ["ring", 52.4855, -1.9084, "Argent Centre workshops", "Frederick Street. Make-your-own-wedding-rings days with a goldsmith."],
-    ["mark", 52.4877, -1.9107, "Chamberlain Clock", "The Quarter's landmark and the natural meeting point."],
-    ["mark", 52.4900, -1.9113, "Museum of the Jewellery Quarter", "A preserved working factory, wonderful if there's time."],
-    ["mark", 52.4879, -1.9139, "Birmingham Assay Office", "Where the anchor hallmark comes from; the world's busiest."],
-    ["mark", 52.4890, -1.9096, "Jewellery Quarter station", "Trains and tram from the city centre."],
-    ["food", 52.4877, -1.9110, "The Rose Villa Tavern", "Victorian tiled pub on the clock corner; proper pub food."],
-    ["food", 52.4862, -1.9089, "1000 Trades", "Craft beer and rotating kitchen residencies."],
-    ["food", 52.4867, -1.9095, "The Button Factory", "Terrace, relaxed menu, sunny-afternoon spot."],
-    ["food", 52.4855, -1.9040, "Otto", "Wood-fired pizza on Caroline Street."],
-    ["food", 52.4880, -1.9095, "The Wilderness", "Tasting-menu fine dining for a celebration."],
-    ["food", 52.4851, -1.9048, "St Paul's Square", "Georgian square ringed with restaurants and bars; The Jam House for live music."],
+    ["ring", 52.4886, -1.9105, "Marlows Diamonds", "16 Vyse Street. One of the biggest diamond and wedding-band retailers in the Quarter.", "open", "Open Mondays (7 days a week)"],
+    ["ring", 52.4892, -1.9074, "Charles Green & Son", "Historic Birmingham makers; wedding rings since the 1820s.", "check", "Weekday business, phone ahead for Monday"],
+    ["ring", 52.4870, -1.9120, "Hockley Mint", "Major wedding-ring manufacturer; stocked across the Quarter's independents.", "check", "Trade hours, phone ahead for Monday"],
+    ["ring", 52.4883, -1.9108, "Vyse Street cluster", "Dozens of ring retailers between the clock and the station. Walk, shortlist, return.", "open", "Most shops trade Mon to Sat"],
+    ["ring", 52.4855, -1.9084, "Argent Centre workshops", "Frederick Street. Make-your-own-wedding-rings days with a goldsmith.", "check", "Booking-led, check Monday availability"],
+    ["mark", 52.4877, -1.9107, "Chamberlain Clock", "The Quarter's landmark and the natural meeting point.", "open", "Always there"],
+    ["mark", 52.4900, -1.9113, "Museum of the Jewellery Quarter", "A preserved working factory, wonderful if there's time.", "closed", "Closed Mondays (Thu to Sat only)"],
+    ["mark", 52.4879, -1.9139, "Birmingham Assay Office", "Where the anchor hallmark comes from; the world's busiest.", "check", "Working office, not a public visit"],
+    ["mark", 52.4890, -1.9096, "Jewellery Quarter station", "Trains and tram from the city centre.", "open", "Runs Mondays"],
+    ["food", 52.4877, -1.9110, "The Rose Villa Tavern", "Victorian tiled pub on the clock corner; proper pub food.", "open", "Mondays from midday"],
+    ["food", 52.4862, -1.9089, "1000 Trades", "Craft beer and rotating kitchen residencies.", "late", "Mondays from 4pm"],
+    ["food", 52.4867, -1.9095, "The Button Factory", "Terrace, relaxed menu, sunny-afternoon spot.", "open", "Mondays from midday"],
+    ["food", 52.4855, -1.9040, "Otto", "Wood-fired pizza on Caroline Street.", "late", "Mondays from 5pm, evenings only"],
+    ["food", 52.4880, -1.9095, "The Wilderness", "Tasting-menu fine dining for a celebration.", "closed", "Closed Mondays and Tuesdays"],
+    ["food", 52.4851, -1.9048, "St Paul's Square", "Georgian square ringed with restaurants and bars; The Jam House for live music.", "check", "Venues vary, most open Mondays"],
   ];
-  places.forEach(([kind, lat, lng, name, blurb])=>{
-    L.circleMarker([lat, lng], {
-      radius: 9,
-      color: "#fbfaf5",
-      weight: 2,
-      fillColor: COLORS[kind],
-      fillOpacity: 0.95
-    }).addTo(map).bindPopup(
-      "<b>" + name + "</b><br>" + blurb +
-      '<br><a href="' + gmaps(name) + '" target="_blank" rel="noopener">Open in Google Maps</a>'
-    );
-  });
+
+  function popupHtml(p){
+    return "<b>" + p[3] + "</b><br>" + p[4] +
+      '<br><span style="color:' + MON[p[5]] + ';font-weight:700">&#9679; ' + p[6] + "</span>" +
+      '<br><a href="' + gmaps(p[3]) + '" target="_blank" rel="noopener">Open in Google Maps</a>';
+  }
+
+  function leafletMap(){
+    if(typeof L === "undefined"){
+      document.getElementById("map").innerHTML =
+        '<p style="padding:20px;color:#6f8a77">The map script did not load. Check your connection and reload.</p>';
+      return;
+    }
+    const map = L.map("map", { scrollWheelZoom: false }).setView([CENTER.lat, CENTER.lng], 16);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    places.forEach(p=>{
+      L.circleMarker([p[1], p[2]], {
+        radius: 9,
+        color: "#fbfaf5",
+        weight: 2,
+        fillColor: COLORS[p[0]],
+        fillOpacity: 0.95
+      }).addTo(map).bindPopup(popupHtml(p));
+    });
+  }
+
+  function googleMap(){
+    const map = new google.maps.Map(document.getElementById("map"), {
+      center: CENTER,
+      zoom: 16,
+      mapTypeControl: false,
+      fullscreenControl: true
+    });
+    const iw = new google.maps.InfoWindow();
+    places.forEach(p=>{
+      const m = new google.maps.Marker({
+        position: { lat: p[1], lng: p[2] },
+        map,
+        title: p[3],
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 9,
+          fillColor: COLORS[p[0]],
+          fillOpacity: 0.95,
+          strokeColor: "#fbfaf5",
+          strokeWeight: 2
+        }
+      });
+      m.addListener("click", ()=>{ iw.setContent(popupHtml(p)); iw.open(map, m); });
+    });
+  }
+
+  if(GOOGLE_MAPS_KEY){
+    window.__initGmap = googleMap;
+    const s = document.createElement("script");
+    s.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(GOOGLE_MAPS_KEY) + "&callback=__initGmap";
+    s.async = true;
+    s.onerror = leafletMap;
+    document.head.appendChild(s);
+  } else {
+    leafletMap();
+  }
 })();
 </script>
 </body>
