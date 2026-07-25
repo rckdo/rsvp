@@ -5,6 +5,9 @@
   Single-file HTML. Inline CSS + JS. No build step.
 
   Changelog
+  v15.1 (25/07/2026): RSVPs panel. The invite card at the repo root now stores replies in
+          the same database (rsvp/replies); this page lists them live with accept/decline
+          counts, behind the same passcode.
   v15.0 (25/07/2026): Online gated version. 4-character passcode splash. Tick state, item list
           and assignments now live in Firebase Realtime Database, shared and live-synced
           between devices via Anonymous Auth. Edit mode: add items, reword items and notes,
@@ -27,9 +30,20 @@
          "weddingTracker": {
            ".read": "auth != null",
            ".write": "auth != null"
+         },
+         "rsvp": {
+           "replies": {
+             ".read": "auth != null",
+             "$id": {
+               ".write": "auth != null && !data.exists()",
+               ".validate": "newData.hasChildren(['name','attending','at'])"
+             }
+           }
          }
        }
      }
+     (The rsvp/replies node is written by the invite card at the repo root;
+      replies are append-only for guests and appear in the RSVPs panel below.)
   6. Change PASSCODE below if you want a different 4-character code.
 
   Note: the passcode is a gate for humans, not a security boundary. Keep nothing sensitive
@@ -208,6 +222,17 @@
   .panel dd{margin:0;text-align:right;font-weight:500}
   .panel .full{grid-column:1 / -1;text-align:left;color:var(--ink);font-size:13.5px;line-height:1.5;padding-top:8px;border-top:1px solid var(--line);margin-top:6px}
   .panel .full strong{color:var(--forest)}
+
+  /* RSVPs panel (fed by the invite card via the shared database) */
+  .panel.rsvps{margin:8px 0 6px}
+  .panel.rsvps.hidden{display:none}
+  .rsvp-sum{font-size:14px;color:var(--sage);margin:0}
+  ul.rsvp-list{list-style:none;margin:6px 0 0;padding:0;font-size:14.5px}
+  .rsvp-list li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 2px;border-top:1px solid var(--line)}
+  .rsvp-list .who{font-weight:500;color:var(--ink)}
+  .rsvp-list .st{font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:2px 9px;border-radius:999px}
+  .rsvp-list .st.yes{background:#dbe6db;color:#3c5c47}
+  .rsvp-list .st.no{background:#eddfca;color:#8a5e1c}
 
   /* Section cards */
   section.card{
@@ -433,6 +458,12 @@
         <div class="full">*8 weeks before the ceremony. You have asked B&amp;NES for a short grace period to the end of the week. <strong>Notice is the hard legal deadline</strong> and is what confirms the provisional booking.</div>
       </dl>
     </div>
+  </div>
+
+  <div class="panel rsvps hidden" id="rsvp-panel">
+    <h3>RSVPs</h3>
+    <p class="rsvp-sum" id="rsvp-sum"></p>
+    <ul class="rsvp-list" id="rsvp-list"></ul>
   </div>
 
   <div id="sections"></div>
@@ -715,6 +746,33 @@ function subscribe(){
     ticks = new Set(Object.keys(v.ticks || {}));
     if(editorOpen){ renderQueued = true; updateProgress(); return; }
     render();
+  });
+  db.ref("rsvp/replies").on("value", renderRsvps);
+}
+
+// Replies come from guests via the invite card, so render them with
+// textContent only; never trust that text as HTML.
+function renderRsvps(snap){
+  const v = snap.val() || {};
+  const list = Object.values(v).sort((a,b)=>String(a.at||"").localeCompare(String(b.at||"")));
+  document.getElementById("rsvp-panel").classList.remove("hidden");
+  const yes = list.filter(r=>r.attending==="accepts").length;
+  const no = list.length - yes;
+  document.getElementById("rsvp-sum").textContent = list.length
+    ? `${list.length} repl${list.length===1?"y":"ies"}: ${yes} accepting, ${no} declining`
+    : "No replies yet. They'll appear here as guests respond to the invite page.";
+  const ul = document.getElementById("rsvp-list");
+  ul.innerHTML = "";
+  list.forEach(r=>{
+    const li = document.createElement("li");
+    const who = document.createElement("span");
+    who.className = "who";
+    who.textContent = r.name || "(no name)";
+    const st = document.createElement("span");
+    st.className = "st " + (r.attending==="accepts" ? "yes" : "no");
+    st.textContent = r.attending==="accepts" ? "accepts" : "declines";
+    li.appendChild(who); li.appendChild(st);
+    ul.appendChild(li);
   });
 }
 
