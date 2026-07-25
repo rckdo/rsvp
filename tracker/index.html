@@ -5,6 +5,11 @@
   Single-file HTML. Inline CSS + JS. No build step.
 
   Changelog
+  v15.5 (25/07/2026): Preferences are recordable on the page: answer chips (1/2/3, A/B,
+          C/D/E, F/G, H/I, yes/no etc.) on every choice item, always live, syncing like
+          ticks; picking an answer ticks the item, re-picking clears it. Free-text
+          detail fields where the form wants specifics (names, guests, readings, music,
+          ring logistics, symbolic details, contact info).
   v15.4 (25/07/2026): The full B&NES ceremony wordings (declaratory/contracting vows,
           affirmations A/B, promises C/D/E, symbolic ceremonies, ring words F/G, closing
           words H/I) transposed verbatim into the preference items, plus the missing form
@@ -343,6 +348,26 @@
   }
   .text-block .body.placeholder{color:var(--sage);font-style:italic}
 
+  /* Answer chips: record the actual preference, always live */
+  .answers{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+  .ans-chip{
+    font-family:inherit;font-size:12.5px;font-weight:700;
+    border:1.5px solid var(--line-strong);background:#fff;color:var(--forest);
+    border-radius:999px;padding:4px 12px;cursor:pointer;
+    transition:background .12s ease,border-color .12s ease;
+  }
+  .ans-chip:hover{border-color:var(--sage)}
+  .ans-chip.sel{background:var(--forest);border-color:var(--forest);color:#f2f0e6}
+  .ans-note{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-size:15.5px;font-style:italic;color:var(--ink);
+  }
+  .ans-edit{
+    background:none;border:1px dashed var(--line-strong);border-radius:999px;
+    color:var(--sage);font-family:inherit;font-size:12px;padding:2px 10px;cursor:pointer;
+  }
+  .ans-edit:hover{border-color:var(--sage);color:var(--forest)}
+
   .tag{
     flex:0 0 auto;
     align-self:flex-start;
@@ -571,40 +596,40 @@ const SEED = [
   {
     title:"Preferences document: the choices",
     when:"Return by 27 Jul",
-    sub:"One line per decision, mirroring the B&NES doc, with the full wordings here so the doc can stay in the drawer. Vows are repeated after the registrar a few words at a time.",
+    sub:"One line per decision, mirroring the B&NES doc, with the full wordings here so the doc can stay in the drawer. Record your choice on each line and it ticks itself; transcribing to the form at the end is just copying off this page.",
     items:[
-      {id:"pref-names", t:"Names for the ceremony",
+      {id:"pref-names", t:"Names for the ceremony", det:true,
        note:"The form asks for each of you: full legal name, and the preferred first name for the registrar to use on the day."},
-      {id:"pref-guests", t:"Number of guests attending"},
-      {id:"pref-decl", t:"Declaratory vow: choose 1, 2 or 3", tag:"legal",
+      {id:"pref-guests", t:"Number of guests attending", det:true},
+      {id:"pref-decl", t:"Declaratory vow: choose 1, 2 or 3", tag:"legal", choices:["1","2","3"],
        note:"Legal wording, required: declaring you are free to marry. <b>1:</b> 'I do solemnly declare that I know not of any lawful impediment why I … may not be joined in matrimony to …' <b>2:</b> 'I declare that I know of no legal reason why I … may not be joined in marriage to …' <b>3:</b> answering 'I am' to the question 'Are you … free lawfully to marry …?'"},
-      {id:"pref-affirm", t:"Affirmation: choose A or B",
+      {id:"pref-affirm", t:"Affirmation: choose A or B", choices:["A","B"],
        note:"<b>A:</b> '… do you take … to be your wedded wife/husband, to love and encourage her/him through good times and bad. Do you promise to honour … at all times and remain faithful to her/him throughout your lives together?' <b>B:</b> '… do you take … to be your wife/husband, to love and cherish her/him, help her/him and honour him/her and give her/him understanding and comfort whatever the future may bring?'"},
-      {id:"pref-contract", t:"Contracting vow: choose 1, 2 or 3", tag:"legal",
+      {id:"pref-contract", t:"Contracting vow: choose 1, 2 or 3", tag:"legal", choices:["1","2","3"],
        note:"Legal wording, required: the vow that unites you as a married couple. <b>1:</b> 'I call upon these persons here present to witness that I … do take thee … to be my lawful wedded wife/husband.' <b>2:</b> 'I … take you … to be my wedded wife/husband.' <b>3:</b> 'I … take thee … to be my wedded wife/husband.'"},
-      {id:"pref-promises", t:"Chosen promises: C, D, E or write your own",
+      {id:"pref-promises", t:"Chosen promises: C, D, E or write your own", choices:["C","D","E","Own words","None"],
        note:"Optional extra promise after the vows; pick one or write your own (non-religious, approved in advance; draft below). <b>C:</b> '… I promise to love you through good times and bad. I will cherish, honour and encourage you. I will respect you as an individual and be true to you. And through these promises I dedicate myself to you.' <b>D:</b> 'Today in the company of our family and friends, I marry my best friend. The one I laugh and cry with. The one I have chosen to share my life with. I will stand by your side through life's joys and sorrows, laughter and pain. Today I marry the one I love.' <b>E:</b> '… I promise to love and cherish you, comfort and care for you, honour and protect you throughout our lives together, and this is my commitment to you.'"},
       {id:"write-promises", kind:"text", t:"Own promises, draft", body:""},
-      {id:"pref-symbolic", t:"Symbolic element: none, or Tying the Knot / Rose / Sand",
+      {id:"pref-symbolic", t:"Symbolic element: none, or Tying the Knot / Rose / Sand", choices:["None","Tying the knot","Rose","Sand"], det:true,
        note:"Optional; you provide any apparatus, and decide who brings the items forward (or have them at the front already). <b>Tying the knot:</b> join hands, exchange words and together create a knot memento. <b>Rose:</b> a simple ceremony exchanging roses. <b>Sand:</b> you each pour a vessel of sand into one vessel, forever mixing the sand."},
-      {id:"pref-rings-words", t:"Ring words: choose F or G",
+      {id:"pref-rings-words", t:"Ring words: choose F or G", choices:["F","G"], det:true,
        note:"Also on the form: exchanging rings yes/no, both giving yes/no, and who brings them forward. <b>F:</b> '… I give you this ring as a symbol of my love and commitment. May it be a lasting reminder of the promises we have made to each other here today.' <b>G:</b> '… I give you this ring as a symbol of our marriage and as a sign of my solemn promise to show you love, loyalty and respect. I give you everything that I am and ever hope to be. I will be faithful both in good times and bad. I will share my life with you, and I promise to love you always.'"},
-      {id:"pref-closing", t:"Closing words: choose H or I",
+      {id:"pref-closing", t:"Closing words: choose H or I", choices:["H","I"],
        note:"<b>H (printed first):</b> 'This is a new beginning for … and … May you have many happy years together and may all your hopes and dreams be fulfilled. May you believe in each other, and may the warmth of your love enrich not only your lives but also the lives of those around you. We hope that the feelings of love that you have for each other will deepen and grow even stronger throughout the years to come. May no failure or misfortune ever part you and may you live full, rich lives together.' The registrar then confirms the contract and that you are married. <b>I (printed second):</b> '… and … This is a new chapter in your lives together. May you share many new experiences and continue to grow as a couple. May your love remain constant and strong. May you never take each other for granted but continue to laugh together often and enjoy each other's company every day.' Then congratulations and the announcement that you are married. If the exact H/I lettering matters when submitting, confirm it with B&NES."},
-      {id:"pref-readings", t:"Readings: decide yes/no, choose pieces, name readers",
+      {id:"pref-readings", t:"Readings: decide yes/no, choose pieces, name readers", choices:["Yes","No"], det:true,
        note:"Up to three interludes: a reading, poem or piece of music each, none religious. Attach copies with the doc and name who reads or performs each."},
-      {id:"pref-music", t:"Ceremony music: pick four moments",
+      {id:"pref-music", t:"Ceremony music: pick four moments", det:true,
        note:"Recorded or live. Four moments: guests arriving beforehand, your entrance, the signing, and your exit."},
-      {id:"pref-absent", t:"Acknowledgement of absent family/friends (optional, 150 words)",
+      {id:"pref-absent", t:"Acknowledgement of absent family/friends (optional, 150 words)", choices:["Yes","No"], det:true,
        note:"For people dear to you who cannot attend, mentioned by the registrar."},
-      {id:"pref-story", t:"Your story as a couple (optional, 300 words)",
+      {id:"pref-story", t:"Your story as a couple (optional, 300 words)", choices:["Yes","No"],
        note:"How you met, shared values, hopes for the future, children or beloved pets. Read aloud by the registrar. Draft it just below."},
       {id:"write-story", kind:"text", t:"Your story, draft", body:""},
-      {id:"pref-arrive", t:"Arriving together or separately"},
+      {id:"pref-arrive", t:"Arriving together or separately", choices:["Together","Separately"]},
       {id:"write-else", kind:"text", t:"Anything else for the registrar", body:""},
-      {id:"pref-contact", t:"Contact details and celebrant permission",
+      {id:"pref-contact", t:"Contact details and celebrant permission", choices:["Yes","No"], det:true,
        note:"Yes/No on the form: permission to pass your details to the assigned celebrant, plus a phone number and email for each of you."},
-      {id:"pref-photo", t:"Photo / social-media permission: delete the option you don't want",
+      {id:"pref-photo", t:"Photo / social-media permission: delete the option you don't want", choices:["Share","No sharing"],
        note:"The form asks you to keep one line: permission for B&NES to share ceremony images on their marketing and social channels, or not."},
     ]
   },
@@ -740,6 +765,10 @@ let editorOpen = false;   // an inline editor is on screen; hold re-renders
 let renderQueued = false;
 
 const CHECK = '<svg viewBox="0 0 24 24"><polyline points="5 13 10 18 19 6"/></svg>';
+
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
 const ASSIGN_CYCLE = [null, "R", "L", "RL"];
 const ASSIGN_LABEL = {R:"R", L:"L", RL:"R + L"};
 
@@ -796,7 +825,7 @@ function seedObjects(){
     const sid = "s" + i;
     out.sections[sid] = { title:sec.title, when:sec.when, sub:sec.sub || null, order:sec.order || (i+1)*10 };
     sec.items.forEach((it,j)=>{
-      out.items[it.id] = { sec:sid, t:it.t, note:it.note || null, tag:it.tag || null, assign:it.assign || null, order:(j+1)*10, kind:it.kind || null, body:it.kind === "text" ? (it.body || "") : null };
+      out.items[it.id] = { sec:sid, t:it.t, note:it.note || null, tag:it.tag || null, assign:it.assign || null, order:(j+1)*10, kind:it.kind || null, body:it.kind === "text" ? (it.body || "") : null, choices:it.choices || null, det:it.det || null };
     });
   });
   SEED_PANELS.forEach((p,i)=>{
@@ -836,7 +865,7 @@ function start(){
 // Bump when the SEED gains new sections/items/panels: existing databases
 // get the additions topped up without touching anything already there
 // (edits and deletions in the DB always win over the seed).
-const SEED_VERSION = 4;
+const SEED_VERSION = 5;
 
 function seedIfNeeded(){
   return db.ref(ROOT).once("value").then(snap=>{
@@ -866,6 +895,17 @@ function seedIfNeeded(){
       });
       if((v.sections||{})["s1"] && !upd["sections/s1"]) upd["sections/s1/sub"] = want.sections["s1"].sub;
       if((v.panels||{})["p0"] && !upd["panels/p0"]) upd["panels/p0/full"] = want.panels["p0"].full;
+    }
+    // v5 migration: preference items gained answer chips and detail
+    // fields; add the configs to existing items (answers start empty).
+    if((v.seedVersion || 1) < 5){
+      Object.entries(want.items).forEach(([id,it])=>{
+        if((v.items||{})[id] && !upd["items/"+id]){
+          if(it.choices) upd["items/" + id + "/choices"] = it.choices;
+          if(it.det) upd["items/" + id + "/det"] = true;
+        }
+      });
+      if((v.sections||{})["s1"] && !upd["sections/s1"] && !upd["sections/s1/sub"]) upd["sections/s1/sub"] = want.sections["s1"].sub;
     }
     upd["seedVersion"] = SEED_VERSION;
     return db.ref(ROOT).update(upd);
@@ -982,9 +1022,25 @@ function render(){
         ? `<span class="assign" data-a="${it.assign}">${ASSIGN_LABEL[it.assign]||""}</span>`
         : `<span class="assign unset hidden" data-a="">who?</span>`;
       const note = it.note ? `<span class="note">${it.note}</span>` : "";
+      let answers = "";
+      if(it.choices || it.det){
+        answers = `<span class="answers" data-id="${it.id}">`;
+        if(it.choices){
+          const cs = Array.isArray(it.choices) ? it.choices : Object.values(it.choices);
+          cs.forEach(c=>{
+            answers += `<button type="button" class="ans-chip ${it.answer===c?"sel":""}" data-c="${esc(c)}">${esc(c)}</button>`;
+          });
+        }
+        if(it.det){
+          answers += it.detail
+            ? `<span class="ans-note">${esc(it.detail)}</span><button type="button" class="ans-edit" aria-label="Edit detail">edit</button>`
+            : `<button type="button" class="ans-edit">+ note detail</button>`;
+        }
+        answers += `</span>`;
+      }
       html += `<li class="item ${isDone?"done":""}" data-id="${it.id}">
         <span class="box" role="checkbox" tabindex="0" aria-checked="${isDone}">${CHECK}</span>
-        <span class="txt"><span class="t">${it.t}</span>${note}</span>${assign}${tag}
+        <span class="txt"><span class="t">${it.t}</span>${note}${answers}</span>${assign}${tag}
         <button class="edit-btn" type="button" aria-label="Edit item">edit</button>${mv}
       </li>`;
     });
@@ -1027,8 +1083,19 @@ function bindRows(){
     });
     li.addEventListener("click", e=>{
       if(document.body.classList.contains("editing")) return;
-      if(e.target.closest(".edit-btn,.assign,.editor")) return;
+      if(e.target.closest(".edit-btn,.assign,.editor,.answers")) return;
       toggle(li);
+    });
+    li.querySelectorAll(".ans-chip").forEach(chip=>{
+      chip.addEventListener("click", e=>{
+        e.stopPropagation();
+        recordAnswer(li.dataset.id, chip.dataset.c);
+      });
+    });
+    const ansEdit = li.querySelector(".ans-edit");
+    if(ansEdit) ansEdit.addEventListener("click", e=>{
+      e.stopPropagation();
+      openDetailEditor(li.dataset.id);
     });
     const editBtn = li.querySelector(".edit-btn");
     if(editBtn) editBtn.addEventListener("click", e=>{ e.stopPropagation(); openEditor(li); });
@@ -1062,6 +1129,40 @@ function toggle(li){
 /* ---------------------------------------------------------------------
    Editing: assign cycle, inline editor, add, delete
    --------------------------------------------------------------------- */
+// Record a preference answer. Picking a choice also ticks the item
+// (the decision is made); picking the same chip again clears the
+// answer without unticking.
+function recordAnswer(id, c){
+  if(!db) return;
+  const cur = items[id] ? items[id].answer : null;
+  if(cur === c){
+    db.ref(ROOT + "/items/" + id + "/answer").set(null);
+  } else {
+    db.ref(ROOT).update({ ["items/" + id + "/answer"]: c, ["ticks/" + id]: true });
+  }
+}
+
+// Small always-live editor for the free-text detail on an answer row.
+function openDetailEditor(id){
+  if(editorOpen || !db) return;
+  editorOpen = true;
+  const row = document.querySelector('.answers[data-id="' + id + '"]');
+  const it = items[id] || {};
+  const ed = document.createElement("span");
+  ed.className = "editor";
+  const dIn = document.createElement("input");
+  dIn.type = "text";
+  dIn.value = it.detail || "";
+  dIn.placeholder = "The specifics: names, numbers, who, what";
+  ed.appendChild(dIn);
+  ed.appendChild(editorButtons(()=>{
+    db.ref(ROOT + "/items/" + id + "/detail").set(dIn.value.trim() || null);
+    closeEditor();
+  }, closeEditor));
+  row.replaceWith(ed);
+  dIn.focus();
+}
+
 // Swap an item with its neighbour, renumbering the whole section so
 // duplicate order values from top-up seeding can never wedge a row.
 function moveItem(id, dir){
