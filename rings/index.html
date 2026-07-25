@@ -102,6 +102,12 @@
   .slider-row label{color:var(--sage);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
   .slider-row input[type=range]{flex:1 1 160px;accent-color:var(--forest);height:22px}
   .slider-val{font-weight:700;color:var(--gold);font-size:16px;min-width:52px}
+  .mon-toggle{
+    display:flex;align-items:center;gap:6px;
+    color:var(--forest);font-weight:700;font-size:13px;cursor:pointer;
+    white-space:nowrap;
+  }
+  .mon-toggle input{accent-color:var(--forest);width:15px;height:15px;margin:0}
   .slider-count{color:var(--sage);margin-left:auto}
   .legend{
     display:flex;gap:18px;flex-wrap:wrap;
@@ -168,6 +174,7 @@
     <label for="minrating">Minimum rating</label>
     <input type="range" id="minrating" min="3.5" max="5" step="0.1" value="4.5">
     <span class="slider-val" id="minrating-val">4.5&#9733;</span>
+    <label class="mon-toggle"><input type="checkbox" id="mononly"> Open Mondays</label>
     <span class="slider-count" id="pin-count"></span>
   </div>
   <div id="map"></div>
@@ -491,26 +498,61 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
     // live jeweller search: every jewellery shop Google knows nearby,
     // filtered by the rating slider (and a 5-review floor so a lone
     // five-star review can't game the list)
-    const jewellers = [];   // { marker, rating }
+    const jewellers = [];   // { marker, rating, placeId, monOpen }
     const seen = {};
     const slider = document.getElementById("minrating");
     const sliderVal = document.getElementById("minrating-val");
     const pinCount = document.getElementById("pin-count");
+    const monOnly = document.getElementById("mononly");
 
     function applyFilter(){
       const min = parseFloat(slider.value);
+      const mon = monOnly.checked;
       sliderVal.innerHTML = min.toFixed(1) + "&#9733;";
-      let shown = 0;
+      let shown = 0, pending = 0;
       jewellers.forEach(j=>{
-        const on = j.rating >= min - 1e-9;
+        let on = j.rating >= min - 1e-9;
+        if(on && mon){
+          if(j.monOpen === undefined) pending++;
+          if(j.monOpen === false) on = false;
+        }
         j.marker.setMap(on ? map : null);
         if(on) shown++;
       });
       pinCount.textContent = jewellers.length
-        ? shown + " of " + jewellers.length + " jewellers shown"
+        ? shown + " of " + jewellers.length + " jewellers shown" + (mon && pending ? " (checking Monday hours…)" : "")
         : "Searching for jewellers…";
     }
     slider.addEventListener("input", applyFilter);
+
+    // On first use of the toggle, look up Monday hours for every found
+    // jeweller (staggered, cached on the entry) and refine as results
+    // land. Unknown hours are left visible: absence of data is not
+    // evidence of closure.
+    let monChecked = false;
+    function checkMondays(){
+      if(monChecked) return;
+      monChecked = true;
+      let delay = 0;
+      jewellers.forEach(j=>{
+        if(j.monOpen !== undefined || !j.placeId) return;
+        setTimeout(()=>{
+          svc.getDetails({ placeId: j.placeId, fields: ["opening_hours"] }, (d, st)=>{
+            if(st === google.maps.places.PlacesServiceStatus.OK && d && d.opening_hours && d.opening_hours.weekday_text){
+              j.monOpen = !/closed/i.test(d.opening_hours.weekday_text[0] || "");
+            } else {
+              j.monOpen = null;   // unknown: keep visible
+            }
+            applyFilter();
+          });
+        }, delay);
+        delay += 180;
+      });
+    }
+    monOnly.addEventListener("change", ()=>{
+      if(monOnly.checked && svc) checkMondays();
+      applyFilter();
+    });
 
     function addJeweller(r){
       if(!r.place_id || seen[r.place_id]) return;
@@ -527,7 +569,8 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
         ' <span style="color:#6f8a77">(' + (r.user_ratings_total || 0).toLocaleString() + " reviews)</span>" +
         (r.vicinity ? "<br>" + escT(r.vicinity) : "");
       m.addListener("click", ()=>fetchDetails(m, r.place_id, r.place_id, basic));
-      jewellers.push({ marker: m, rating: r.rating });
+      jewellers.push({ marker: m, rating: r.rating, placeId: r.place_id, monOpen: undefined });
+      if(monChecked){ monChecked = false; checkMondays(); }
     }
 
     function searchJewellers(){
