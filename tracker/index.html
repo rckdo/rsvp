@@ -5,6 +5,12 @@
   Single-file HTML. Inline CSS + JS. No build step.
 
   Changelog
+  v15.4 (25/07/2026): The full B&NES ceremony wordings (declaratory/contracting vows,
+          affirmations A/B, promises C/D/E, symbolic ceremonies, ring words F/G, closing
+          words H/I) transposed verbatim into the preference items, plus the missing form
+          fields (names, guest numbers, celebrant contact permission, anything-else
+          notepad). Notice appointment documents list and T&Cs payment/cancellation
+          terms captured. Draft blocks restyled as notepad insets in the serif.
   v15.3 (25/07/2026): Story and own-promises drafts move from top panels to inline text
           blocks inside the Preferences section, mirroring the real doc. Text blocks have
           an editable header and an always-available edit button (independent of Edit
@@ -311,8 +317,16 @@
   .txt .note{display:block;font-size:13.5px;color:var(--sage);margin-top:2px;line-height:1.45}
   .txt .note b{color:var(--gold);font-weight:700}
 
-  /* Inline text blocks (drafts): their edit button is always live */
-  li.item.text-block{display:block}
+  /* Inline text blocks (drafts): a notepad inset, visually distinct
+     from the task rows, and their edit button is always live */
+  li.item.text-block{
+    display:block;
+    background:#f8f4e7;
+    border:1px dashed var(--line-strong);
+    border-radius:10px;
+    padding:12px 16px 14px;
+    margin:10px 0;
+  }
   .text-block .th{display:flex;align-items:baseline;gap:10px}
   .text-block .th .t2{
     font-family:'Karla',sans-serif;
@@ -322,7 +336,9 @@
   }
   .text-block .tb-edit{display:inline-block}
   .text-block .body{
-    margin-top:6px;font-size:14.5px;line-height:1.55;
+    margin-top:6px;
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-size:17.5px;line-height:1.55;
     color:var(--ink);white-space:pre-wrap;
   }
   .text-block .body.placeholder{color:var(--sage);font-style:italic}
@@ -541,7 +557,7 @@ const SEED = [
     sub:"The time-critical items. Two are just phone calls, but they matter most.",
     items:[
       {id:"pay-balance", t:"Call B&NES to pay the ceremony balance", tag:"money", assign:"R",
-       note:"~£520 on <b>01225 477234</b>, Mon-Fri office hours. Have your card ready (not AMEX)."},
+       note:"~£520 on <b>01225 477234</b>, Mon-Fri office hours, card except AMEX. T&Cs require full payment at least 2 calendar months before the ceremony, so this is <b>now overdue</b>: call first thing."},
       {id:"order-certs", t:"Order marriage certificates in the same call", tag:"money", assign:"R",
        note:"£12.50 each. One for the record; a spare is handy for banks and pensions."},
       {id:"prefs-progress", t:"Complete and submit the preferences document", assign:"RL",
@@ -555,33 +571,41 @@ const SEED = [
   {
     title:"Preferences document: the choices",
     when:"Return by 27 Jul",
-    sub:"Each line is one decision. Tick as you settle it, then send the completed doc to B&NES.",
+    sub:"One line per decision, mirroring the B&NES doc, with the full wordings here so the doc can stay in the drawer. Vows are repeated after the registrar a few words at a time.",
     items:[
+      {id:"pref-names", t:"Names for the ceremony",
+       note:"The form asks for each of you: full legal name, and the preferred first name for the registrar to use on the day."},
+      {id:"pref-guests", t:"Number of guests attending"},
       {id:"pref-decl", t:"Declaratory vow: choose 1, 2 or 3", tag:"legal",
-       note:"Legal wording, required. <b>1:</b> 'I do solemnly declare that I know not of any lawful impediment why I may not be joined in matrimony to...' <b>2:</b> 'I declare that I know of no legal reason why I may not be joined in marriage to...' <b>3:</b> reply 'I am' to the registrar's question 'Are you free lawfully to marry...?'"},
+       note:"Legal wording, required: declaring you are free to marry. <b>1:</b> 'I do solemnly declare that I know not of any lawful impediment why I … may not be joined in matrimony to …' <b>2:</b> 'I declare that I know of no legal reason why I … may not be joined in marriage to …' <b>3:</b> answering 'I am' to the question 'Are you … free lawfully to marry …?'"},
       {id:"pref-affirm", t:"Affirmation: choose A or B",
-       note:"The A and B wordings are in the B&NES doc. Once you've picked, paste the winner into this note via Edit so it's to hand."},
+       note:"<b>A:</b> '… do you take … to be your wedded wife/husband, to love and encourage her/him through good times and bad. Do you promise to honour … at all times and remain faithful to her/him throughout your lives together?' <b>B:</b> '… do you take … to be your wife/husband, to love and cherish her/him, help her/him and honour him/her and give her/him understanding and comfort whatever the future may bring?'"},
       {id:"pref-contract", t:"Contracting vow: choose 1, 2 or 3", tag:"legal",
-       note:"Legal wording, required. <b>1:</b> 'I call upon these persons here present to witness that I do take thee to be my lawful wedded wife/husband.' <b>2:</b> 'I take you to be my wedded wife/husband.' <b>3:</b> 'I take thee to be my wedded wife/husband.'"},
+       note:"Legal wording, required: the vow that unites you as a married couple. <b>1:</b> 'I call upon these persons here present to witness that I … do take thee … to be my lawful wedded wife/husband.' <b>2:</b> 'I … take you … to be my wedded wife/husband.' <b>3:</b> 'I … take thee … to be my wedded wife/husband.'"},
       {id:"pref-promises", t:"Chosen promises: C, D, E or write your own",
-       note:"The personal, non-legal bit. C, D and E are in the doc; own words must be non-religious and approved in advance. Draft your own just below."},
+       note:"Optional extra promise after the vows; pick one or write your own (non-religious, approved in advance; draft below). <b>C:</b> '… I promise to love you through good times and bad. I will cherish, honour and encourage you. I will respect you as an individual and be true to you. And through these promises I dedicate myself to you.' <b>D:</b> 'Today in the company of our family and friends, I marry my best friend. The one I laugh and cry with. The one I have chosen to share my life with. I will stand by your side through life's joys and sorrows, laughter and pain. Today I marry the one I love.' <b>E:</b> '… I promise to love and cherish you, comfort and care for you, honour and protect you throughout our lives together, and this is my commitment to you.'"},
       {id:"write-promises", kind:"text", t:"Own promises, draft", body:""},
       {id:"pref-symbolic", t:"Symbolic element: none, or Tying the Knot / Rose / Sand",
-       note:"If yes, decide who brings the items forward."},
+       note:"Optional; you provide any apparatus, and decide who brings the items forward (or have them at the front already). <b>Tying the knot:</b> join hands, exchange words and together create a knot memento. <b>Rose:</b> a simple ceremony exchanging roses. <b>Sand:</b> you each pour a vessel of sand into one vessel, forever mixing the sand."},
       {id:"pref-rings-words", t:"Ring words: choose F or G",
-       note:"F and G are in the doc. Also confirm: exchanging rings yes/no, both giving, and who carries them forward."},
+       note:"Also on the form: exchanging rings yes/no, both giving yes/no, and who brings them forward. <b>F:</b> '… I give you this ring as a symbol of my love and commitment. May it be a lasting reminder of the promises we have made to each other here today.' <b>G:</b> '… I give you this ring as a symbol of our marriage and as a sign of my solemn promise to show you love, loyalty and respect. I give you everything that I am and ever hope to be. I will be faithful both in good times and bad. I will share my life with you, and I promise to love you always.'"},
       {id:"pref-closing", t:"Closing words: choose H or I",
-       note:"H and I are in the doc; paste your pick here via Edit."},
+       note:"<b>H (printed first):</b> 'This is a new beginning for … and … May you have many happy years together and may all your hopes and dreams be fulfilled. May you believe in each other, and may the warmth of your love enrich not only your lives but also the lives of those around you. We hope that the feelings of love that you have for each other will deepen and grow even stronger throughout the years to come. May no failure or misfortune ever part you and may you live full, rich lives together.' The registrar then confirms the contract and that you are married. <b>I (printed second):</b> '… and … This is a new chapter in your lives together. May you share many new experiences and continue to grow as a couple. May your love remain constant and strong. May you never take each other for granted but continue to laugh together often and enjoy each other's company every day.' Then congratulations and the announcement that you are married. If the exact H/I lettering matters when submitting, confirm it with B&NES."},
       {id:"pref-readings", t:"Readings: decide yes/no, choose pieces, name readers",
-       note:"Up to three. Must be non-religious. Attach copies with the doc."},
+       note:"Up to three interludes: a reading, poem or piece of music each, none religious. Attach copies with the doc and name who reads or performs each."},
       {id:"pref-music", t:"Ceremony music: pick four moments",
-       note:"Guests arriving, your entrance, the signing, your exit. Check with the venue how it's played."},
-      {id:"pref-absent", t:"Acknowledgement of absent family/friends (optional, 150 words)"},
+       note:"Recorded or live. Four moments: guests arriving beforehand, your entrance, the signing, and your exit."},
+      {id:"pref-absent", t:"Acknowledgement of absent family/friends (optional, 150 words)",
+       note:"For people dear to you who cannot attend, mentioned by the registrar."},
       {id:"pref-story", t:"Your story as a couple (optional, 300 words)",
-       note:"Read aloud by the registrar. Draft it just below. Can include pets, a nice nod to the dogs."},
+       note:"How you met, shared values, hopes for the future, children or beloved pets. Read aloud by the registrar. Draft it just below."},
       {id:"write-story", kind:"text", t:"Your story, draft", body:""},
       {id:"pref-arrive", t:"Arriving together or separately"},
-      {id:"pref-photo", t:"Photo / social-media permission: delete the option you don't want"},
+      {id:"write-else", kind:"text", t:"Anything else for the registrar", body:""},
+      {id:"pref-contact", t:"Contact details and celebrant permission",
+       note:"Yes/No on the form: permission to pass your details to the assigned celebrant, plus a phone number and email for each of you."},
+      {id:"pref-photo", t:"Photo / social-media permission: delete the option you don't want",
+       note:"The form asks you to keep one line: permission for B&NES to share ceremony images on their marketing and social channels, or not."},
     ]
   },
   {
@@ -592,7 +616,7 @@ const SEED = [
       {id:"venue-hire", t:"Confirm and pay the Temple of Minerva venue hire", tag:"money", assign:"R",
        note:"Separate from the registrar fee, paid to the venue operator (Heritage Park Weddings). Confirm booking and payment with them directly."},
       {id:"notice-attend", t:"Attend the notice of marriage appointment", tag:"legal", assign:"RL",
-       note:"<b>1.30pm, 11 August, Didcot Register Office.</b> Both of you, with ID and proof of address. This is the hard legal step that confirms the booking."},
+       note:"<b>1.30pm, 11 August, Didcot Register Office.</b> Bring for each of you: valid passport (or full birth certificate plus photo ID), proof of address (utility bill under 3 months old, bank statement under 1 month, or council tax bill under 12 months), and the ceremony venue's full name and address. Statutory fee per person, paid at booking. This is the hard legal step that confirms the wedding."},
       {id:"invites-finalise", t:"Create the invitations", assign:"R",
        note:"Timings, parking, dress code, the outdoor element and that dogs are coming. RSVPs and dietary requirements."},
       {id:"invites-send", t:"Send the invitations", assign:"L"},
@@ -694,7 +718,7 @@ const SEED_PANELS = [
     {l:"Ceremony balance", v:"~£520"},
     {l:"Certificates", v:"£12.50 ea"},
     {l:"Notice fee", v:"~£35 pp"}],
-   full:"<strong>Ceremony balance</strong> = £620 weekday rate less the £100 deposit. That is the 2025/26 figure and may rise a little under 2026/27 rates. Pay by phone: <strong>01225 477234</strong> (Mon-Fri), card except AMEX. <strong>Venue hire is separate</strong> and paid to the Temple operator, not the registrar."},
+   full:"<strong>Ceremony balance</strong> = £620 weekday rate less the £100 non-refundable deposit; due at least 2 months before the day per the T&Cs. Pay by phone: <strong>01225 477234</strong> (Mon-Fri), card except AMEX. <strong>Venue hire is separate</strong> and paid to the Temple operator, not the registrar. Cancellation is by email only (register_office@bathnes.gov.uk): 2+ months out, full refund less deposit; 2 months to 2 weeks, 50%; later, nothing."},
   {title:"Key dates", rows:[
     {l:"Preferences doc", v:"~27 Jul*"},
     {l:"Ceremony balance", v:"Now due"},
@@ -812,7 +836,7 @@ function start(){
 // Bump when the SEED gains new sections/items/panels: existing databases
 // get the additions topped up without touching anything already there
 // (edits and deletions in the DB always win over the seed).
-const SEED_VERSION = 3;
+const SEED_VERSION = 4;
 
 function seedIfNeeded(){
   return db.ref(ROOT).once("value").then(snap=>{
@@ -832,6 +856,16 @@ function seedIfNeeded(){
         if(upd["items/" + iid] && v.panels[pid].full) upd["items/" + iid].body = v.panels[pid].full;
         upd["panels/" + pid] = null;
       });
+    }
+    // v4 migration: the seed notes gained the full B&NES wordings and
+    // document lists, so refresh notes on already-seeded items (titles,
+    // ticks, assignments, order and drafts are left untouched).
+    if((v.seedVersion || 1) < 4){
+      Object.entries(want.items).forEach(([id,it])=>{
+        if((v.items||{})[id] && !upd["items/"+id]) upd["items/" + id + "/note"] = it.note;
+      });
+      if((v.sections||{})["s1"] && !upd["sections/s1"]) upd["sections/s1/sub"] = want.sections["s1"].sub;
+      if((v.panels||{})["p0"] && !upd["panels/p0"]) upd["panels/p0/full"] = want.panels["p0"].full;
     }
     upd["seedVersion"] = SEED_VERSION;
     return db.ref(ROOT).update(upd);
