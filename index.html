@@ -284,7 +284,7 @@
   .link:hover { color: #a34a2c; }
   .link:focus-visible { outline: 2px solid #7a7c47; outline-offset: 3px; }
 
-  /* ---- Confirmation panel ---- */
+  /* ---- Review + confirmation panels ---- */
   .panel {
     flex: 1;
     display: none;
@@ -294,8 +294,35 @@
     text-align: center;
     padding: 40px;
   }
+  /* only one panel visible at a time; the shown one rises in gently */
+  .card.reviewing .body { display: none; }
+  .card.reviewing .review { display: flex; animation: rise 0.55s ease both; }
   .card.sent .body { display: none; }
+  .card.sent .review { display: none; }
   .card.sent .thanks { display: flex; animation: rise 0.55s ease both; }
+
+  .eyebrow {
+    font-family: 'Marcellus', serif;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #9e5a30;
+  }
+  .review .name {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: 26px;
+    color: #4a3f2f;
+    margin-top: 18px;
+  }
+  .review .status {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 19px;
+    color: #8a7256;
+    margin-top: 4px;
+  }
+  .review .submit { margin-top: 26px; }
 
   .thanks .title {
     font-family: 'Playfair Display', serif;
@@ -317,7 +344,7 @@
   /* Respect users who prefer less motion — hold everything still. */
   @media (prefers-reduced-motion: reduce) {
     .card, .body, .band .block,
-    .card.sent .thanks,
+    .card.reviewing .review, .card.sent .thanks,
     .sky, .glow, .robin { animation: none; }
     .motes { display: none; }
     .submit, .link { transition: none; }
@@ -367,8 +394,16 @@
           </label>
         </div>
 
-        <button type="submit" class="submit">Send reply</button>
+        <button type="submit" class="submit">Next</button>
       </form>
+    </div>
+
+    <div class="panel review">
+      <div class="eyebrow">Please confirm</div>
+      <div class="name" id="review-name"></div>
+      <div class="status" id="review-status"></div>
+      <button type="button" class="submit" id="confirm-btn">Confirm</button>
+      <button type="button" class="link" id="change-btn">Change reply</button>
     </div>
 
     <div class="panel thanks">
@@ -467,7 +502,7 @@
   })();
 
   /* ---------------------------------------------------------------
-     Reply flow: fill -> send, one press.
+     Reply flow: fill -> Next -> review -> Confirm.
 
      WHERE REPLIES GO
      Every confirmed reply is (a) kept in this browser's localStorage
@@ -543,24 +578,49 @@
 
   var form = document.getElementById('rsvp-form');
   var card = document.getElementById('card');
+  var reviewName = document.getElementById('review-name');
+  var reviewStatus = document.getElementById('review-status');
+  var confirmBtn = document.getElementById('confirm-btn');
+  var changeBtn = document.getElementById('change-btn');
   var title = document.getElementById('thanks-title');
   var msg = document.getElementById('thanks-msg');
 
+  var STATUS = { accepts: 'Joyfully accepts', declines: 'Regretfully declines' };
   var CONFIRM = {
     accepts:  { title: 'Wonderful',      msg: 'We look forward to seeing you there.' },
     declines: { title: 'We’ll miss you', msg: 'Sorry that we won’t see you there.' }
   };
 
-  // One press: validate, commit the reply and show the closing message.
+  var pending = null;
+
+  // Step 1 (Next): validate, then show the review panel. Nothing is
+  // saved or sent yet; Confirm on the next screen commits it.
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    var reply = {
+    var data = {
       name: form.name.value.trim(),
       attending: (form.attending.value || ''),
       at: new Date().toISOString()
     };
-    if (!reply.name) { form.name.focus(); return; }
-    if (!reply.attending) { form.attending[0].focus(); return; }
+    if (!data.name) { form.name.focus(); return; }
+    if (!data.attending) { form.attending[0].focus(); return; }
+
+    pending = data;
+    reviewName.textContent = data.name;
+    reviewStatus.textContent = STATUS[data.attending];
+    card.classList.add('reviewing');
+    confirmBtn.focus();
+  });
+
+  // Back to editing.
+  changeBtn.addEventListener('click', function () {
+    card.classList.remove('reviewing');
+  });
+
+  // Step 2 (Confirm): commit the reply and show the closing message.
+  confirmBtn.addEventListener('click', function () {
+    if (!pending) return;
+    var reply = pending;
 
     // Backup copy in this browser (never lost, even if the send fails).
     try {
@@ -584,6 +644,7 @@
     var c = CONFIRM[reply.attending];
     title.textContent = c.title;
     msg.textContent = c.msg;
+    card.classList.remove('reviewing');
     card.classList.add('sent');
   });
 })();
