@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<!--
+  Wedding Planning Tracker : Richard & Lorraine
+  Ceremony: Monday 21 September 2026, 13:00, Temple of Minerva, Royal Victoria Park
+  Single-file HTML. Inline CSS + JS. No build step.
+
+  Changelog
+  v15.0 (25/07/2026): Online gated version. 4-character passcode splash. Tick state, item list
+          and assignments now live in Firebase Realtime Database, shared and live-synced
+          between devices via Anonymous Auth. Edit mode: add items, reword items and notes,
+          delete items, assign items to R / L / both. First run seeds the database from the
+          v14 item list (same stable IDs). localStorage tick persistence removed.
+  v14.0 (25/07/2026): Initial build. Deadline-grouped checklist, live progress bar and
+          countdown, pre-filled payment figures and key dates, preferences-doc decision list.
+
+  SETUP (one-off, about two minutes)
+  1. Create a Firebase project at console.firebase.google.com (or reuse an existing one).
+  2. Build > Realtime Database > Create database.
+  3. Build > Authentication > Sign-in method > enable Anonymous.
+  4. Project settings > Your apps > Web app > copy the config object into FIREBASE_CONFIG
+     below (marked PASTE CONFIG HERE).
+  5. Realtime Database > Rules > paste:
+     {
+       "rules": {
+         ".read": false,
+         ".write": false,
+         "weddingTracker": {
+           ".read": "auth != null",
+           ".write": "auth != null"
+         }
+       }
+     }
+  6. Change PASSCODE below if you want a different 4-character code.
+
+  Note: the passcode is a gate for humans, not a security boundary. Keep nothing sensitive
+  in the tracker. See the handover doc, section 7.
+-->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wedding Tracker : Richard &amp; Lorraine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#26332c;
+    --forest:#2f4a3c;
+    --sage:#6f8a77;
+    --gold:#a3762f;
+    --paper:#eef1ea;
+    --card:#fbfaf5;
+    --line:#dce0d6;
+    --line-strong:#c6cdbe;
+    --done:#8aa08f;
+    --shadow:0 1px 2px rgba(38,51,44,.05);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Karla',system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:820px;margin:0 auto;padding:0 20px 96px}
+
+  /* Passcode splash */
+  #splash{
+    position:fixed;inset:0;z-index:50;
+    background:var(--forest);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  #splash.hidden{display:none}
+  .splash-card{
+    background:var(--card);
+    border-radius:18px;
+    padding:38px 30px 34px;
+    max-width:340px;width:100%;
+    text-align:center;
+    box-shadow:0 18px 44px rgba(0,0,0,.28);
+  }
+  .splash-card h1{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;font-size:30px;color:var(--forest);
+    margin:0;line-height:1.1;
+  }
+  .splash-card .amp{color:var(--gold);font-style:italic;font-weight:500}
+  .splash-card p{font-size:14px;color:var(--sage);margin:10px 0 24px}
+  .dots{display:flex;gap:12px;justify-content:center;cursor:text;position:relative}
+  .dot{
+    width:50px;height:58px;
+    border:1.5px solid var(--line-strong);
+    border-radius:10px;background:#fff;
+    font-size:26px;font-weight:700;color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    transition:border-color .15s ease;
+  }
+  .dot.filled{border-color:var(--sage)}
+  #pin{
+    position:absolute;inset:0;width:100%;height:100%;
+    opacity:0;border:none;font-size:26px;
+  }
+  .splash-err{font-size:13px;color:#a3512f;margin-top:14px;min-height:20px}
+  .dots.shake{animation:shake .4s ease}
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-7px)}
+    40%{transform:translateX(7px)}
+    60%{transform:translateX(-5px)}
+    80%{transform:translateX(5px)}
+  }
+
+  /* Header */
+  header{
+    background:var(--forest);
+    color:#f2f0e6;
+    margin:0 -20px 28px;
+    padding:40px 24px 34px;
+    text-align:center;
+  }
+  header .names{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;
+    font-size:clamp(38px,8vw,58px);
+    line-height:1;
+    margin:0;
+    letter-spacing:.5px;
+  }
+  header .amp{color:#c9a86a;font-style:italic;font-weight:500}
+  header .meta{
+    margin:14px auto 0;
+    max-width:52ch;
+    color:#cdd6c9;
+    font-size:15px;
+  }
+  header .venue{color:#eef0e6;font-weight:500}
+
+  /* Setup / sync notices */
+  .notice{
+    background:#f6ead2;
+    border:1px solid #e3cfa4;
+    border-radius:14px;
+    padding:14px 18px;
+    font-size:14px;
+    color:#6d5420;
+    margin:0 0 18px;
+  }
+  .notice b{color:#8a5e1c}
+  .notice.hidden{display:none}
+
+  /* Countdown + progress strip */
+  .strip{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    margin:24px 0 8px;
+  }
+  .stat{
+    flex:1 1 150px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px 18px;
+    box-shadow:var(--shadow);
+  }
+  .stat .n{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;
+    font-size:40px;
+    line-height:1;
+    color:var(--forest);
+  }
+  .stat .l{font-size:13px;color:var(--sage);margin-top:6px;letter-spacing:.02em}
+  .bar-track{
+    height:9px;
+    background:#e2e6dc;
+    border-radius:999px;
+    overflow:hidden;
+    margin-top:12px;
+  }
+  .bar-fill{height:100%;width:0;background:var(--gold);border-radius:999px;transition:width .35s ease}
+
+  /* Reference panels */
+  .ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0 6px}
+  @media(max-width:620px){.ref-grid{grid-template-columns:1fr}}
+  .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px 20px;
+    box-shadow:var(--shadow);
+  }
+  .panel h3{
+    font-family:'Karla',sans-serif;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.09em;
+    color:var(--gold);
+    margin:0 0 12px;
+  }
+  .panel dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14.5px}
+  .panel dt{color:var(--sage)}
+  .panel dd{margin:0;text-align:right;font-weight:500}
+  .panel .full{grid-column:1 / -1;text-align:left;color:var(--ink);font-size:13.5px;line-height:1.5;padding-top:8px;border-top:1px solid var(--line);margin-top:6px}
+  .panel .full strong{color:var(--forest)}
+
+  /* Section cards */
+  section.card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:8px 22px 10px;
+    margin-top:20px;
+    box-shadow:var(--shadow);
+  }
+  .sec-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    padding:14px 0 6px;
+    border-bottom:1px solid var(--line);
+  }
+  .sec-head h2{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;
+    font-size:27px;
+    color:var(--forest);
+    margin:0;
+    line-height:1.1;
+  }
+  .sec-head .when{font-size:13px;color:var(--gold);font-weight:700;white-space:nowrap;letter-spacing:.02em}
+  .sec-sub{font-size:14px;color:var(--sage);margin:8px 0 4px}
+
+  ul.items{list-style:none;margin:6px 0 8px;padding:0}
+  li.item{
+    display:flex;
+    align-items:flex-start;
+    gap:13px;
+    padding:12px 2px;
+    border-top:1px solid var(--line);
+  }
+  li.item:first-child{border-top:none}
+  .box{
+    flex:0 0 auto;
+    width:21px;height:21px;
+    margin-top:2px;
+    border:1.5px solid var(--line-strong);
+    border-radius:6px;
+    background:#fff;
+    cursor:pointer;
+    position:relative;
+    transition:background .15s ease,border-color .15s ease;
+  }
+  .box:hover{border-color:var(--sage)}
+  .box svg{position:absolute;inset:0;width:100%;height:100%;stroke:#fff;stroke-width:3;fill:none;opacity:0;transition:opacity .15s ease;stroke-linecap:round;stroke-linejoin:round}
+  li.done .box{background:var(--done);border-color:var(--done)}
+  li.done .box svg{opacity:1}
+  .txt{flex:1 1 auto}
+  .txt .t{font-weight:500;color:var(--ink)}
+  li.done .txt .t{color:var(--sage);text-decoration:line-through;text-decoration-color:var(--line-strong)}
+  .txt .note{display:block;font-size:13.5px;color:var(--sage);margin-top:2px;line-height:1.45}
+  .txt .note b{color:var(--gold);font-weight:700}
+
+  .tag{
+    flex:0 0 auto;
+    align-self:flex-start;
+    margin-top:1px;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    padding:3px 9px;
+    border-radius:999px;
+  }
+  .tag.legal{background:#eddfca;color:#8a5e1c}
+  .tag.money{background:#dbe6db;color:#3c5c47}
+
+  /* Assignment chip: R / L / R+L */
+  .assign{
+    flex:0 0 auto;
+    align-self:flex-start;
+    margin-top:1px;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.03em;
+    padding:3px 9px;
+    border-radius:999px;
+    border:1px solid var(--line-strong);
+    color:var(--forest);
+    background:#fff;
+    white-space:nowrap;
+  }
+  .assign.hidden{display:none}
+  body.editing .assign{display:inline-block;cursor:pointer}
+  body.editing .assign:hover{border-color:var(--sage)}
+  body.editing .assign.unset{color:var(--line-strong);border-style:dashed}
+
+  /* Edit mode */
+  .edit-btn{
+    flex:0 0 auto;
+    align-self:flex-start;
+    display:none;
+    background:none;
+    border:1px solid var(--line-strong);
+    border-radius:999px;
+    color:var(--sage);
+    font-family:inherit;
+    font-size:12px;
+    padding:2px 10px;
+    cursor:pointer;
+  }
+  .edit-btn:hover{border-color:var(--sage);color:var(--forest)}
+  body.editing .edit-btn{display:inline-block}
+  .add-row{display:none;padding:10px 2px 12px;border-top:1px solid var(--line)}
+  body.editing .add-row{display:block}
+  .add-item{
+    background:none;
+    border:1px dashed var(--line-strong);
+    border-radius:999px;
+    color:var(--sage);
+    font-family:inherit;
+    font-size:13px;
+    padding:7px 16px;
+    cursor:pointer;
+  }
+  .add-item:hover{border-color:var(--sage);color:var(--forest)}
+
+  /* Inline item editor */
+  .editor{flex:1 1 auto}
+  .editor input,.editor textarea{
+    width:100%;
+    font-family:inherit;
+    font-size:14.5px;
+    color:var(--ink);
+    background:#fff;
+    border:1px solid var(--line-strong);
+    border-radius:8px;
+    padding:8px 10px;
+  }
+  .editor input:focus,.editor textarea:focus{outline:none;border-color:var(--sage)}
+  .editor textarea{margin-top:8px;min-height:56px;resize:vertical;font-size:13.5px}
+  .editor .hint{font-size:12px;color:var(--sage);margin:4px 0 0}
+  .editor .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+  .editor .save,.editor .cancel,.editor .del{
+    font-family:inherit;font-size:13px;
+    border-radius:999px;padding:7px 16px;cursor:pointer;
+  }
+  .editor .save{background:var(--forest);border:1px solid var(--forest);color:#f2f0e6}
+  .editor .save:hover{background:#3c5c4a}
+  .editor .cancel{background:none;border:1px solid var(--line-strong);color:var(--sage)}
+  .editor .cancel:hover{border-color:var(--sage);color:var(--forest)}
+  .editor .del{background:none;border:1px solid #d8b8a8;color:#a3512f;margin-left:auto}
+  .editor .del:hover{border-color:#a3512f}
+
+  footer{margin-top:34px;text-align:center;color:var(--sage);font-size:13.5px}
+  .foot-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+  .reset,.edit-toggle{
+    background:none;border:1px solid var(--line-strong);color:var(--sage);
+    font-family:inherit;font-size:13px;padding:8px 16px;border-radius:999px;cursor:pointer;
+  }
+  .reset:hover,.edit-toggle:hover{border-color:var(--sage);color:var(--forest)}
+  body.editing .edit-toggle{background:var(--forest);border-color:var(--forest);color:#f2f0e6}
+  #sync-note{margin-top:10px;font-size:12.5px}
+  #sync-note .dot-live{color:#3c5c47}
+  #sync-note .dot-off{color:#a3512f}
+
+  @media print{
+    .box{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .reset,.edit-toggle,.edit-btn,.add-row,#sync-note{display:none}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="splash-card">
+    <h1>Richard <span class="amp">&amp;</span> Lorraine</h1>
+    <p>Enter the code to open the tracker</p>
+    <div class="dots" id="dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <input id="pin" type="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="4" aria-label="4 character passcode">
+    </div>
+    <div class="splash-err" id="splash-err"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <h1 class="names">Richard <span class="amp">&amp;</span> Lorraine</h1>
+    <p class="meta">
+      <span class="venue">Temple of Minerva, Royal Victoria Park</span><br>
+      Monday 21 September 2026 &middot; 13:00
+    </p>
+  </header>
+
+  <div class="notice hidden" id="setup-note">
+    <b>Not connected yet.</b> Paste your Firebase config into the marked block near the top
+    of this file's script, then reload. Until then nothing here will save or sync.
+  </div>
+
+  <div class="strip">
+    <div class="stat"><div class="n" id="days">…</div><div class="l">days to go</div></div>
+    <div class="stat"><div class="n" id="pct">0%</div><div class="l" id="donecount">0 of 0 done</div>
+      <div class="bar-track"><div class="bar-fill" id="bar"></div></div>
+    </div>
+  </div>
+
+  <div class="ref-grid">
+    <div class="panel">
+      <h3>Payments</h3>
+      <dl>
+        <dt>Deposit (paid 30 Jun)</dt><dd>£100</dd>
+        <dt>Ceremony balance</dt><dd>~£520</dd>
+        <dt>Certificates</dt><dd>£12.50 ea</dd>
+        <dt>Notice fee</dt><dd>~£35 pp</dd>
+        <div class="full"><strong>Ceremony balance</strong> = £620 weekday rate less the £100 deposit. That is the 2025/26 figure and may rise a little under 2026/27 rates. Pay by phone: <strong>01225 477234</strong> (Mon-Fri), card except AMEX. <strong>Venue hire is separate</strong> and paid to the Temple operator, not the registrar.</div>
+      </dl>
+    </div>
+    <div class="panel">
+      <h3>Key dates</h3>
+      <dl>
+        <dt>Preferences doc</dt><dd>~27 Jul*</dd>
+        <dt>Ceremony balance</dt><dd>Now due</dd>
+        <dt>Notice of marriage</dt><dd>by ~24 Aug</dd>
+        <dt>Ceremony</dt><dd>21 Sep</dd>
+        <div class="full">*8 weeks before the ceremony. You have asked B&amp;NES for a short grace period to the end of the week. <strong>Notice is the hard legal deadline</strong> and is what confirms the provisional booking.</div>
+      </dl>
+    </div>
+  </div>
+
+  <div id="sections"></div>
+
+  <footer>
+    <p>Ticks and edits sync live between your devices.<br>
+    Figures are estimates from the B&amp;NES documents; confirm exact amounts when you call.</p>
+    <div class="foot-btns">
+      <button class="edit-toggle" id="edit-toggle">Edit list</button>
+      <button class="reset" id="reset">Reset all ticks</button>
+    </div>
+    <p id="sync-note"></p>
+  </footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>
+/* =====================================================================
+   CONFIG : the only two things you should need to touch.
+   ===================================================================== */
+
+// 4-character passcode for the splash screen. Case doesn't matter.
+const PASSCODE = "DOGS";
+
+// PASTE CONFIG HERE : replace with the web config object from
+// Firebase console > Project settings > Your apps > Web app.
+const FIREBASE_CONFIG = {
+  apiKey: "PASTE_API_KEY",
+  authDomain: "PASTE_PROJECT.firebaseapp.com",
+  databaseURL: "https://PASTE_PROJECT-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "PASTE_PROJECT",
+  appId: "PASTE_APP_ID"
+};
+
+/* ===================================================================== */
+
+const CEREMONY = new Date(2026, 8, 21, 13, 0, 0); // 21 Sep 2026
+const ROOT = "weddingTracker";
+const UNLOCK_KEY = "rl-tracker-unlocked";
+
+// v14 item list, used ONCE to seed the database on first run.
+// After seeding, the database is the source of truth; editing this
+// array has no effect on an already-seeded tracker.
+const SEED = [
+  {
+    title:"This week",
+    when:"By Mon-Fri",
+    sub:"The time-critical items. Two are just phone calls, but they matter most.",
+    items:[
+      {id:"pay-balance", t:"Call B&NES to pay the ceremony balance", tag:"money",
+       note:"~£520 on <b>01225 477234</b>, Mon-Fri office hours. Have your card ready (not AMEX)."},
+      {id:"order-certs", t:"Order marriage certificates in the same call", tag:"money",
+       note:"£12.50 each. Get at least two, needed for name changes, pensions, employer, bank."},
+      {id:"prefs-progress", t:"Complete the preferences document",
+       note:"This is your 'vows' submission. See the decision list further down. Return by end of this week per the grace period you requested."},
+      {id:"confirm-witnesses", t:"Confirm your two witnesses", tag:"legal",
+       note:"Legally required, present for the whole ceremony. Easy to forget at a small wedding, so lock in who they are."},
+      {id:"notice-booked", t:"Check the notice appointment is booked and in the diary", tag:"legal",
+       note:"You said this is arranged with your local council. Confirm the date and what ID/residency documents to bring."},
+    ]
+  },
+  {
+    title:"Preferences document: the choices",
+    when:"Return by end of week",
+    sub:"Each line is one decision. Tick as you settle it, then send the completed doc to B&NES.",
+    items:[
+      {id:"pref-decl", t:"Declaratory vow: choose 1, 2 or 3", tag:"legal", note:"Legal wording. Required."},
+      {id:"pref-affirm", t:"Affirmation: choose A or B"},
+      {id:"pref-contract", t:"Contracting vow: choose 1, 2 or 3", tag:"legal", note:"Legal wording. Required."},
+      {id:"pref-promises", t:"Chosen promises: C, D, E or write your own",
+       note:"The personal, non-legal bit. Own words are allowed but must be non-religious and get approved, so start these first if you want bespoke ones."},
+      {id:"pref-symbolic", t:"Symbolic element: none, or Tying the Knot / Rose / Sand",
+       note:"If yes, decide who brings the items forward."},
+      {id:"pref-rings-words", t:"Ring words: choose F or G",
+       note:"Also confirm: exchanging rings yes/no, both giving, and who carries them forward."},
+      {id:"pref-closing", t:"Closing words: choose H or I"},
+      {id:"pref-readings", t:"Readings: decide yes/no, choose pieces, name readers",
+       note:"Up to three. Must be non-religious. Attach copies with the doc."},
+      {id:"pref-music", t:"Ceremony music: pick four moments",
+       note:"Guests arriving, your entrance, the signing, your exit. Check with the venue how it's played."},
+      {id:"pref-absent", t:"Acknowledgement of absent family/friends (optional, 150 words)"},
+      {id:"pref-story", t:"Your story as a couple (optional, 300 words)",
+       note:"Read aloud by the registrar. Can include pets, a nice nod to the dogs."},
+      {id:"pref-arrive", t:"Arriving together or separately"},
+      {id:"pref-photo", t:"Photo / social-media permission: delete the option you don't want"},
+    ]
+  },
+  {
+    title:"This month",
+    when:"Through August",
+    sub:"The bookings and buying. Several feed each other, so numbers and dates first.",
+    items:[
+      {id:"venue-hire", t:"Confirm and pay the Temple of Minerva venue hire", tag:"money",
+       note:"Separate from the registrar fee, paid to the venue operator (Heritage Park Weddings). Check it's booked if not already."},
+      {id:"invites-finalise", t:"Finalise the invitations",
+       note:"Include timings, parking, dress code, the outdoor element and that dogs are coming. Ask for RSVPs and dietary requirements."},
+      {id:"invites-send", t:"Send the invitations"},
+      {id:"sydneys-book", t:"Confirm the Sydney's booking and pre-order plan",
+       note:"Area reserved, sharing plates pre-order, money behind the bar. Ask their latest arrival time and whether cold plates ease the 3pm kitchen close."},
+      {id:"creamtea-confirm", t:"Confirm the cream tea venue is booked",
+       note:"You've mentioned it as the plan, so make sure it's actually locked in with a time."},
+      {id:"rings-buy", t:"Buy the rings",
+       note:"Mind sizing and any engraving lead time so they're ready in good time."},
+      {id:"photographer", t:"Book and brief the photographer",
+       note:"Confirm they can cover the Temple, cream tea and Sydney's, and share a rough running order."},
+      {id:"flowers", t:"Decide on flowers",
+       note:"Bouquet, buttonholes, anything for the tables, or keep it simple. Order if wanted."},
+      {id:"outfit-r", t:"Sort your outfit (Richard)"},
+      {id:"outfit-l", t:"Sort Lorraine's outfit"},
+      {id:"stay", t:"Book somewhere to stay",
+       note:"Wedding night for you both, and share nearby options with any guests who need them."},
+      {id:"dogs-plan", t:"Plan the dogs' day",
+       note:"Who handles them during the ceremony, whether they're allowed at the Temple, and how they move between the three venues."},
+      {id:"transport", t:"Plan transport between venues",
+       note:"Temple of Minerva → cream tea → Sydney's, with realistic gaps."},
+    ]
+  },
+  {
+    title:"Final fortnight",
+    when:"Early to mid September",
+    sub:"Confirming and finishing. This is where numbers get locked.",
+    items:[
+      {id:"final-numbers", t:"Give final numbers and dietaries to Sydney's and the cream tea venue",
+       note:"You can't finalise the pre-order without these, so chase RSVPs now."},
+      {id:"food-preorder", t:"Finalise the Sydney's food pre-order and bar amount"},
+      {id:"running-order", t:"Confirm the running order with all three venues",
+       note:"Ceremony 13:00, then cream tea, then Sydney's mid-afternoon. Share the timings with everyone involved."},
+      {id:"wet-weather", t:"Confirm a wet-weather fallback",
+       note:"Sydney's terrace is outdoors, so check there's an indoor option."},
+      {id:"rings-collect", t:"Collect the rings and check the fit"},
+      {id:"outfits-ready", t:"Outfits ready: final fittings, shoes, the lot"},
+      {id:"readings-print", t:"Print copies of any readings for the readers"},
+      {id:"guests-logistics", t:"Send parking and arrival details to guests",
+       note:"Royal Victoria Park car parks; link is in the B&NES email."},
+      {id:"witnesses-confirm", t:"Reconfirm your two witnesses can attend"},
+    ]
+  },
+  {
+    title:"On the day",
+    when:"Mon 21 Sep",
+    sub:"The 'don't leave the house without' list.",
+    items:[
+      {id:"otd-rings", t:"Rings"},
+      {id:"otd-witnesses", t:"Two witnesses present", tag:"legal"},
+      {id:"otd-readings", t:"Reading copies"},
+      {id:"otd-music", t:"Music sorted and a device to play it"},
+      {id:"otd-dogs", t:"Dog handler briefed"},
+      {id:"otd-contact", t:"A point-of-contact person",
+       note:"Someone other than you two to field questions and keep timings on track."},
+    ]
+  },
+  {
+    title:"After",
+    when:"The following weeks",
+    sub:"Quick wins once the day is done.",
+    items:[
+      {id:"aft-certs", t:"Collect / receive the marriage certificates"},
+      {id:"aft-namechange", t:"Name-change admin, if either of you is changing name",
+       note:"Bank, employer, pension, passport, driving licence. This is what the spare certificates are for."},
+      {id:"aft-thanks", t:"Thank yous to guests and suppliers"},
+    ]
+  },
+];
+
+/* ---------------------------------------------------------------------
+   Shared state, filled from the database. The page renders only from
+   this; nothing is read from localStorage any more.
+   --------------------------------------------------------------------- */
+let db = null;
+let sections = {};   // secId -> {title, when, sub, order}
+let items = {};      // itemId -> {sec, t, note, tag, assign, order}
+let ticks = new Set();
+let editorOpen = false;   // an inline editor is on screen; hold re-renders
+let renderQueued = false;
+
+const CHECK = '<svg viewBox="0 0 24 24"><polyline points="5 13 10 18 19 6"/></svg>';
+const ASSIGN_CYCLE = [null, "R", "L", "RL"];
+const ASSIGN_LABEL = {R:"R", L:"L", RL:"R + L"};
+
+/* ---------------------------------------------------------------------
+   Passcode splash
+   --------------------------------------------------------------------- */
+const splash = document.getElementById("splash");
+const pin = document.getElementById("pin");
+const dotsEl = document.getElementById("dots");
+const splashErr = document.getElementById("splash-err");
+
+function unlock(){
+  try{ sessionStorage.setItem(UNLOCK_KEY, "1"); }catch(e){}
+  splash.classList.add("hidden");
+  start();
+}
+
+function paintDots(){
+  const v = pin.value;
+  dotsEl.querySelectorAll(".dot").forEach((d,i)=>{
+    d.textContent = v[i] ? v[i].toUpperCase() : "";
+    d.classList.toggle("filled", !!v[i]);
+  });
+}
+
+pin.addEventListener("input", ()=>{
+  pin.value = pin.value.replace(/[^a-zA-Z0-9]/g,"").slice(0,4);
+  paintDots();
+  if(pin.value.length === 4){
+    if(pin.value.toUpperCase() === PASSCODE.toUpperCase()){ unlock(); }
+    else{
+      splashErr.textContent = "That's not it. Try again.";
+      dotsEl.classList.add("shake");
+      setTimeout(()=>{ dotsEl.classList.remove("shake"); pin.value=""; paintDots(); }, 420);
+    }
+  } else {
+    splashErr.textContent = "";
+  }
+});
+dotsEl.addEventListener("click", ()=>pin.focus());
+
+/* ---------------------------------------------------------------------
+   Firebase boot: init, anonymous sign-in, first-run seed, subscribe.
+   --------------------------------------------------------------------- */
+function configured(){
+  return FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf("PASTE") !== 0;
+}
+
+function start(){
+  if(!configured()){
+    // No config yet: show the seed list read-only so the page previews.
+    document.getElementById("setup-note").classList.remove("hidden");
+    SEED.forEach((sec,i)=>{
+      const sid = "s" + i;
+      sections[sid] = { title:sec.title, when:sec.when, sub:sec.sub || null, order:(i+1)*10 };
+      sec.items.forEach((it,j)=>{
+        items[it.id] = { sec:sid, t:it.t, note:it.note || null, tag:it.tag || null, assign:null, order:(j+1)*10 };
+      });
+    });
+    render();
+    return;
+  }
+  if(typeof firebase === "undefined"){
+    setSync(false, "The Firebase script didn't load. Check your connection and reload.");
+    return;
+  }
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.database();
+
+  firebase.auth().signInAnonymously()
+    .then(seedIfNeeded)
+    .then(subscribe)
+    .catch(err=>{
+      setSync(false, "Couldn't connect: " + (err && err.code ? err.code : "unknown error"));
+    });
+
+  db.ref(".info/connected").on("value", s=>{
+    setSync(s.val() === true);
+  });
+}
+
+function seedIfNeeded(){
+  return db.ref(ROOT + "/sections").once("value").then(snap=>{
+    if(snap.exists()) return;
+    const upd = {};
+    SEED.forEach((sec,i)=>{
+      const sid = "s" + i;
+      upd["sections/" + sid] = { title:sec.title, when:sec.when, sub:sec.sub || null, order:(i+1)*10 };
+      sec.items.forEach((it,j)=>{
+        upd["items/" + it.id] = { sec:sid, t:it.t, note:it.note || null, tag:it.tag || null, assign:null, order:(j+1)*10 };
+      });
+    });
+    return db.ref(ROOT).update(upd);
+  });
+}
+
+function subscribe(){
+  db.ref(ROOT).on("value", snap=>{
+    const v = snap.val() || {};
+    sections = v.sections || {};
+    items = v.items || {};
+    ticks = new Set(Object.keys(v.ticks || {}));
+    if(editorOpen){ renderQueued = true; updateProgress(); return; }
+    render();
+  });
+}
+
+function setSync(live, msg){
+  const el = document.getElementById("sync-note");
+  if(msg){ el.innerHTML = '<span class="dot-off">●</span> ' + msg; return; }
+  el.innerHTML = live
+    ? '<span class="dot-live">●</span> Synced live'
+    : '<span class="dot-off">●</span> Offline, changes will sync when you reconnect';
+}
+
+/* ---------------------------------------------------------------------
+   Rendering
+   --------------------------------------------------------------------- */
+function orderedSections(){
+  return Object.entries(sections)
+    .map(([id,s])=>({id,...s}))
+    .sort((a,b)=>(a.order||0)-(b.order||0));
+}
+function orderedItems(secId){
+  return Object.entries(items)
+    .filter(([,it])=>it.sec === secId)
+    .map(([id,it])=>({id,...it}))
+    .sort((a,b)=>(a.order||0)-(b.order||0));
+}
+
+function render(){
+  renderQueued = false;
+  const root = document.getElementById("sections");
+  root.innerHTML = "";
+  orderedSections().forEach(sec=>{
+    const s = document.createElement("section");
+    s.className = "card";
+    let html = `<div class="sec-head"><h2>${sec.title}</h2><span class="when">${sec.when}</span></div>`;
+    if(sec.sub) html += `<p class="sec-sub">${sec.sub}</p>`;
+    html += `<ul class="items">`;
+    orderedItems(sec.id).forEach(it=>{
+      const isDone = ticks.has(it.id);
+      const tag = it.tag ? `<span class="tag ${it.tag}">${it.tag==="legal"?"legal":"pay"}</span>` : "";
+      const assign = it.assign
+        ? `<span class="assign" data-a="${it.assign}">${ASSIGN_LABEL[it.assign]||""}</span>`
+        : `<span class="assign unset hidden" data-a="">who?</span>`;
+      const note = it.note ? `<span class="note">${it.note}</span>` : "";
+      html += `<li class="item ${isDone?"done":""}" data-id="${it.id}">
+        <span class="box" role="checkbox" tabindex="0" aria-checked="${isDone}">${CHECK}</span>
+        <span class="txt"><span class="t">${it.t}</span>${note}</span>${assign}${tag}
+        <button class="edit-btn" type="button" aria-label="Edit item">edit</button>
+      </li>`;
+    });
+    html += `</ul><div class="add-row"><button class="add-item" type="button" data-sec="${sec.id}">+ Add an item</button></div>`;
+    s.innerHTML = html;
+    root.appendChild(s);
+  });
+  bindRows();
+  updateProgress();
+}
+
+function bindRows(){
+  document.querySelectorAll("li.item").forEach(li=>{
+    const box = li.querySelector(".box");
+    box.addEventListener("click", e=>{ e.stopPropagation(); toggle(li); });
+    box.addEventListener("keydown", e=>{
+      if(e.key===" "||e.key==="Enter"){ e.preventDefault(); toggle(li); }
+    });
+    li.addEventListener("click", e=>{
+      if(document.body.classList.contains("editing")) return;
+      if(e.target.closest(".edit-btn,.assign,.editor")) return;
+      toggle(li);
+    });
+    const editBtn = li.querySelector(".edit-btn");
+    if(editBtn) editBtn.addEventListener("click", e=>{ e.stopPropagation(); openEditor(li); });
+    const chip = li.querySelector(".assign");
+    if(chip) chip.addEventListener("click", e=>{
+      if(!document.body.classList.contains("editing")) return;
+      e.stopPropagation();
+      cycleAssign(li.dataset.id);
+    });
+  });
+  document.querySelectorAll(".add-item").forEach(btn=>{
+    btn.addEventListener("click", ()=>openAdder(btn));
+  });
+}
+
+/* ---------------------------------------------------------------------
+   Ticking
+   --------------------------------------------------------------------- */
+function toggle(li){
+  if(!db) return;
+  const id = li.dataset.id;
+  const nowDone = !ticks.has(id);
+  // optimistic local flip; the DB listener will confirm
+  if(nowDone) ticks.add(id); else ticks.delete(id);
+  li.classList.toggle("done", nowDone);
+  li.querySelector(".box").setAttribute("aria-checked", nowDone);
+  updateProgress();
+  db.ref(ROOT + "/ticks/" + id).set(nowDone ? true : null);
+}
+
+/* ---------------------------------------------------------------------
+   Editing: assign cycle, inline editor, add, delete
+   --------------------------------------------------------------------- */
+function cycleAssign(id){
+  const cur = items[id] ? (items[id].assign || null) : null;
+  const next = ASSIGN_CYCLE[(ASSIGN_CYCLE.indexOf(cur)+1) % ASSIGN_CYCLE.length];
+  db.ref(ROOT + "/items/" + id + "/assign").set(next);
+}
+
+function buildEditor(initial, onSave, onCancel, onDelete){
+  const ed = document.createElement("span");
+  ed.className = "editor";
+  const tIn = document.createElement("input");
+  tIn.type = "text";
+  tIn.placeholder = "What needs doing?";
+  tIn.value = initial.t || "";
+  const nIn = document.createElement("textarea");
+  nIn.placeholder = "Note (optional). Basic HTML like <b>bold</b> is fine.";
+  nIn.value = initial.note || "";
+  const row = document.createElement("span");
+  row.className = "row";
+  const save = document.createElement("button");
+  save.type = "button"; save.className = "save"; save.textContent = "Save";
+  const cancel = document.createElement("button");
+  cancel.type = "button"; cancel.className = "cancel"; cancel.textContent = "Cancel";
+  row.appendChild(save); row.appendChild(cancel);
+  if(onDelete){
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "del"; del.textContent = "Delete";
+    del.addEventListener("click", e=>{ e.stopPropagation(); onDelete(); });
+    row.appendChild(del);
+  }
+  ed.appendChild(tIn); ed.appendChild(nIn); ed.appendChild(row);
+  save.addEventListener("click", e=>{
+    e.stopPropagation();
+    const t = tIn.value.trim();
+    if(!t){ tIn.focus(); return; }
+    onSave({ t, note: nIn.value.trim() || null });
+  });
+  cancel.addEventListener("click", e=>{ e.stopPropagation(); onCancel(); });
+  ed.addEventListener("click", e=>e.stopPropagation());
+  return { el: ed, focus: ()=>tIn.focus() };
+}
+
+function closeEditor(){
+  editorOpen = false;
+  render();   // re-render from state; picks up anything queued while editing
+}
+
+function openEditor(li){
+  if(editorOpen || !db) return;
+  editorOpen = true;
+  const id = li.dataset.id;
+  const it = items[id] || {};
+  const txt = li.querySelector(".txt");
+  const editBtn = li.querySelector(".edit-btn");
+  if(editBtn) editBtn.style.display = "none";
+  const ed = buildEditor(
+    { t: it.t, note: it.note },
+    vals=>{
+      db.ref(ROOT + "/items/" + id).update({ t: vals.t, note: vals.note });
+      closeEditor();
+    },
+    closeEditor,
+    ()=>{
+      if(!confirm("Delete this item for both of you?")) return;
+      db.ref(ROOT).update({ ["items/" + id]: null, ["ticks/" + id]: null });
+      closeEditor();
+    }
+  );
+  txt.replaceWith(ed.el);
+  ed.focus();
+}
+
+function newId(t){
+  const slug = t.toLowerCase().replace(/[^a-z0-9]+/g,"-").split("-").filter(Boolean).slice(0,3).join("-") || "item";
+  return slug + "-" + Math.random().toString(36).slice(2,6);
+}
+
+function openAdder(btn){
+  if(editorOpen || !db) return;
+  editorOpen = true;
+  const secId = btn.dataset.sec;
+  const holder = btn.parentElement;
+  btn.style.display = "none";
+  const ed = buildEditor(
+    {},
+    vals=>{
+      const maxOrder = orderedItems(secId).reduce((m,it)=>Math.max(m, it.order||0), 0);
+      db.ref(ROOT + "/items/" + newId(vals.t)).set({
+        sec: secId, t: vals.t, note: vals.note, tag: null, assign: null, order: maxOrder + 10
+      });
+      closeEditor();
+    },
+    closeEditor
+  );
+  holder.appendChild(ed.el);
+  ed.focus();
+}
+
+document.getElementById("edit-toggle").addEventListener("click", function(){
+  const on = document.body.classList.toggle("editing");
+  this.textContent = on ? "Done editing" : "Edit list";
+  document.querySelectorAll(".assign.unset").forEach(c=>c.classList.toggle("hidden", !on));
+});
+
+/* ---------------------------------------------------------------------
+   Progress, countdown, reset
+   --------------------------------------------------------------------- */
+function updateProgress(){
+  const ids = Object.keys(items);
+  const total = ids.length;
+  const d = ids.filter(id=>ticks.has(id)).length;
+  const pct = total ? Math.round(d/total*100) : 0;
+  document.getElementById("pct").textContent = pct + "%";
+  document.getElementById("donecount").textContent = `${d} of ${total} done`;
+  document.getElementById("bar").style.width = pct + "%";
+}
+
+function updateCountdown(){
+  const now = new Date();
+  const ms = CEREMONY - now;
+  const days = Math.max(0, Math.ceil(ms/86400000));
+  document.getElementById("days").textContent = days;
+}
+
+document.getElementById("reset").addEventListener("click", ()=>{
+  if(!db) return;
+  if(confirm("Clear every tick for both of you and start fresh?")){
+    db.ref(ROOT + "/ticks").remove();
+  }
+});
+
+/* ---------------------------------------------------------------------
+   Kick off
+   --------------------------------------------------------------------- */
+let unlocked = false;
+try{ unlocked = sessionStorage.getItem(UNLOCK_KEY) === "1"; }catch(e){}
+if(unlocked){
+  splash.classList.add("hidden");
+  start();
+} else {
+  pin.focus();
+}
+updateCountdown();
+setInterval(updateCountdown, 60000);
+</script>
+</body>
+</html>
