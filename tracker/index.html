@@ -188,6 +188,16 @@
   .quilt .block{flex:0 0 auto}
   .quilt .cell{width:100%;height:100%}
 
+  /* slim motif row that pins to the top once the header scrolls away */
+  #quilt-sticky{
+    position:fixed;top:0;left:0;right:0;z-index:40;
+    padding:6px 0;
+    box-shadow:0 2px 10px rgba(38,51,44,.18);
+    transform:translateY(-100%);
+    transition:transform .25s ease;
+  }
+  #quilt-sticky.on{transform:translateY(0)}
+
   /* Setup / sync notices */
   .notice{
     background:#f6ead2;
@@ -511,12 +521,14 @@
 
   @media print{
     .box,.quilt,.quilt .cell{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .reset,.edit-toggle,.edit-btn,.add-row,#sync-note{display:none}
+    .reset,.edit-toggle,.edit-btn,.add-row,#sync-note,#quilt-sticky{display:none}
     body{background:#fff}
   }
 </style>
 </head>
 <body>
+
+<div class="quilt" id="quilt-sticky" aria-hidden="true"></div>
 
 <div id="splash">
   <div class="splash-card">
@@ -1567,9 +1579,9 @@ document.getElementById("reset").addEventListener("click", ()=>{
     ()=>({ wrap:grid(3,3), cells:["#bf6a43",CREAM,"#bf6a43",CREAM,"#bf6a43",CREAM,"#bf6a43",CREAM,"#bf6a43"] }),
     ()=>({ wrap:grid(1,1), cells:["conic-gradient(#4a3f2f 0 45deg, " + CREAM + " 45deg 135deg, #4a3f2f 135deg 225deg, " + CREAM + " 225deg 315deg, #4a3f2f 315deg)"] }),
   ];
-  function fill(el, offset){
+  function fill(el, offset, px){
     if(!el) return;
-    const px = 34;
+    px = px || 34;
     for(let i = 0; i < 40; i++){
       const blk = builders[(i + offset) % builders.length]();
       const wrap = document.createElement("div");
@@ -1586,6 +1598,16 @@ document.getElementById("reset").addEventListener("click", ()=>{
   }
   fill(document.getElementById("quilt-top"), 1);
   fill(document.getElementById("quilt-bottom"), 3);
+
+  // sticky motif row: slides in once the header has scrolled out of view
+  const sticky = document.getElementById("quilt-sticky");
+  const hdr = document.querySelector("header");
+  fill(sticky, 0, 24);
+  if(sticky && hdr && "IntersectionObserver" in window){
+    new IntersectionObserver(entries=>{
+      sticky.classList.toggle("on", !entries[0].isIntersecting);
+    }).observe(hdr);
+  }
 })();
 
 /* ---------------------------------------------------------------------
