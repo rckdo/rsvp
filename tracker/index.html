@@ -5,6 +5,12 @@
   Single-file HTML. Inline CSS + JS. No build step.
 
   Changelog
+  v15.6 (25/07/2026): Answer options are editable per item: the item editor gains a
+          comma-separated options field plus toggles for the free-text detail field and
+          answer-required. New items can be created with or without multiple choice.
+          Required items can't be ticked until answered (chips nudge instead); editing
+          options clears a recorded answer that no longer exists. Legal vows seeded as
+          answer-required.
   v15.5 (25/07/2026): Preferences are recordable on the page: answer chips (1/2/3, A/B,
           C/D/E, F/G, H/I, yes/no etc.) on every choice item, always live, syncing like
           ticks; picking an answer ticks the item, re-picking clears it. Free-text
@@ -367,6 +373,16 @@
     color:var(--sage);font-family:inherit;font-size:12px;padding:2px 10px;cursor:pointer;
   }
   .ans-edit:hover{border-color:var(--sage);color:var(--forest)}
+  .ans-req{
+    font-size:11px;font-weight:700;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--gold);
+  }
+  .answers.nudge{animation:shake .4s ease}
+  .editor .chk{
+    display:flex;gap:8px;align-items:center;
+    font-size:13px;color:var(--sage);margin-top:8px;cursor:pointer;
+  }
+  .editor .chk input{accent-color:var(--forest);width:15px;height:15px;margin:0}
 
   .tag{
     flex:0 0 auto;
@@ -601,11 +617,11 @@ const SEED = [
       {id:"pref-names", t:"Names for the ceremony", det:true,
        note:"The form asks for each of you: full legal name, and the preferred first name for the registrar to use on the day."},
       {id:"pref-guests", t:"Number of guests attending", det:true},
-      {id:"pref-decl", t:"Declaratory vow: choose 1, 2 or 3", tag:"legal", choices:["1","2","3"],
+      {id:"pref-decl", t:"Declaratory vow: choose 1, 2 or 3", tag:"legal", choices:["1","2","3"], req:true,
        note:"Legal wording, required: declaring you are free to marry. <b>1:</b> 'I do solemnly declare that I know not of any lawful impediment why I … may not be joined in matrimony to …' <b>2:</b> 'I declare that I know of no legal reason why I … may not be joined in marriage to …' <b>3:</b> answering 'I am' to the question 'Are you … free lawfully to marry …?'"},
       {id:"pref-affirm", t:"Affirmation: choose A or B", choices:["A","B"],
        note:"<b>A:</b> '… do you take … to be your wedded wife/husband, to love and encourage her/him through good times and bad. Do you promise to honour … at all times and remain faithful to her/him throughout your lives together?' <b>B:</b> '… do you take … to be your wife/husband, to love and cherish her/him, help her/him and honour him/her and give her/him understanding and comfort whatever the future may bring?'"},
-      {id:"pref-contract", t:"Contracting vow: choose 1, 2 or 3", tag:"legal", choices:["1","2","3"],
+      {id:"pref-contract", t:"Contracting vow: choose 1, 2 or 3", tag:"legal", choices:["1","2","3"], req:true,
        note:"Legal wording, required: the vow that unites you as a married couple. <b>1:</b> 'I call upon these persons here present to witness that I … do take thee … to be my lawful wedded wife/husband.' <b>2:</b> 'I … take you … to be my wedded wife/husband.' <b>3:</b> 'I … take thee … to be my wedded wife/husband.'"},
       {id:"pref-promises", t:"Chosen promises: C, D, E or write your own", choices:["C","D","E","Own words","None"],
        note:"Optional extra promise after the vows; pick one or write your own (non-religious, approved in advance; draft below). <b>C:</b> '… I promise to love you through good times and bad. I will cherish, honour and encourage you. I will respect you as an individual and be true to you. And through these promises I dedicate myself to you.' <b>D:</b> 'Today in the company of our family and friends, I marry my best friend. The one I laugh and cry with. The one I have chosen to share my life with. I will stand by your side through life's joys and sorrows, laughter and pain. Today I marry the one I love.' <b>E:</b> '… I promise to love and cherish you, comfort and care for you, honour and protect you throughout our lives together, and this is my commitment to you.'"},
@@ -825,7 +841,7 @@ function seedObjects(){
     const sid = "s" + i;
     out.sections[sid] = { title:sec.title, when:sec.when, sub:sec.sub || null, order:sec.order || (i+1)*10 };
     sec.items.forEach((it,j)=>{
-      out.items[it.id] = { sec:sid, t:it.t, note:it.note || null, tag:it.tag || null, assign:it.assign || null, order:(j+1)*10, kind:it.kind || null, body:it.kind === "text" ? (it.body || "") : null, choices:it.choices || null, det:it.det || null };
+      out.items[it.id] = { sec:sid, t:it.t, note:it.note || null, tag:it.tag || null, assign:it.assign || null, order:(j+1)*10, kind:it.kind || null, body:it.kind === "text" ? (it.body || "") : null, choices:it.choices || null, det:it.det || null, req:it.req || null };
     });
   });
   SEED_PANELS.forEach((p,i)=>{
@@ -865,7 +881,7 @@ function start(){
 // Bump when the SEED gains new sections/items/panels: existing databases
 // get the additions topped up without touching anything already there
 // (edits and deletions in the DB always win over the seed).
-const SEED_VERSION = 5;
+const SEED_VERSION = 6;
 
 function seedIfNeeded(){
   return db.ref(ROOT).once("value").then(snap=>{
@@ -906,6 +922,12 @@ function seedIfNeeded(){
         }
       });
       if((v.sections||{})["s1"] && !upd["sections/s1"] && !upd["sections/s1/sub"]) upd["sections/s1/sub"] = want.sections["s1"].sub;
+    }
+    // v6 migration: the legal vows are marked answer-required.
+    if((v.seedVersion || 1) < 6){
+      Object.entries(want.items).forEach(([id,it])=>{
+        if(it.req && (v.items||{})[id] && !upd["items/"+id]) upd["items/" + id + "/req"] = true;
+      });
     }
     upd["seedVersion"] = SEED_VERSION;
     return db.ref(ROOT).update(upd);
@@ -1036,6 +1058,7 @@ function render(){
             ? `<span class="ans-note">${esc(it.detail)}</span><button type="button" class="ans-edit" aria-label="Edit detail">edit</button>`
             : `<button type="button" class="ans-edit">+ note detail</button>`;
         }
+        if(it.req && it.choices && !it.answer) answers += `<span class="ans-req">answer needed</span>`;
         answers += `</span>`;
       }
       html += `<li class="item ${isDone?"done":""}" data-id="${it.id}">
@@ -1118,6 +1141,16 @@ function toggle(li){
   if(!db) return;
   const id = li.dataset.id;
   const nowDone = !ticks.has(id);
+  // answer-required items can't be ticked done until a choice is recorded
+  const it = items[id];
+  if(nowDone && it && it.req && it.choices && !it.answer){
+    const row = li.querySelector(".answers");
+    if(row){
+      row.classList.add("nudge");
+      setTimeout(()=>row.classList.remove("nudge"), 500);
+    }
+    return;
+  }
   // optimistic local flip; the DB listener will confirm
   if(nowDone) ticks.add(id); else ticks.delete(id);
   li.classList.toggle("done", nowDone);
@@ -1197,6 +1230,24 @@ function buildEditor(initial, onSave, onCancel, onDelete, sectionPick){
   const nIn = document.createElement("textarea");
   nIn.placeholder = "Note (optional). Basic HTML like <b>bold</b> is fine.";
   nIn.value = initial.note || "";
+  const cIn = document.createElement("input");
+  cIn.type = "text";
+  cIn.placeholder = "e.g. A, B, C (blank for a plain tick item)";
+  cIn.value = initial.choices
+    ? (Array.isArray(initial.choices) ? initial.choices : Object.values(initial.choices)).join(", ")
+    : "";
+  function chk(label, on){
+    const wrap = document.createElement("label");
+    wrap.className = "chk";
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = !!on;
+    wrap.appendChild(box);
+    wrap.appendChild(document.createTextNode(label));
+    return { wrap, box };
+  }
+  const detChk = chk("Free-text detail field on the row", initial.det);
+  const reqChk = chk("Answer required before it can be ticked", initial.req);
   let secSel = null;
   if(sectionPick){
     secSel = document.createElement("select");
@@ -1222,13 +1273,25 @@ function buildEditor(initial, onSave, onCancel, onDelete, sectionPick){
     row.appendChild(del);
   }
   ed.appendChild(tIn); ed.appendChild(nIn);
+  ed.appendChild(fieldLabel("Answer options, comma-separated"));
+  ed.appendChild(cIn);
+  ed.appendChild(detChk.wrap);
+  ed.appendChild(reqChk.wrap);
   if(secSel) ed.appendChild(secSel);
   ed.appendChild(row);
   save.addEventListener("click", e=>{
     e.stopPropagation();
     const t = tIn.value.trim();
     if(!t){ tIn.focus(); return; }
-    onSave({ t, note: nIn.value.trim() || null, sec: secSel ? secSel.value : null });
+    const choices = cIn.value.split(",").map(s=>s.trim()).filter(Boolean);
+    onSave({
+      t,
+      note: nIn.value.trim() || null,
+      sec: secSel ? secSel.value : null,
+      choices: choices.length ? choices : null,
+      det: detChk.box.checked || null,
+      req: (reqChk.box.checked && choices.length) ? true : null
+    });
   });
   cancel.addEventListener("click", e=>{ e.stopPropagation(); onCancel(); });
   ed.addEventListener("click", e=>e.stopPropagation());
@@ -1249,9 +1312,12 @@ function openEditor(li){
   const editBtn = li.querySelector(".edit-btn");
   if(editBtn) editBtn.style.display = "none";
   const ed = buildEditor(
-    { t: it.t, note: it.note },
+    { t: it.t, note: it.note, choices: it.choices, det: it.det, req: it.req },
     vals=>{
-      const upd = { t: vals.t, note: vals.note };
+      const upd = { t: vals.t, note: vals.note, choices: vals.choices, det: vals.det, req: vals.req };
+      // a recorded answer that no longer exists among the options is cleared
+      const cur = it.answer || null;
+      if(cur && (!vals.choices || vals.choices.indexOf(cur) === -1)) upd.answer = null;
       if(vals.sec && vals.sec !== it.sec){
         upd.sec = vals.sec;
         upd.order = orderedItems(vals.sec).reduce((m,x)=>Math.max(m, x.order||0), 0) + 10;
@@ -1414,7 +1480,8 @@ function openAdder(btn){
     vals=>{
       const maxOrder = orderedItems(secId).reduce((m,it)=>Math.max(m, it.order||0), 0);
       db.ref(ROOT + "/items/" + newId(vals.t)).set({
-        sec: secId, t: vals.t, note: vals.note, tag: null, assign: null, order: maxOrder + 10
+        sec: secId, t: vals.t, note: vals.note, tag: null, assign: null, order: maxOrder + 10,
+        choices: vals.choices, det: vals.det, req: vals.req
       });
       closeEditor();
     },
