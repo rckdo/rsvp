@@ -149,26 +149,21 @@
   </header>
 
   <h2 class="sec">The map</h2>
-  <p class="sec-sub">Terracotta pins are the vintage specialists, gold are new-stock ring places, green are food, blue is parking, dark are landmarks. Tap a pin for ratings, hours and a Google Maps link.</p>
+  <p class="sec-sub">Gold pins are ring places, green are food, blue is parking, dark are landmarks. Tap a pin (or any shop label on the map itself) for ratings, reviews and hours.</p>
   <div id="map"></div>
   <div class="legend">
-    <span><span class="dot" style="background:#a34a2c"></span>Vintage rings</span>
-    <span><span class="dot" style="background:#a3762f"></span>New rings</span>
+    <span><span class="dot" style="background:#a3762f"></span>Rings</span>
     <span><span class="dot" style="background:#3c6b3f"></span>Food &amp; drink</span>
     <span><span class="dot" style="background:#33567c"></span>Parking</span>
     <span><span class="dot" style="background:#26332c"></span>Landmarks</span>
   </div>
 
   <h2 class="sec">Where to buy</h2>
-  <p class="sec-sub">Vintage first, since that's more your style: the terracotta pins on the map are the antique and second-hand specialists, worth hitting before the new-stock windows.</p>
+  <p class="sec-sub">Vintage first, since that's more your style, then the new-stock names as backup.</p>
   <div class="grid">
     <div class="card">
-      <h3>Vintage and antique first <span class="flag">your style</span></h3>
-      <ul>
-        <li><b>Adamas Jewellery</b>: fine antique pieces across the great periods, Georgian, Victorian, Edwardian, Art Deco.</li>
-        <li><b>Vintage Tom</b> (at Charles Hart Jewellers): vintage and antique rings inside a firm that has traded for two centuries.</li>
-        <li>Plenty of <b>Vyse Street windows</b> mix second-hand and antique stock in with the new; ask, the good pieces are often in the back.</li>
-      </ul>
+      <h3>Vintage and antique <span class="flag">your style</span></h3>
+      <p>The dedicated antique dealers keep boutique hours, but you don't need them: plenty of the everyday <b>Vyse Street and Warstone Lane shops carry antique and second-hand trays</b> alongside the new stock. The move is to ask directly, "what do you have in vintage or pre-owned?", because the good pieces are often in the back, not the window.</p>
       <p class="note">Vintage buying notes: check the band's wear (thin shanks need building up), confirm it can be resized (full eternity styles often can't), and use the hallmark's year letter to date the piece exactly.</p>
     </div>
     <div class="card">
@@ -303,7 +298,7 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
 
 (function(){
   const CENTER = { lat: 52.4874, lng: -1.9085 };
-  const COLORS = { vint:"#a34a2c", ring:"#a3762f", food:"#3c6b3f", mark:"#26332c", park:"#33567c" };
+  const COLORS = { ring:"#a3762f", food:"#3c6b3f", mark:"#26332c", park:"#33567c" };
 
   function gmaps(q){
     return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q + " Birmingham Jewellery Quarter");
@@ -311,8 +306,6 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
   // [kind, lat, lng, name, blurb]
   const places = [
     ["park", 52.4898, -1.9095, "Jewellery Quarter multi-storey car park", "Vyse Street, B18 6LP. 553 spaces next to the station, about £8.40 for a full day; on-street pay and display is dotted through the Quarter too."],
-    ["vint", 52.4881, -1.9101, "Adamas Jewellery", "Fine antique jewellery across the great periods: Georgian, Victorian, Edwardian, Art Deco."],
-    ["vint", 52.4878, -1.9093, "Vintage Tom at Charles Hart Jewellers", "Vintage and antique rings inside a firm trading for two centuries."],
     ["ring", 52.4886, -1.9105, "Marlows Diamonds", "16 Vyse Street. One of the biggest diamond and wedding-band retailers in the Quarter."],
     ["ring", 52.4892, -1.9074, "Charles Green & Son", "Historic Birmingham makers; wedding rings since the 1820s."],
     ["ring", 52.4870, -1.9120, "Hockley Mint", "Major wedding-ring manufacturer; stocked across the Quarter's independents."],
