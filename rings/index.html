@@ -152,6 +152,7 @@
   <p class="sec-sub">Gold pins are ring places, green are food, blue is parking, dark are landmarks. Tap a pin (or any shop label on the map itself) for ratings, reviews and hours.</p>
   <div id="map"></div>
   <div class="legend">
+    <span><span class="dot" style="background:#a34a2c"></span>Vintage</span>
     <span><span class="dot" style="background:#a3762f"></span>Rings</span>
     <span><span class="dot" style="background:#3c6b3f"></span>Food &amp; drink</span>
     <span><span class="dot" style="background:#33567c"></span>Parking</span>
@@ -163,7 +164,8 @@
   <div class="grid">
     <div class="card">
       <h3>Vintage and antique <span class="flag">your style</span></h3>
-      <p>The dedicated antique dealers keep boutique hours, but you don't need them: plenty of the everyday <b>Vyse Street and Warstone Lane shops carry antique and second-hand trays</b> alongside the new stock. The move is to ask directly, "what do you have in vintage or pre-owned?", because the good pieces are often in the back, not the window.</p>
+      <p><b>Vintage and Modern</b> (29a Warstone Lane): family-run, a wide range of sensibly priced vintage and modern pieces, with restoration and repair done in-house. The closest thing in the Quarter to exactly what you're after; tap its pin on the map for live Monday hours before you commit the walk.</p>
+      <p>Beyond it, plenty of the everyday <b>Vyse Street and Warstone Lane shops carry antique and second-hand trays</b> alongside the new stock. Ask directly, "what do you have in vintage or pre-owned?", because the good pieces are often in the back, not the window.</p>
       <p class="note">Vintage buying notes: check the band's wear (thin shanks need building up), confirm it can be resized (full eternity styles often can't), and use the hallmark's year letter to date the piece exactly.</p>
     </div>
     <div class="card">
@@ -294,7 +296,7 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
 
 (function(){
   const CENTER = { lat: 52.4874, lng: -1.9085 };
-  const COLORS = { ring:"#a3762f", food:"#3c6b3f", mark:"#26332c", park:"#33567c" };
+  const COLORS = { vint:"#a34a2c", ring:"#a3762f", food:"#3c6b3f", mark:"#26332c", park:"#33567c" };
 
   function gmaps(q){
     return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q + " Birmingham Jewellery Quarter");
@@ -302,6 +304,7 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
   // [kind, lat, lng, name, blurb]
   const places = [
     ["park", 52.4898, -1.9095, "Jewellery Quarter multi-storey car park", "Vyse Street, B18 6LP. 553 spaces next to the station, about £8.40 for a full day; on-street pay and display is dotted through the Quarter too."],
+    ["vint", 52.4877, -1.9098, "Vintage and Modern", "29a Warstone Lane. Family-run, sensibly priced vintage and modern pieces, restoration and repair in-house."],
     ["ring", 52.4886, -1.9105, "Marlows Diamonds", "16 Vyse Street. One of the biggest diamond and wedding-band retailers in the Quarter."],
     ["ring", 52.4892, -1.9074, "Charles Green & Son", "Historic Birmingham makers; wedding rings since the 1820s."],
     ["ring", 52.4870, -1.9120, "Hockley Mint", "Major wedding-ring manufacturer; stocked across the Quarter's independents."],
