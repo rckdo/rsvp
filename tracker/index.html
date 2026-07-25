@@ -5,6 +5,10 @@
   Single-file HTML. Inline CSS + JS. No build step.
 
   Changelog
+  v15.3 (25/07/2026): Story and own-promises drafts move from top panels to inline text
+          blocks inside the Preferences section, mirroring the real doc. Text blocks have
+          an editable header and an always-available edit button (independent of Edit
+          list mode). Existing databases migrate any drafted panel text automatically.
   v15.2 (25/07/2026): Quilt bands from the invitation across the header. Payments and
           Key dates panels now live in the database and are editable in edit mode
           (title, rows, footnote). Items can move between sections from the item editor.
@@ -307,6 +311,22 @@
   .txt .note{display:block;font-size:13.5px;color:var(--sage);margin-top:2px;line-height:1.45}
   .txt .note b{color:var(--gold);font-weight:700}
 
+  /* Inline text blocks (drafts): their edit button is always live */
+  li.item.text-block{display:block}
+  .text-block .th{display:flex;align-items:baseline;gap:10px}
+  .text-block .th .t2{
+    font-family:'Karla',sans-serif;
+    font-size:12px;font-weight:700;
+    letter-spacing:.07em;text-transform:uppercase;
+    color:var(--gold);
+  }
+  .text-block .tb-edit{display:inline-block}
+  .text-block .body{
+    margin-top:6px;font-size:14.5px;line-height:1.55;
+    color:var(--ink);white-space:pre-wrap;
+  }
+  .text-block .body.placeholder{color:var(--sage);font-style:italic}
+
   .tag{
     flex:0 0 auto;
     align-self:flex-start;
@@ -357,6 +377,7 @@
   }
   .edit-btn:hover{border-color:var(--sage);color:var(--forest)}
   body.editing .edit-btn{display:inline-block}
+  .edit-btn.mv{padding:2px 8px}
   .add-row{display:none;padding:10px 2px 12px;border-top:1px solid var(--line)}
   body.editing .add-row{display:block}
   .add-item{
@@ -528,7 +549,7 @@ const SEED = [
       {id:"confirm-witnesses", t:"Confirm your two witnesses", tag:"legal", assign:"RL",
        note:"Legally required, present for the whole ceremony. Easy to forget at a small wedding, so lock in who they are."},
       {id:"notice-booked", t:"Notice of marriage appointment booked and in the diary", tag:"legal", assign:"R",
-       note:"Booked with Oxfordshire: <b>1pm, 11 August, Didcot Register Office</b>. Check what ID and residency documents to bring."},
+       note:"Booked with Oxfordshire: <b>1.30pm, 11 August, Didcot Register Office</b>. Check what ID and residency documents to bring."},
     ]
   },
   {
@@ -543,7 +564,8 @@ const SEED = [
       {id:"pref-contract", t:"Contracting vow: choose 1, 2 or 3", tag:"legal",
        note:"Legal wording, required. <b>1:</b> 'I call upon these persons here present to witness that I do take thee to be my lawful wedded wife/husband.' <b>2:</b> 'I take you to be my wedded wife/husband.' <b>3:</b> 'I take thee to be my wedded wife/husband.'"},
       {id:"pref-promises", t:"Chosen promises: C, D, E or write your own",
-       note:"The personal, non-legal bit. C, D and E are in the doc; own words must be non-religious and approved in advance. Draft your own in the 'Own promises' panel above."},
+       note:"The personal, non-legal bit. C, D and E are in the doc; own words must be non-religious and approved in advance. Draft your own just below."},
+      {id:"write-promises", kind:"text", t:"Own promises, draft", body:""},
       {id:"pref-symbolic", t:"Symbolic element: none, or Tying the Knot / Rose / Sand",
        note:"If yes, decide who brings the items forward."},
       {id:"pref-rings-words", t:"Ring words: choose F or G",
@@ -556,7 +578,8 @@ const SEED = [
        note:"Guests arriving, your entrance, the signing, your exit. Check with the venue how it's played."},
       {id:"pref-absent", t:"Acknowledgement of absent family/friends (optional, 150 words)"},
       {id:"pref-story", t:"Your story as a couple (optional, 300 words)",
-       note:"Read aloud by the registrar. Draft it in the 'Your story' panel above. Can include pets, a nice nod to the dogs."},
+       note:"Read aloud by the registrar. Draft it just below. Can include pets, a nice nod to the dogs."},
+      {id:"write-story", kind:"text", t:"Your story, draft", body:""},
       {id:"pref-arrive", t:"Arriving together or separately"},
       {id:"pref-photo", t:"Photo / social-media permission: delete the option you don't want"},
     ]
@@ -569,11 +592,11 @@ const SEED = [
       {id:"venue-hire", t:"Confirm and pay the Temple of Minerva venue hire", tag:"money", assign:"R",
        note:"Separate from the registrar fee, paid to the venue operator (Heritage Park Weddings). Confirm booking and payment with them directly."},
       {id:"notice-attend", t:"Attend the notice of marriage appointment", tag:"legal", assign:"RL",
-       note:"<b>1pm, 11 August, Didcot Register Office.</b> Both of you, with ID and proof of address. This is the hard legal step that confirms the booking."},
+       note:"<b>1.30pm, 11 August, Didcot Register Office.</b> Both of you, with ID and proof of address. This is the hard legal step that confirms the booking."},
       {id:"invites-finalise", t:"Create the invitations", assign:"R",
        note:"Timings, parking, dress code, the outdoor element and that dogs are coming. RSVPs and dietary requirements."},
       {id:"invites-send", t:"Send the invitations", assign:"L"},
-      {id:"sydneys-book", t:"Organise a pub for afterwards?",
+      {id:"sydneys-book", t:"Book post-ceremony pub?",
        note:"Pick the pub, reserve an area, and decide on food (sharing plates or a pre-order) and money behind the bar. Check latest arrival time and kitchen hours."},
       {id:"creamtea-confirm", t:"Plan the cream tea 'catering'",
        note:"Scones and tea in the Gardens: who's providing, quantities, where it's served, and a locked-in time."},
@@ -675,13 +698,9 @@ const SEED_PANELS = [
   {title:"Key dates", rows:[
     {l:"Preferences doc", v:"~27 Jul*"},
     {l:"Ceremony balance", v:"Now due"},
-    {l:"Notice appointment", v:"1pm, 11 Aug"},
+    {l:"Notice appointment", v:"1.30pm, 11 Aug"},
     {l:"Ceremony", v:"21 Sep"}],
    full:"*8 weeks before the ceremony, with a short grace period agreed with B&NES. <strong>Notice (Didcot Register Office) is the hard legal deadline</strong> and is what confirms the provisional booking."},
-  {title:"Your story, draft",
-   full:"Up to 300 words, read aloud by the registrar. Draft it here: open Edit list below, then edit this panel and write in the footnote box. Rough is fine, polish later. Remember the dogs."},
-  {title:"Own promises, draft",
-   full:"If you write your own promises, draft them here via Edit. They must be non-religious and approved with the preferences doc, so start early."},
 ];
 
 /* ---------------------------------------------------------------------
@@ -753,7 +772,7 @@ function seedObjects(){
     const sid = "s" + i;
     out.sections[sid] = { title:sec.title, when:sec.when, sub:sec.sub || null, order:sec.order || (i+1)*10 };
     sec.items.forEach((it,j)=>{
-      out.items[it.id] = { sec:sid, t:it.t, note:it.note || null, tag:it.tag || null, assign:it.assign || null, order:(j+1)*10 };
+      out.items[it.id] = { sec:sid, t:it.t, note:it.note || null, tag:it.tag || null, assign:it.assign || null, order:(j+1)*10, kind:it.kind || null, body:it.kind === "text" ? (it.body || "") : null };
     });
   });
   SEED_PANELS.forEach((p,i)=>{
@@ -793,7 +812,7 @@ function start(){
 // Bump when the SEED gains new sections/items/panels: existing databases
 // get the additions topped up without touching anything already there
 // (edits and deletions in the DB always win over the seed).
-const SEED_VERSION = 2;
+const SEED_VERSION = 3;
 
 function seedIfNeeded(){
   return db.ref(ROOT).once("value").then(snap=>{
@@ -804,6 +823,16 @@ function seedIfNeeded(){
     Object.entries(want.sections).forEach(([id,s])=>{ if(!(v.sections||{})[id]) upd["sections/"+id] = s; });
     Object.entries(want.items).forEach(([id,it])=>{ if(!(v.items||{})[id]) upd["items/"+id] = it; });
     Object.entries(want.panels).forEach(([id,p])=>{ if(!(v.panels||{})[id]) upd["panels/"+id] = p; });
+    // v3 migration: the story/promises draft panels became inline text
+    // blocks; carry any drafted text across, then remove the panels.
+    if((v.seedVersion || 1) < 3 && v.panels){
+      const moved = { p2:"write-story", p3:"write-promises" };
+      Object.entries(moved).forEach(([pid, iid])=>{
+        if(!v.panels[pid]) return;
+        if(upd["items/" + iid] && v.panels[pid].full) upd["items/" + iid].body = v.panels[pid].full;
+        upd["panels/" + pid] = null;
+      });
+    }
     upd["seedVersion"] = SEED_VERSION;
     return db.ref(ROOT).update(upd);
   });
@@ -904,6 +933,15 @@ function render(){
     if(sec.sub) html += `<p class="sec-sub">${sec.sub}</p>`;
     html += `<ul class="items">`;
     orderedItems(sec.id).forEach(it=>{
+      const mv = `<button class="edit-btn mv" type="button" data-d="-1" aria-label="Move up">&uarr;</button><button class="edit-btn mv" type="button" data-d="1" aria-label="Move down">&darr;</button>`;
+      if(it.kind === "text"){
+        html += `<li class="item text-block" data-id="${it.id}">
+          <span class="th"><span class="t2">${it.t}</span>
+          <button class="edit-btn tb-edit" type="button" aria-label="Edit text">edit</button>${mv}</span>
+          <div class="body"></div>
+        </li>`;
+        return;
+      }
       const isDone = ticks.has(it.id);
       const tag = it.tag ? `<span class="tag ${it.tag}">${it.tag==="legal"?"legal":"pay"}</span>` : "";
       const assign = it.assign
@@ -913,7 +951,7 @@ function render(){
       html += `<li class="item ${isDone?"done":""}" data-id="${it.id}">
         <span class="box" role="checkbox" tabindex="0" aria-checked="${isDone}">${CHECK}</span>
         <span class="txt"><span class="t">${it.t}</span>${note}</span>${assign}${tag}
-        <button class="edit-btn" type="button" aria-label="Edit item">edit</button>
+        <button class="edit-btn" type="button" aria-label="Edit item">edit</button>${mv}
       </li>`;
     });
     html += `</ul><div class="add-row"><button class="add-item" type="button" data-sec="${sec.id}">+ Add an item</button></div>`;
@@ -926,7 +964,28 @@ function render(){
 }
 
 function bindRows(){
-  document.querySelectorAll("li.item").forEach(li=>{
+  // Text blocks: body set via textContent (drafts are plain text), and
+  // their edit button works with or without Edit list mode.
+  document.querySelectorAll("li.item.text-block").forEach(li=>{
+    const it = items[li.dataset.id] || {};
+    const bodyEl = li.querySelector(".body");
+    if(it.body){ bodyEl.textContent = it.body; }
+    else{
+      bodyEl.textContent = "Nothing drafted yet. Tap edit to write.";
+      bodyEl.classList.add("placeholder");
+    }
+    li.querySelector(".tb-edit").addEventListener("click", e=>{
+      e.stopPropagation();
+      openTextEditor(li);
+    });
+  });
+  document.querySelectorAll("li.item .mv").forEach(btn=>{
+    btn.addEventListener("click", e=>{
+      e.stopPropagation();
+      moveItem(btn.closest("li.item").dataset.id, parseInt(btn.dataset.d, 10));
+    });
+  });
+  document.querySelectorAll("li.item:not(.text-block)").forEach(li=>{
     const box = li.querySelector(".box");
     box.addEventListener("click", e=>{ e.stopPropagation(); toggle(li); });
     box.addEventListener("keydown", e=>{
@@ -969,6 +1028,24 @@ function toggle(li){
 /* ---------------------------------------------------------------------
    Editing: assign cycle, inline editor, add, delete
    --------------------------------------------------------------------- */
+// Swap an item with its neighbour, renumbering the whole section so
+// duplicate order values from top-up seeding can never wedge a row.
+function moveItem(id, dir){
+  if(!db) return;
+  const it = items[id];
+  if(!it) return;
+  const list = orderedItems(it.sec);
+  const idx = list.findIndex(x=>x.id === id);
+  const j = idx + dir;
+  if(idx === -1 || j < 0 || j >= list.length) return;
+  const arr = list.map(x=>x.id);
+  arr[idx] = arr[j];
+  arr[j] = id;
+  const upd = {};
+  arr.forEach((iid,k)=>{ upd[iid + "/order"] = (k+1)*10; });
+  db.ref(ROOT + "/items").update(upd);
+}
+
 function cycleAssign(id){
   const cur = items[id] ? (items[id].assign || null) : null;
   const next = ASSIGN_CYCLE[(ASSIGN_CYCLE.indexOf(cur)+1) % ASSIGN_CYCLE.length];
@@ -1121,6 +1198,37 @@ function openPanelEditor(pid){
   tIn.focus();
 }
 
+// Editor for inline text blocks (drafts). Reachable at any time, not
+// just in Edit list mode.
+function openTextEditor(li){
+  if(editorOpen || !db) return;
+  editorOpen = true;
+  const id = li.dataset.id;
+  const it = items[id] || {};
+  const ed = document.createElement("div");
+  ed.className = "editor";
+  const tIn = document.createElement("input");
+  tIn.type = "text"; tIn.value = it.t || ""; tIn.placeholder = "Heading";
+  const bIn = document.createElement("textarea");
+  bIn.value = it.body || "";
+  bIn.placeholder = "Write here. Plain text; line breaks are kept.";
+  bIn.style.minHeight = "140px";
+  ed.appendChild(fieldLabel("Heading"));
+  ed.appendChild(tIn);
+  ed.appendChild(fieldLabel("Text"));
+  ed.appendChild(bIn);
+  ed.appendChild(editorButtons(()=>{
+    db.ref(ROOT + "/items/" + id).update({
+      t: tIn.value.trim() || it.t || "Draft",
+      body: bIn.value.trim()
+    });
+    closeEditor();
+  }, closeEditor));
+  li.innerHTML = "";
+  li.appendChild(ed);
+  bIn.focus();
+}
+
 function openSectionEditor(secEl, sid){
   if(editorOpen || !db) return;
   editorOpen = true;
@@ -1191,7 +1299,8 @@ document.getElementById("edit-toggle").addEventListener("click", function(){
    Progress, countdown, reset
    --------------------------------------------------------------------- */
 function updateProgress(){
-  const ids = Object.keys(items);
+  // Text blocks are drafts, not tasks; they don't count toward progress.
+  const ids = Object.entries(items).filter(([,it])=>it.kind !== "text").map(([id])=>id);
   const total = ids.length;
   const d = ids.filter(id=>ticks.has(id)).length;
   const pct = total ? Math.round(d/total*100) : 0;
