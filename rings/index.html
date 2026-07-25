@@ -163,7 +163,7 @@
   </header>
 
   <h2 class="sec">The map</h2>
-  <p class="sec-sub">Every jeweller Google knows in the Quarter, filtered by the rating slider. Terracotta pins are vintage or antique specialists (by name), gold are the rest; green is food, blue parking, dark landmarks. Tap any pin for ratings, reviews and hours.</p>
+  <p class="sec-sub">Every jeweller Google knows in the Quarter, filtered by the rating slider. Terracotta pins are vintage or antique specialists, olive are wedding-band specialists, gold are the rest; green is food, blue parking, dark landmarks. Tap any pin for ratings, reviews and hours.</p>
   <div class="slider-row">
     <label for="minrating">Minimum rating</label>
     <input type="range" id="minrating" min="3.5" max="5" step="0.1" value="4.5">
@@ -173,6 +173,7 @@
   <div id="map"></div>
   <div class="legend">
     <span><span class="dot" style="background:#a34a2c"></span>Vintage / antique</span>
+    <span><span class="dot" style="background:#7a7c47"></span>Wedding bands</span>
     <span><span class="dot" style="background:#a3762f"></span>Jewellers</span>
     <span><span class="dot" style="background:#3c6b3f"></span>Food &amp; drink</span>
     <span><span class="dot" style="background:#33567c"></span>Parking</span>
@@ -316,7 +317,7 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
 
 (function(){
   const CENTER = { lat: 52.4874, lng: -1.9085 };
-  const COLORS = { vint:"#a34a2c", ring:"#a3762f", food:"#3c6b3f", mark:"#26332c", park:"#33567c" };
+  const COLORS = { vint:"#a34a2c", band:"#7a7c47", ring:"#a3762f", food:"#3c6b3f", mark:"#26332c", park:"#33567c" };
 
   function gmaps(q){
     return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q + " Birmingham Jewellery Quarter");
@@ -342,6 +343,16 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
     ["ring", 52.4883, -1.9108, "Vyse Street cluster", "Dozens of ring retailers between the clock and the station. Walk, shortlist, return."],
   ];
   const VINT_RE = /vintage|antique|estate|pre-?owned|second ?hand|heirloom/i;
+  // Wedding-band specialists: matched by name, plus known specialists
+  // whose names don't say it.
+  const BAND_RE = /wedding|bridal|\bbands?\b/i;
+  const BAND_NAMES = ["manna", "platinum jewellers", "bond jewellery", "mitchel", "design centre", "shining diamonds"];
+  function pinKind(name){
+    const n = (name || "").toLowerCase();
+    if(VINT_RE.test(n)) return "vint";
+    if(BAND_RE.test(n) || BAND_NAMES.some(b=>n.includes(b))) return "band";
+    return "ring";
+  }
 
   function popupHtml(p, hint){
     return "<b>" + p[3] + "</b><br>" + p[4] +
@@ -505,12 +516,11 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
       if(!r.place_id || seen[r.place_id]) return;
       seen[r.place_id] = true;
       if(!r.rating || (r.user_ratings_total || 0) < 5) return;
-      const isVint = VINT_RE.test(r.name || "");
       const m = new google.maps.Marker({
         position: r.geometry.location,
         map: null,
         title: r.name,
-        icon: circleIcon(isVint ? COLORS.vint : COLORS.ring)
+        icon: circleIcon(COLORS[pinKind(r.name)])
       });
       const basic = "<b>" + escT(r.name) + "</b>" +
         '<br><span style="color:#a3762f;font-weight:700">' + stars(r.rating) + " " + r.rating.toFixed(1) + "</span>" +
