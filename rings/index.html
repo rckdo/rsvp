@@ -304,33 +304,32 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
 (function(){
   const CENTER = { lat: 52.4874, lng: -1.9085 };
   const COLORS = { vint:"#a34a2c", ring:"#a3762f", food:"#3c6b3f", mark:"#26332c", park:"#33567c" };
-  const MON = { open:"#3c6b3f", late:"#a3762f", closed:"#a3512f", check:"#a3762f" };
 
   function gmaps(q){
     return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q + " Birmingham Jewellery Quarter");
   }
-  // [kind, lat, lng, name, blurb, mondayStatusKind, mondayText]
+  // [kind, lat, lng, name, blurb]
   const places = [
-    ["park", 52.4898, -1.9095, "Jewellery Quarter multi-storey car park", "Vyse Street, B18 6LP. 553 spaces next to the station, about £8.40 for a full day; on-street pay and display is dotted through the Quarter too.", "open", "Mon to Sat 6am to 8.30pm"],
-    ["vint", 52.4881, -1.9101, "Adamas Jewellery", "Fine antique jewellery across the great periods: Georgian, Victorian, Edwardian, Art Deco.", "check", "Phone ahead for Monday"],
-    ["vint", 52.4878, -1.9093, "Vintage Tom at Charles Hart Jewellers", "Vintage and antique rings inside a firm trading for two centuries.", "check", "Phone ahead for Monday"],
-    ["ring", 52.4886, -1.9105, "Marlows Diamonds", "16 Vyse Street. One of the biggest diamond and wedding-band retailers in the Quarter.", "open", "Open Mondays (7 days a week)"],
-    ["ring", 52.4892, -1.9074, "Charles Green & Son", "Historic Birmingham makers; wedding rings since the 1820s.", "check", "Weekday business, phone ahead for Monday"],
-    ["ring", 52.4870, -1.9120, "Hockley Mint", "Major wedding-ring manufacturer; stocked across the Quarter's independents.", "check", "Trade hours, phone ahead for Monday"],
-    ["ring", 52.4883, -1.9108, "Vyse Street cluster", "Dozens of ring retailers between the clock and the station, antique and second-hand stock mixed in with the new. Walk, shortlist, return.", "open", "Most shops trade Mon to Sat"],
-    ["mark", 52.4877, -1.9107, "Chamberlain Clock", "The Quarter's landmark and the natural meeting point.", "open", "Always there"],
-    ["mark", 52.4900, -1.9113, "Museum of the Jewellery Quarter", "A preserved working factory, wonderful if there's time.", "closed", "Closed Mondays (Thu to Sat only)"],
-    ["mark", 52.4879, -1.9139, "Birmingham Assay Office", "Where the anchor hallmark comes from; the world's busiest.", "check", "Working office, not a public visit"],
-    ["mark", 52.4890, -1.9096, "Jewellery Quarter station", "Trains and tram from the city centre.", "open", "Runs Mondays"],
-    ["food", 52.4877, -1.9110, "The Rose Villa Tavern", "Victorian tiled pub on the clock corner; pub lunch from midday.", "open", "Mondays from midday"],
-    ["food", 52.4867, -1.9095, "The Button Factory", "Terrace, relaxed menu, from midday.", "open", "Mondays from midday"],
-    ["food", 52.4853, -1.9046, "Saint Kitchen", "St Paul's Square. Coffee, brunch and flatbread lunches, all homemade.", "open", "Mondays 8am to 5pm"],
-    ["food", 52.4862, -1.9089, "1000 Trades", "Craft beer and rotating kitchen residencies; the end-of-day option.", "late", "Mondays from 4pm"],
+    ["park", 52.4898, -1.9095, "Jewellery Quarter multi-storey car park", "Vyse Street, B18 6LP. 553 spaces next to the station, about £8.40 for a full day; on-street pay and display is dotted through the Quarter too."],
+    ["vint", 52.4881, -1.9101, "Adamas Jewellery", "Fine antique jewellery across the great periods: Georgian, Victorian, Edwardian, Art Deco."],
+    ["vint", 52.4878, -1.9093, "Vintage Tom at Charles Hart Jewellers", "Vintage and antique rings inside a firm trading for two centuries."],
+    ["ring", 52.4886, -1.9105, "Marlows Diamonds", "16 Vyse Street. One of the biggest diamond and wedding-band retailers in the Quarter."],
+    ["ring", 52.4892, -1.9074, "Charles Green & Son", "Historic Birmingham makers; wedding rings since the 1820s."],
+    ["ring", 52.4870, -1.9120, "Hockley Mint", "Major wedding-ring manufacturer; stocked across the Quarter's independents."],
+    ["ring", 52.4883, -1.9108, "Vyse Street cluster", "Dozens of ring retailers between the clock and the station, antique and second-hand stock mixed in with the new. Walk, shortlist, return."],
+    ["mark", 52.4877, -1.9107, "Chamberlain Clock", "The Quarter's landmark and the natural meeting point."],
+    ["mark", 52.4900, -1.9113, "Museum of the Jewellery Quarter", "A preserved working factory, wonderful if there's time (closed Mondays)."],
+    ["mark", 52.4879, -1.9139, "Birmingham Assay Office", "Where the anchor hallmark comes from; the world's busiest."],
+    ["mark", 52.4890, -1.9096, "Jewellery Quarter station", "Trains and tram from the city centre."],
+    ["food", 52.4877, -1.9110, "The Rose Villa Tavern", "Victorian tiled pub on the clock corner; pub lunch from midday."],
+    ["food", 52.4867, -1.9095, "The Button Factory", "Terrace, relaxed menu, from midday."],
+    ["food", 52.4853, -1.9046, "Saint Kitchen", "St Paul's Square. Coffee, brunch and flatbread lunches, all homemade."],
+    ["food", 52.4862, -1.9089, "1000 Trades", "Craft beer and rotating kitchen residencies; opens 4pm."],
   ];
 
-  function popupHtml(p){
+  function popupHtml(p, hint){
     return "<b>" + p[3] + "</b><br>" + p[4] +
-      '<br><span style="color:' + MON[p[5]] + ';font-weight:700">&#9679; ' + p[6] + "</span>" +
+      (hint ? '<br><span style="color:#a3512f;font-size:12px">' + hint + "</span>" : "") +
       '<br><a href="' + gmaps(p[3]) + '" target="_blank" rel="noopener">Open in Google Maps</a>';
   }
 
@@ -367,19 +366,37 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
     return "★".repeat(full) + "☆".repeat(5 - full);
   }
 
+  function escT(s){
+    return String(s || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
   function detailHtml(p, d){
-    let h = "<b>" + (d.name || p[3]) + "</b>";
+    let h = '<div style="max-width:270px">';
+    if(d.photos && d.photos[0]){
+      try{
+        h += '<img src="' + d.photos[0].getUrl({ maxWidth: 400, maxHeight: 200 }) +
+          '" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:6px">';
+      }catch(e){}
+    }
+    h += "<b>" + escT(d.name || p[3]) + "</b>";
     if(d.rating){
       h += '<br><span style="color:#a3762f;font-weight:700">' + stars(d.rating) + " " + d.rating.toFixed(1) + "</span>";
       if(d.user_ratings_total) h += ' <span style="color:#6f8a77">(' + d.user_ratings_total.toLocaleString() + " reviews)</span>";
     }
     if(d.opening_hours && d.opening_hours.weekday_text){
       const today = d.opening_hours.weekday_text[(new Date().getDay() + 6) % 7];
-      if(today) h += '<br><span style="color:#3c6b3f">' + today + "</span>";
+      if(today) h += '<br><span style="color:#3c6b3f">' + escT(today) + "</span>";
     }
-    h += "<br>" + p[4];
-    h += '<br><span style="color:' + MON[p[5]] + ';font-weight:700">&#9679; ' + p[6] + "</span>";
-    h += '<br><a href="' + (d.url || gmaps(p[3])) + '" target="_blank" rel="noopener">Open in Google Maps</a>';
+    if(d.reviews && d.reviews.length){
+      d.reviews.slice(0, 2).forEach(r=>{
+        if(!r.text) return;
+        const t = r.text.length > 140 ? r.text.slice(0, 140) + "…" : r.text;
+        h += '<div style="margin-top:6px;padding-left:8px;border-left:2px solid #dce0d6;color:#4a5a50;font-style:italic">"' +
+          escT(t) + '"<br><span style="font-style:normal;color:#a3762f">' + stars(r.rating || 0) + "</span></div>";
+      });
+    }
+    h += '<div style="margin-top:6px"><a href="' + (d.url || gmaps(p[3])) + '" target="_blank" rel="noopener">All reviews on Google Maps</a></div>';
+    h += "</div>";
     return h;
   }
 
@@ -418,10 +435,16 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
           query: p[3] + " Jewellery Quarter Birmingham",
           fields: ["place_id"]
         }, (res, st)=>{
+          if(st === google.maps.places.PlacesServiceStatus.REQUEST_DENIED){
+            // makes the missing console switch visible instead of silent
+            cache[p[3]] = popupHtml(p, "Ratings need the Places API enabled for this key in Google Cloud.");
+            show(m, cache[p[3]]);
+            return;
+          }
           if(st !== google.maps.places.PlacesServiceStatus.OK || !res || !res[0]){ cache[p[3]] = popupHtml(p); return; }
           svc.getDetails({
             placeId: res[0].place_id,
-            fields: ["name","rating","user_ratings_total","opening_hours","url"]
+            fields: ["name","rating","user_ratings_total","opening_hours","url","reviews","photos"]
           }, (d, st2)=>{
             if(st2 !== google.maps.places.PlacesServiceStatus.OK || !d){ cache[p[3]] = popupHtml(p); return; }
             cache[p[3]] = detailHtml(p, d);
