@@ -515,17 +515,19 @@
      shows up live inside the passcode-gated tracker page (/tracker/)
      and in the Firebase console under rsvp/replies.
 
-     PASTE CONFIG HERE: same Firebase project and config object as the
-     tracker. Until it's set, replies stay only in the guest's browser.
+     The config below is the same Firebase project as the tracker.
+     It's public by design; security lives in the database rules.
      Web3Forms (further down) remains as an optional fallback and is
      only used if Firebase isn't configured.
      --------------------------------------------------------------- */
   var FIREBASE_CONFIG = {
-    apiKey: 'PASTE_API_KEY',
-    authDomain: 'PASTE_PROJECT.firebaseapp.com',
-    databaseURL: 'https://PASTE_PROJECT-default-rtdb.europe-west1.firebasedatabase.app',
-    projectId: 'PASTE_PROJECT',
-    appId: 'PASTE_APP_ID'
+    apiKey: 'AIzaSyBI-BFXh8BzvsaDw3Mm0Mxi7UmqyU1Y_g8',
+    authDomain: 'rl-wedding-fe94a.firebaseapp.com',
+    databaseURL: 'https://rl-wedding-fe94a-default-rtdb.europe-west1.firebasedatabase.app',
+    projectId: 'rl-wedding-fe94a',
+    storageBucket: 'rl-wedding-fe94a.firebasestorage.app',
+    messagingSenderId: '54300603401',
+    appId: '1:54300603401:web:b743cdc18f80b9626874d8'
   };
   var RSVP = {
     endpoint: 'https://api.web3forms.com/submit',
