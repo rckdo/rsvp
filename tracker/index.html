@@ -384,9 +384,19 @@
   }
   .editor .chk input{accent-color:var(--forest);width:15px;height:15px;margin:0}
 
-  .tag{
+  /* right-hand chip column: assign on top, tag beneath, edit under */
+  .chips{
     flex:0 0 auto;
     align-self:flex-start;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:6px;
+  }
+  .chips .mvrow{display:flex;gap:4px}
+
+  .tag{
+    flex:0 0 auto;
     margin-top:1px;
     font-size:11px;
     font-weight:700;
@@ -401,7 +411,6 @@
   /* Assignment chip: R / L / R+L */
   .assign{
     flex:0 0 auto;
-    align-self:flex-start;
     margin-top:1px;
     font-size:11px;
     font-weight:700;
@@ -413,10 +422,10 @@
     background:#fff;
     white-space:nowrap;
   }
-  /* who's-who colours: Richard blue, Lorraine yellow, joint green */
-  .assign[data-a="R"]{background:#dde7f1;border-color:#b9cde2;color:#33567c}
-  .assign[data-a="L"]{background:#f7edc4;border-color:#e2d194;color:#8a6d14}
-  .assign[data-a="RL"]{background:#d9e8d4;border-color:#b9d3b0;color:#3c6b3f}
+  /* who's-who colours, soft pastels: Richard blue, Lorraine yellow, joint green */
+  .assign[data-a="R"]{background:#e4eef8;border-color:#cdddef;color:#5578a0}
+  .assign[data-a="L"]{background:#faf3d4;border-color:#ecdfa9;color:#9a7d3c}
+  .assign[data-a="RL"]{background:#e3f0de;border-color:#cbe1c2;color:#5c8360}
   .assign.hidden{display:none}
   body.editing .assign{display:inline-block;cursor:pointer}
   body.editing .assign:hover{border-color:var(--sage)}
@@ -425,7 +434,6 @@
   /* Edit mode */
   .edit-btn{
     flex:0 0 auto;
-    align-self:flex-start;
     display:none;
     background:none;
     border:1px solid var(--line-strong);
@@ -1067,8 +1075,8 @@ function render(){
       }
       html += `<li class="item ${isDone?"done":""}" data-id="${it.id}">
         <span class="box" role="checkbox" tabindex="0" aria-checked="${isDone}">${CHECK}</span>
-        <span class="txt"><span class="t">${it.t}</span>${note}${answers}</span>${assign}${tag}
-        <button class="edit-btn" type="button" aria-label="Edit item">edit</button>${mv}
+        <span class="txt"><span class="t">${it.t}</span>${note}${answers}</span>
+        <span class="chips">${assign}${tag}<button class="edit-btn" type="button" aria-label="Edit item">edit</button><span class="mvrow">${mv}</span></span>
       </li>`;
     });
     html += `</ul><div class="add-row"><button class="add-item" type="button" data-sec="${sec.id}">+ Add an item</button></div>`;
