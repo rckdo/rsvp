@@ -89,6 +89,20 @@
     box-shadow:var(--shadow);
     z-index:1;
   }
+  .slider-row{
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:12px 18px;
+    margin:0 0 12px;
+    box-shadow:var(--shadow);
+    font-size:14px;
+  }
+  .slider-row label{color:var(--sage);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+  .slider-row input[type=range]{flex:1 1 160px;accent-color:var(--forest);height:22px}
+  .slider-val{font-weight:700;color:var(--gold);font-size:16px;min-width:52px}
+  .slider-count{color:var(--sage);margin-left:auto}
   .legend{
     display:flex;gap:18px;flex-wrap:wrap;
     font-size:13.5px;color:var(--sage);
@@ -149,11 +163,17 @@
   </header>
 
   <h2 class="sec">The map</h2>
-  <p class="sec-sub">Gold pins are ring places, green are food, blue is parking, dark are landmarks. Tap a pin (or any shop label on the map itself) for ratings, reviews and hours.</p>
+  <p class="sec-sub">Every jeweller Google knows in the Quarter, filtered by the rating slider. Terracotta pins are vintage or antique specialists (by name), gold are the rest; green is food, blue parking, dark landmarks. Tap any pin for ratings, reviews and hours.</p>
+  <div class="slider-row">
+    <label for="minrating">Minimum rating</label>
+    <input type="range" id="minrating" min="3.5" max="5" step="0.1" value="4.5">
+    <span class="slider-val" id="minrating-val">4.5&#9733;</span>
+    <span class="slider-count" id="pin-count"></span>
+  </div>
   <div id="map"></div>
   <div class="legend">
-    <span><span class="dot" style="background:#a34a2c"></span>Vintage</span>
-    <span><span class="dot" style="background:#a3762f"></span>Rings</span>
+    <span><span class="dot" style="background:#a34a2c"></span>Vintage / antique</span>
+    <span><span class="dot" style="background:#a3762f"></span>Jewellers</span>
     <span><span class="dot" style="background:#3c6b3f"></span>Food &amp; drink</span>
     <span><span class="dot" style="background:#33567c"></span>Parking</span>
     <span><span class="dot" style="background:#26332c"></span>Landmarks</span>
@@ -301,14 +321,12 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
   function gmaps(q){
     return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q + " Birmingham Jewellery Quarter");
   }
+  // Fixed pins: parking, food and landmarks. Jewellers are found live
+  // via Places nearby search on the Google map (all of them, filtered
+  // by the rating slider), or fall back to a curated list on Leaflet.
   // [kind, lat, lng, name, blurb]
   const places = [
     ["park", 52.4898, -1.9095, "Jewellery Quarter multi-storey car park", "Vyse Street, B18 6LP. 553 spaces next to the station, about £8.40 for a full day; on-street pay and display is dotted through the Quarter too."],
-    ["vint", 52.4877, -1.9098, "Vintage and Modern", "29a Warstone Lane. Family-run, sensibly priced vintage and modern pieces, restoration and repair in-house."],
-    ["ring", 52.4886, -1.9105, "Marlows Diamonds", "16 Vyse Street. One of the biggest diamond and wedding-band retailers in the Quarter."],
-    ["ring", 52.4892, -1.9074, "Charles Green & Son", "Historic Birmingham makers; wedding rings since the 1820s."],
-    ["ring", 52.4870, -1.9120, "Hockley Mint", "Major wedding-ring manufacturer; stocked across the Quarter's independents."],
-    ["ring", 52.4883, -1.9108, "Vyse Street cluster", "Dozens of ring retailers between the clock and the station, antique and second-hand stock mixed in with the new. Walk, shortlist, return."],
     ["mark", 52.4877, -1.9107, "Chamberlain Clock", "The Quarter's landmark and the natural meeting point."],
     ["mark", 52.4900, -1.9113, "Museum of the Jewellery Quarter", "A preserved working factory, wonderful if there's time (closed Mondays)."],
     ["mark", 52.4879, -1.9139, "Birmingham Assay Office", "Where the anchor hallmark comes from; the world's busiest."],
@@ -317,6 +335,13 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
     ["food", 52.4867, -1.9095, "The Button Factory", "Terrace, relaxed menu, from midday."],
     ["food", 52.4853, -1.9046, "Saint Kitchen", "St Paul's Square. Coffee, brunch and flatbread lunches, all homemade."],
   ];
+  const FALLBACK_RINGS = [
+    ["vint", 52.4877, -1.9098, "Vintage and Modern", "29a Warstone Lane. Family-run, sensibly priced vintage and modern pieces, restoration and repair in-house."],
+    ["ring", 52.4886, -1.9105, "Marlows Diamonds", "16 Vyse Street. One of the biggest diamond and wedding-band retailers in the Quarter."],
+    ["ring", 52.4892, -1.9074, "Charles Green & Son", "Historic Birmingham makers; wedding rings since the 1820s."],
+    ["ring", 52.4883, -1.9108, "Vyse Street cluster", "Dozens of ring retailers between the clock and the station. Walk, shortlist, return."],
+  ];
+  const VINT_RE = /vintage|antique|estate|pre-?owned|second ?hand|heirloom/i;
 
   function popupHtml(p, hint){
     return "<b>" + p[3] + "</b><br>" + p[4] +
@@ -335,7 +360,7 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
-    places.forEach(p=>{
+    places.concat(FALLBACK_RINGS).forEach(p=>{
       L.circleMarker([p[1], p[2]], {
         radius: 9,
         color: "#fbfaf5",
@@ -344,6 +369,7 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
         fillOpacity: 0.95
       }).addTo(map).bindPopup(popupHtml(p));
     });
+    document.getElementById("pin-count").textContent = "Live jeweller search needs the Google map";
   }
 
   // Google's own detail (rating, review count, today's hours) fetched
@@ -391,6 +417,17 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
     return h;
   }
 
+  function circleIcon(color){
+    return {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 9,
+      fillColor: color,
+      fillOpacity: 0.95,
+      strokeColor: "#fbfaf5",
+      strokeWeight: 2
+    };
+  }
+
   function googleMap(){
     const map = new google.maps.Map(document.getElementById("map"), {
       center: CENTER,
@@ -404,46 +441,106 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
 
     function show(m, html){ iw.setContent(html); iw.open(map, m); }
 
+    function fetchDetails(m, key, placeId, fallbackHtml){
+      if(cache[key]){ show(m, cache[key]); return; }
+      show(m, fallbackHtml);
+      if(!svc || !placeId){ cache[key] = fallbackHtml; return; }
+      svc.getDetails({
+        placeId,
+        fields: ["name","rating","user_ratings_total","opening_hours","url","reviews","photos"]
+      }, (d, st)=>{
+        if(st !== google.maps.places.PlacesServiceStatus.OK || !d){ cache[key] = fallbackHtml; return; }
+        cache[key] = detailHtml([null,null,null,d.name,""], d);
+        show(m, cache[key]);
+      });
+    }
+
+    // fixed pins: parking, food, landmarks
     places.forEach(p=>{
       const m = new google.maps.Marker({
         position: { lat: p[1], lng: p[2] },
         map,
         title: p[3],
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 9,
-          fillColor: COLORS[p[0]],
-          fillOpacity: 0.95,
-          strokeColor: "#fbfaf5",
-          strokeWeight: 2
-        }
+        icon: circleIcon(COLORS[p[0]])
       });
       m.addListener("click", ()=>{
         if(cache[p[3]]){ show(m, cache[p[3]]); return; }
         if(!svc || SKIP_LOOKUP[p[3]]){ show(m, popupHtml(p)); return; }
-        show(m, popupHtml(p));   // instant content while the lookup runs
+        show(m, popupHtml(p));
         svc.findPlaceFromQuery({
           query: p[3] + " Jewellery Quarter Birmingham",
           fields: ["place_id"]
         }, (res, st)=>{
-          if(st === google.maps.places.PlacesServiceStatus.REQUEST_DENIED){
-            // makes the missing console switch visible instead of silent
-            cache[p[3]] = popupHtml(p, "Ratings need the Places API enabled for this key in Google Cloud.");
-            show(m, cache[p[3]]);
-            return;
-          }
           if(st !== google.maps.places.PlacesServiceStatus.OK || !res || !res[0]){ cache[p[3]] = popupHtml(p); return; }
-          svc.getDetails({
-            placeId: res[0].place_id,
-            fields: ["name","rating","user_ratings_total","opening_hours","url","reviews","photos"]
-          }, (d, st2)=>{
-            if(st2 !== google.maps.places.PlacesServiceStatus.OK || !d){ cache[p[3]] = popupHtml(p); return; }
-            cache[p[3]] = detailHtml(p, d);
-            show(m, cache[p[3]]);
-          });
+          fetchDetails(m, p[3], res[0].place_id, popupHtml(p));
         });
       });
     });
+
+    // live jeweller search: every jewellery shop Google knows nearby,
+    // filtered by the rating slider (and a 5-review floor so a lone
+    // five-star review can't game the list)
+    const jewellers = [];   // { marker, rating }
+    const seen = {};
+    const slider = document.getElementById("minrating");
+    const sliderVal = document.getElementById("minrating-val");
+    const pinCount = document.getElementById("pin-count");
+
+    function applyFilter(){
+      const min = parseFloat(slider.value);
+      sliderVal.innerHTML = min.toFixed(1) + "&#9733;";
+      let shown = 0;
+      jewellers.forEach(j=>{
+        const on = j.rating >= min - 1e-9;
+        j.marker.setMap(on ? map : null);
+        if(on) shown++;
+      });
+      pinCount.textContent = jewellers.length
+        ? shown + " of " + jewellers.length + " jewellers shown"
+        : "Searching for jewellers…";
+    }
+    slider.addEventListener("input", applyFilter);
+
+    function addJeweller(r){
+      if(!r.place_id || seen[r.place_id]) return;
+      seen[r.place_id] = true;
+      if(!r.rating || (r.user_ratings_total || 0) < 5) return;
+      const isVint = VINT_RE.test(r.name || "");
+      const m = new google.maps.Marker({
+        position: r.geometry.location,
+        map: null,
+        title: r.name,
+        icon: circleIcon(isVint ? COLORS.vint : COLORS.ring)
+      });
+      const basic = "<b>" + escT(r.name) + "</b>" +
+        '<br><span style="color:#a3762f;font-weight:700">' + stars(r.rating) + " " + r.rating.toFixed(1) + "</span>" +
+        ' <span style="color:#6f8a77">(' + (r.user_ratings_total || 0).toLocaleString() + " reviews)</span>" +
+        (r.vicinity ? "<br>" + escT(r.vicinity) : "");
+      m.addListener("click", ()=>fetchDetails(m, r.place_id, r.place_id, basic));
+      jewellers.push({ marker: m, rating: r.rating });
+    }
+
+    function searchJewellers(){
+      if(!svc){ pinCount.textContent = "Jeweller search unavailable"; return; }
+      svc.nearbySearch({
+        location: CENTER,
+        radius: 700,
+        type: "jewelry_store"
+      }, (results, st, pagination)=>{
+        if(st === google.maps.places.PlacesServiceStatus.REQUEST_DENIED){
+          pinCount.textContent = "Jeweller search needs the Places API enabled for this key";
+          return;
+        }
+        if(st !== google.maps.places.PlacesServiceStatus.OK || !results){ applyFilter(); return; }
+        results.forEach(addJeweller);
+        applyFilter();
+        if(pagination && pagination.hasNextPage){
+          setTimeout(()=>pagination.nextPage(), 1600);
+        }
+      });
+    }
+    applyFilter();
+    searchJewellers();
   }
 
   if(GOOGLE_MAPS_KEY){
