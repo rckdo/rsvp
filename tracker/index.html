@@ -5,6 +5,9 @@
   Single-file HTML. Inline CSS + JS. No build step.
 
   Changelog
+  v15.2 (25/07/2026): Quilt bands from the invitation across the header. Payments and
+          Key dates panels now live in the database and are editable in edit mode
+          (title, rows, footnote). Items can move between sections from the item editor.
   v15.1 (25/07/2026): RSVPs panel. The invite card at the repo root now stores replies in
           the same database (rsvp/replies); this page lists them live with accept/decline
           counts, behind the same passcode.
@@ -154,6 +157,16 @@
   }
   header .venue{color:#eef0e6;font-weight:500}
 
+  /* Quilt bands, ported from the invitation design */
+  .quilt{
+    display:flex;justify-content:center;align-items:center;gap:6px;
+    padding:10px 0;background:#e0cfa4;overflow:hidden;
+  }
+  #quilt-top{margin:-40px -24px 30px}
+  #quilt-bottom{margin:30px -24px -34px}
+  .quilt .block{flex:0 0 auto}
+  .quilt .cell{width:100%;height:100%}
+
   /* Setup / sync notices */
   .notice{
     background:#f6ead2;
@@ -217,6 +230,8 @@
     color:var(--gold);
     margin:0 0 12px;
   }
+  .panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 12px}
+  .panel-head h3{margin:0}
   .panel dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14.5px}
   .panel dt{color:var(--sage)}
   .panel dd{margin:0;text-align:right;font-weight:500}
@@ -368,8 +383,14 @@
     border-radius:8px;
     padding:8px 10px;
   }
-  .editor input:focus,.editor textarea:focus{outline:none;border-color:var(--sage)}
+  .editor input:focus,.editor textarea:focus,.editor select:focus{outline:none;border-color:var(--sage)}
   .editor textarea{margin-top:8px;min-height:56px;resize:vertical;font-size:13.5px}
+  .editor select{
+    margin-top:8px;width:100%;
+    font-family:inherit;font-size:13.5px;color:var(--ink);
+    background:#fff;border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;
+  }
+  .editor .field-label{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sage);margin:10px 0 2px}
   .editor .hint{font-size:12px;color:var(--sage);margin:4px 0 0}
   .editor .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
   .editor .save,.editor .cancel,.editor .del{
@@ -396,7 +417,7 @@
   #sync-note .dot-off{color:#a3512f}
 
   @media print{
-    .box{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .box,.quilt,.quilt .cell{-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .reset,.edit-toggle,.edit-btn,.add-row,#sync-note{display:none}
     body{background:#fff}
   }
@@ -418,11 +439,13 @@
 
 <div class="wrap">
   <header>
+    <div class="quilt" id="quilt-top" aria-hidden="true"></div>
     <h1 class="names">Richard <span class="amp">&amp;</span> Lorraine</h1>
     <p class="meta">
       <span class="venue">Temple of Minerva, Royal Victoria Park</span><br>
       Monday 21 September 2026 &middot; 13:00
     </p>
+    <div class="quilt" id="quilt-bottom" aria-hidden="true"></div>
   </header>
 
   <div class="notice hidden" id="setup-note">
@@ -437,28 +460,7 @@
     </div>
   </div>
 
-  <div class="ref-grid">
-    <div class="panel">
-      <h3>Payments</h3>
-      <dl>
-        <dt>Deposit (paid 30 Jun)</dt><dd>£100</dd>
-        <dt>Ceremony balance</dt><dd>~£520</dd>
-        <dt>Certificates</dt><dd>£12.50 ea</dd>
-        <dt>Notice fee</dt><dd>~£35 pp</dd>
-        <div class="full"><strong>Ceremony balance</strong> = £620 weekday rate less the £100 deposit. That is the 2025/26 figure and may rise a little under 2026/27 rates. Pay by phone: <strong>01225 477234</strong> (Mon-Fri), card except AMEX. <strong>Venue hire is separate</strong> and paid to the Temple operator, not the registrar.</div>
-      </dl>
-    </div>
-    <div class="panel">
-      <h3>Key dates</h3>
-      <dl>
-        <dt>Preferences doc</dt><dd>~27 Jul*</dd>
-        <dt>Ceremony balance</dt><dd>Now due</dd>
-        <dt>Notice of marriage</dt><dd>by ~24 Aug</dd>
-        <dt>Ceremony</dt><dd>21 Sep</dd>
-        <div class="full">*8 weeks before the ceremony. You have asked B&amp;NES for a short grace period to the end of the week. <strong>Notice is the hard legal deadline</strong> and is what confirms the provisional booking.</div>
-      </dl>
-    </div>
-  </div>
+  <div class="ref-grid" id="ref-grid"></div>
 
   <div class="panel rsvps hidden" id="rsvp-panel">
     <h3>RSVPs</h3>
@@ -517,40 +519,44 @@ const SEED = [
     when:"By Mon-Fri",
     sub:"The time-critical items. Two are just phone calls, but they matter most.",
     items:[
-      {id:"pay-balance", t:"Call B&NES to pay the ceremony balance", tag:"money",
+      {id:"pay-balance", t:"Call B&NES to pay the ceremony balance", tag:"money", assign:"R",
        note:"~£520 on <b>01225 477234</b>, Mon-Fri office hours. Have your card ready (not AMEX)."},
-      {id:"order-certs", t:"Order marriage certificates in the same call", tag:"money",
-       note:"£12.50 each. Get at least two, needed for name changes, pensions, employer, bank."},
-      {id:"prefs-progress", t:"Complete the preferences document",
-       note:"This is your 'vows' submission. See the decision list further down. Return by end of this week per the grace period you requested."},
-      {id:"confirm-witnesses", t:"Confirm your two witnesses", tag:"legal",
+      {id:"order-certs", t:"Order marriage certificates in the same call", tag:"money", assign:"R",
+       note:"£12.50 each. One for the record; a spare is handy for banks and pensions."},
+      {id:"prefs-progress", t:"Complete and submit the preferences document", assign:"RL",
+       note:"The ceremony wording submission, <b>due 27 July</b>, with a short grace period agreed with B&NES. The decision list is further down; draft panels for the story and promises are above."},
+      {id:"confirm-witnesses", t:"Confirm your two witnesses", tag:"legal", assign:"RL",
        note:"Legally required, present for the whole ceremony. Easy to forget at a small wedding, so lock in who they are."},
-      {id:"notice-booked", t:"Check the notice appointment is booked and in the diary", tag:"legal",
-       note:"You said this is arranged with your local council. Confirm the date and what ID/residency documents to bring."},
+      {id:"notice-booked", t:"Notice of marriage appointment booked and in the diary", tag:"legal", assign:"R",
+       note:"Booked with Oxfordshire: <b>1pm, 11 August, Didcot Register Office</b>. Check what ID and residency documents to bring."},
     ]
   },
   {
     title:"Preferences document: the choices",
-    when:"Return by end of week",
+    when:"Return by 27 Jul",
     sub:"Each line is one decision. Tick as you settle it, then send the completed doc to B&NES.",
     items:[
-      {id:"pref-decl", t:"Declaratory vow: choose 1, 2 or 3", tag:"legal", note:"Legal wording. Required."},
-      {id:"pref-affirm", t:"Affirmation: choose A or B"},
-      {id:"pref-contract", t:"Contracting vow: choose 1, 2 or 3", tag:"legal", note:"Legal wording. Required."},
+      {id:"pref-decl", t:"Declaratory vow: choose 1, 2 or 3", tag:"legal",
+       note:"Legal wording, required. <b>1:</b> 'I do solemnly declare that I know not of any lawful impediment why I may not be joined in matrimony to...' <b>2:</b> 'I declare that I know of no legal reason why I may not be joined in marriage to...' <b>3:</b> reply 'I am' to the registrar's question 'Are you free lawfully to marry...?'"},
+      {id:"pref-affirm", t:"Affirmation: choose A or B",
+       note:"The A and B wordings are in the B&NES doc. Once you've picked, paste the winner into this note via Edit so it's to hand."},
+      {id:"pref-contract", t:"Contracting vow: choose 1, 2 or 3", tag:"legal",
+       note:"Legal wording, required. <b>1:</b> 'I call upon these persons here present to witness that I do take thee to be my lawful wedded wife/husband.' <b>2:</b> 'I take you to be my wedded wife/husband.' <b>3:</b> 'I take thee to be my wedded wife/husband.'"},
       {id:"pref-promises", t:"Chosen promises: C, D, E or write your own",
-       note:"The personal, non-legal bit. Own words are allowed but must be non-religious and get approved, so start these first if you want bespoke ones."},
+       note:"The personal, non-legal bit. C, D and E are in the doc; own words must be non-religious and approved in advance. Draft your own in the 'Own promises' panel above."},
       {id:"pref-symbolic", t:"Symbolic element: none, or Tying the Knot / Rose / Sand",
        note:"If yes, decide who brings the items forward."},
       {id:"pref-rings-words", t:"Ring words: choose F or G",
-       note:"Also confirm: exchanging rings yes/no, both giving, and who carries them forward."},
-      {id:"pref-closing", t:"Closing words: choose H or I"},
+       note:"F and G are in the doc. Also confirm: exchanging rings yes/no, both giving, and who carries them forward."},
+      {id:"pref-closing", t:"Closing words: choose H or I",
+       note:"H and I are in the doc; paste your pick here via Edit."},
       {id:"pref-readings", t:"Readings: decide yes/no, choose pieces, name readers",
        note:"Up to three. Must be non-religious. Attach copies with the doc."},
       {id:"pref-music", t:"Ceremony music: pick four moments",
        note:"Guests arriving, your entrance, the signing, your exit. Check with the venue how it's played."},
       {id:"pref-absent", t:"Acknowledgement of absent family/friends (optional, 150 words)"},
       {id:"pref-story", t:"Your story as a couple (optional, 300 words)",
-       note:"Read aloud by the registrar. Can include pets, a nice nod to the dogs."},
+       note:"Read aloud by the registrar. Draft it in the 'Your story' panel above. Can include pets, a nice nod to the dogs."},
       {id:"pref-arrive", t:"Arriving together or separately"},
       {id:"pref-photo", t:"Photo / social-media permission: delete the option you don't want"},
     ]
@@ -558,31 +564,34 @@ const SEED = [
   {
     title:"This month",
     when:"Through August",
-    sub:"The bookings and buying. Several feed each other, so numbers and dates first.",
+    sub:"The bookings and doing. Several feed each other, so numbers and dates first.",
     items:[
-      {id:"venue-hire", t:"Confirm and pay the Temple of Minerva venue hire", tag:"money",
-       note:"Separate from the registrar fee, paid to the venue operator (Heritage Park Weddings). Check it's booked if not already."},
-      {id:"invites-finalise", t:"Finalise the invitations",
-       note:"Include timings, parking, dress code, the outdoor element and that dogs are coming. Ask for RSVPs and dietary requirements."},
-      {id:"invites-send", t:"Send the invitations"},
-      {id:"sydneys-book", t:"Confirm the Sydney's booking and pre-order plan",
-       note:"Area reserved, sharing plates pre-order, money behind the bar. Ask their latest arrival time and whether cold plates ease the 3pm kitchen close."},
-      {id:"creamtea-confirm", t:"Confirm the cream tea venue is booked",
-       note:"You've mentioned it as the plan, so make sure it's actually locked in with a time."},
-      {id:"rings-buy", t:"Buy the rings",
-       note:"Mind sizing and any engraving lead time so they're ready in good time."},
-      {id:"photographer", t:"Book and brief the photographer",
-       note:"Confirm they can cover the Temple, cream tea and Sydney's, and share a rough running order."},
+      {id:"venue-hire", t:"Confirm and pay the Temple of Minerva venue hire", tag:"money", assign:"R",
+       note:"Separate from the registrar fee, paid to the venue operator (Heritage Park Weddings). Confirm booking and payment with them directly."},
+      {id:"notice-attend", t:"Attend the notice of marriage appointment", tag:"legal", assign:"RL",
+       note:"<b>1pm, 11 August, Didcot Register Office.</b> Both of you, with ID and proof of address. This is the hard legal step that confirms the booking."},
+      {id:"invites-finalise", t:"Create the invitations", assign:"R",
+       note:"Timings, parking, dress code, the outdoor element and that dogs are coming. RSVPs and dietary requirements."},
+      {id:"invites-send", t:"Send the invitations", assign:"L"},
+      {id:"sydneys-book", t:"Organise a pub for afterwards?",
+       note:"Pick the pub, reserve an area, and decide on food (sharing plates or a pre-order) and money behind the bar. Check latest arrival time and kitchen hours."},
+      {id:"creamtea-confirm", t:"Plan the cream tea 'catering'",
+       note:"Scones and tea in the Gardens: who's providing, quantities, where it's served, and a locked-in time."},
+      {id:"celebrant", t:"Confirm the celebrant and ceremony details with B&NES", assign:"R",
+       note:"Bath's registrars conduct the ceremony. Check who to expect, their arrival time, and raise any outstanding questions."},
+      {id:"rings-buy", t:"Get the rings", assign:"RL",
+       note:"One each to sort. Mind sizing and any engraving lead time so they're ready in good time."},
+      {id:"photographer", t:"Book and brief the photographer", assign:"R",
+       note:"Confirm they can cover the ceremony and cream tea in the Gardens, plus the pub after, and share a rough running order."},
       {id:"flowers", t:"Decide on flowers",
        note:"Bouquet, buttonholes, anything for the tables, or keep it simple. Order if wanted."},
-      {id:"outfit-r", t:"Sort your outfit (Richard)"},
-      {id:"outfit-l", t:"Sort Lorraine's outfit"},
-      {id:"stay", t:"Book somewhere to stay",
+      {id:"stay", t:"Book the overnight stay",
        note:"Wedding night for you both, and share nearby options with any guests who need them."},
+      {id:"bernies", t:"Arrange the weekend at Bernie's for Lorraine's Mum", assign:"L"},
       {id:"dogs-plan", t:"Plan the dogs' day",
-       note:"Who handles them during the ceremony, whether they're allowed at the Temple, and how they move between the three venues."},
-      {id:"transport", t:"Plan transport between venues",
-       note:"Temple of Minerva → cream tea → Sydney's, with realistic gaps."},
+       note:"Who handles them during the ceremony, whether they're allowed at the Temple, and how they get from the Gardens to the pub (check it's dog-friendly)."},
+      {id:"transport", t:"Plan transport from the Gardens to the pub",
+       note:"Ceremony and cream tea are both in the park, so it's one move, with a realistic gap."},
     ]
   },
   {
@@ -590,15 +599,17 @@ const SEED = [
     when:"Early to mid September",
     sub:"Confirming and finishing. This is where numbers get locked.",
     items:[
-      {id:"final-numbers", t:"Give final numbers and dietaries to Sydney's and the cream tea venue",
-       note:"You can't finalise the pre-order without these, so chase RSVPs now."},
-      {id:"food-preorder", t:"Finalise the Sydney's food pre-order and bar amount"},
-      {id:"running-order", t:"Confirm the running order with all three venues",
-       note:"Ceremony 13:00, then cream tea, then Sydney's mid-afternoon. Share the timings with everyone involved."},
+      {id:"final-numbers", t:"Give final numbers and dietaries to the pub and the cream tea provider",
+       note:"Food plans can't be finalised without these, so chase RSVPs now."},
+      {id:"food-preorder", t:"Finalise the pub food plan and bar amount"},
+      {id:"running-order", t:"Confirm the running order with both venues",
+       note:"Ceremony 13:00 at the Temple, cream tea in the Gardens right after, then the pub from mid-afternoon. Share the timings with everyone involved."},
       {id:"wet-weather", t:"Confirm a wet-weather fallback",
-       note:"Sydney's terrace is outdoors, so check there's an indoor option."},
+       note:"The ceremony and cream tea are outdoors, so know the plan if it rains, and check indoor space wherever the pub is."},
       {id:"rings-collect", t:"Collect the rings and check the fit"},
       {id:"outfits-ready", t:"Outfits ready: final fittings, shoes, the lot"},
+      {id:"vows-final", t:"Final read-through of vows and promises together", assign:"RL",
+       note:"The approved wording is locked with B&NES well before this; this is just the two of you being ready. <b>By 20 September.</b>"},
       {id:"readings-print", t:"Print copies of any readings for the readers"},
       {id:"guests-logistics", t:"Send parking and arrival details to guests",
        note:"Royal Victoria Park car parks; link is in the B&NES email."},
@@ -625,11 +636,52 @@ const SEED = [
     sub:"Quick wins once the day is done.",
     items:[
       {id:"aft-certs", t:"Collect / receive the marriage certificates"},
-      {id:"aft-namechange", t:"Name-change admin, if either of you is changing name",
-       note:"Bank, employer, pension, passport, driving licence. This is what the spare certificates are for."},
       {id:"aft-thanks", t:"Thank yous to guests and suppliers"},
     ]
   },
+  // Appended after the original six so already-seeded databases pick it
+  // up cleanly; the explicit order slots it between Preferences (20)
+  // and This month (30) on screen.
+  {
+    title:"Outfits and making",
+    when:"Fabric and toiles first",
+    order:25,
+    sub:"Lorraine's making pipeline plus both outfits. Toiles before fabric, fabric before final sewing.",
+    items:[
+      {id:"toile-dress", t:"Sew the toile for the dress", assign:"L"},
+      {id:"fabric-dress", t:"Order fabric for the dress", assign:"L"},
+      {id:"toile-harnesses", t:"Sew the toile dog harnesses", assign:"L"},
+      {id:"fabric-harnesses", t:"Order fabric for the dog harnesses", assign:"L"},
+      {id:"fabric-bowtie", t:"Order fabric for the bow tie / cravat", assign:"L"},
+      {id:"shoes-l", t:"Shoes for Lorraine", assign:"L",
+       note:"Decide the style, then buy in time to wear them in."},
+      {id:"mua-book", t:"Book the MUA", assign:"L"},
+      {id:"mua-timeoff", t:"Book time off to visit the MUA", assign:"L"},
+      {id:"outfit-r", t:"Richard's wedding attire", assign:"R"},
+    ]
+  },
+];
+
+// Reference panels, seeded into the database once (like SEED above),
+// then editable in edit mode. Rows are label/value pairs; full is the
+// footnote under the divider (basic HTML allowed).
+const SEED_PANELS = [
+  {title:"Payments", rows:[
+    {l:"Deposit (paid 30 Jun)", v:"£100"},
+    {l:"Ceremony balance", v:"~£520"},
+    {l:"Certificates", v:"£12.50 ea"},
+    {l:"Notice fee", v:"~£35 pp"}],
+   full:"<strong>Ceremony balance</strong> = £620 weekday rate less the £100 deposit. That is the 2025/26 figure and may rise a little under 2026/27 rates. Pay by phone: <strong>01225 477234</strong> (Mon-Fri), card except AMEX. <strong>Venue hire is separate</strong> and paid to the Temple operator, not the registrar."},
+  {title:"Key dates", rows:[
+    {l:"Preferences doc", v:"~27 Jul*"},
+    {l:"Ceremony balance", v:"Now due"},
+    {l:"Notice appointment", v:"1pm, 11 Aug"},
+    {l:"Ceremony", v:"21 Sep"}],
+   full:"*8 weeks before the ceremony, with a short grace period agreed with B&NES. <strong>Notice (Didcot Register Office) is the hard legal deadline</strong> and is what confirms the provisional booking."},
+  {title:"Your story, draft",
+   full:"Up to 300 words, read aloud by the registrar. Draft it here: open Edit list below, then edit this panel and write in the footnote box. Rough is fine, polish later. Remember the dogs."},
+  {title:"Own promises, draft",
+   full:"If you write your own promises, draft them here via Edit. They must be non-religious and approved with the preferences doc, so start early."},
 ];
 
 /* ---------------------------------------------------------------------
@@ -637,6 +689,7 @@ const SEED = [
    this; nothing is read from localStorage any more.
    --------------------------------------------------------------------- */
 let db = null;
+let panels = {};     // panelId -> {title, order, rows, full}
 let sections = {};   // secId -> {title, when, sub, order}
 let items = {};      // itemId -> {sec, t, note, tag, assign, order}
 let ticks = new Set();
@@ -692,17 +745,29 @@ function configured(){
   return FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf("PASTE") !== 0;
 }
 
+// The seed content as flat DB-shaped objects, shared by the seeding
+// code and the unconfigured read-only preview.
+function seedObjects(){
+  const out = { sections:{}, items:{}, panels:{} };
+  SEED.forEach((sec,i)=>{
+    const sid = "s" + i;
+    out.sections[sid] = { title:sec.title, when:sec.when, sub:sec.sub || null, order:sec.order || (i+1)*10 };
+    sec.items.forEach((it,j)=>{
+      out.items[it.id] = { sec:sid, t:it.t, note:it.note || null, tag:it.tag || null, assign:it.assign || null, order:(j+1)*10 };
+    });
+  });
+  SEED_PANELS.forEach((p,i)=>{
+    out.panels["p" + i] = { title:p.title, order:(i+1)*10, rows:p.rows || null, full:p.full || null };
+  });
+  return out;
+}
+
 function start(){
   if(!configured()){
     // No config yet: show the seed list read-only so the page previews.
     document.getElementById("setup-note").classList.remove("hidden");
-    SEED.forEach((sec,i)=>{
-      const sid = "s" + i;
-      sections[sid] = { title:sec.title, when:sec.when, sub:sec.sub || null, order:(i+1)*10 };
-      sec.items.forEach((it,j)=>{
-        items[it.id] = { sec:sid, t:it.t, note:it.note || null, tag:it.tag || null, assign:null, order:(j+1)*10 };
-      });
-    });
+    const o = seedObjects();
+    sections = o.sections; items = o.items; panels = o.panels;
     render();
     return;
   }
@@ -725,17 +790,21 @@ function start(){
   });
 }
 
+// Bump when the SEED gains new sections/items/panels: existing databases
+// get the additions topped up without touching anything already there
+// (edits and deletions in the DB always win over the seed).
+const SEED_VERSION = 2;
+
 function seedIfNeeded(){
-  return db.ref(ROOT + "/sections").once("value").then(snap=>{
-    if(snap.exists()) return;
+  return db.ref(ROOT).once("value").then(snap=>{
+    const v = snap.val() || {};
+    if(v.sections && (v.seedVersion || 1) >= SEED_VERSION) return;
+    const want = seedObjects();
     const upd = {};
-    SEED.forEach((sec,i)=>{
-      const sid = "s" + i;
-      upd["sections/" + sid] = { title:sec.title, when:sec.when, sub:sec.sub || null, order:(i+1)*10 };
-      sec.items.forEach((it,j)=>{
-        upd["items/" + it.id] = { sec:sid, t:it.t, note:it.note || null, tag:it.tag || null, assign:null, order:(j+1)*10 };
-      });
-    });
+    Object.entries(want.sections).forEach(([id,s])=>{ if(!(v.sections||{})[id]) upd["sections/"+id] = s; });
+    Object.entries(want.items).forEach(([id,it])=>{ if(!(v.items||{})[id]) upd["items/"+id] = it; });
+    Object.entries(want.panels).forEach(([id,p])=>{ if(!(v.panels||{})[id]) upd["panels/"+id] = p; });
+    upd["seedVersion"] = SEED_VERSION;
     return db.ref(ROOT).update(upd);
   });
 }
@@ -745,6 +814,7 @@ function subscribe(){
     const v = snap.val() || {};
     sections = v.sections || {};
     items = v.items || {};
+    panels = v.panels || {};
     ticks = new Set(Object.keys(v.ticks || {}));
     if(editorOpen){ renderQueued = true; updateProgress(); return; }
     render();
@@ -801,14 +871,36 @@ function orderedItems(secId){
     .sort((a,b)=>(a.order||0)-(b.order||0));
 }
 
+function renderPanels(){
+  const grid = document.getElementById("ref-grid");
+  grid.innerHTML = "";
+  Object.entries(panels)
+    .map(([id,p])=>({id,...p}))
+    .sort((a,b)=>(a.order||0)-(b.order||0))
+    .forEach(p=>{
+      const el = document.createElement("div");
+      el.className = "panel";
+      el.dataset.pid = p.id;
+      const rows = Array.isArray(p.rows) ? p.rows : Object.values(p.rows || {});
+      let html = `<div class="panel-head"><h3>${p.title}</h3><button class="edit-btn" type="button" aria-label="Edit panel">edit</button></div><dl>`;
+      rows.forEach(r=>{ html += `<dt>${r.l}</dt><dd>${r.v}</dd>`; });
+      if(p.full) html += `<div class="full">${p.full}</div>`;
+      html += `</dl>`;
+      el.innerHTML = html;
+      el.querySelector(".edit-btn").addEventListener("click", ()=>openPanelEditor(p.id));
+      grid.appendChild(el);
+    });
+}
+
 function render(){
   renderQueued = false;
+  renderPanels();
   const root = document.getElementById("sections");
   root.innerHTML = "";
   orderedSections().forEach(sec=>{
     const s = document.createElement("section");
     s.className = "card";
-    let html = `<div class="sec-head"><h2>${sec.title}</h2><span class="when">${sec.when}</span></div>`;
+    let html = `<div class="sec-head"><h2>${sec.title}</h2><span class="when">${sec.when}</span><button class="edit-btn sec-edit" type="button" aria-label="Edit section">edit</button></div>`;
     if(sec.sub) html += `<p class="sec-sub">${sec.sub}</p>`;
     html += `<ul class="items">`;
     orderedItems(sec.id).forEach(it=>{
@@ -826,6 +918,7 @@ function render(){
     });
     html += `</ul><div class="add-row"><button class="add-item" type="button" data-sec="${sec.id}">+ Add an item</button></div>`;
     s.innerHTML = html;
+    s.querySelector(".sec-edit").addEventListener("click", ()=>openSectionEditor(s, sec.id));
     root.appendChild(s);
   });
   bindRows();
@@ -882,7 +975,7 @@ function cycleAssign(id){
   db.ref(ROOT + "/items/" + id + "/assign").set(next);
 }
 
-function buildEditor(initial, onSave, onCancel, onDelete){
+function buildEditor(initial, onSave, onCancel, onDelete, sectionPick){
   const ed = document.createElement("span");
   ed.className = "editor";
   const tIn = document.createElement("input");
@@ -892,6 +985,17 @@ function buildEditor(initial, onSave, onCancel, onDelete){
   const nIn = document.createElement("textarea");
   nIn.placeholder = "Note (optional). Basic HTML like <b>bold</b> is fine.";
   nIn.value = initial.note || "";
+  let secSel = null;
+  if(sectionPick){
+    secSel = document.createElement("select");
+    secSel.setAttribute("aria-label", "Section");
+    orderedSections().forEach(s=>{
+      const o = document.createElement("option");
+      o.value = s.id; o.textContent = s.title;
+      if(s.id === sectionPick) o.selected = true;
+      secSel.appendChild(o);
+    });
+  }
   const row = document.createElement("span");
   row.className = "row";
   const save = document.createElement("button");
@@ -905,12 +1009,14 @@ function buildEditor(initial, onSave, onCancel, onDelete){
     del.addEventListener("click", e=>{ e.stopPropagation(); onDelete(); });
     row.appendChild(del);
   }
-  ed.appendChild(tIn); ed.appendChild(nIn); ed.appendChild(row);
+  ed.appendChild(tIn); ed.appendChild(nIn);
+  if(secSel) ed.appendChild(secSel);
+  ed.appendChild(row);
   save.addEventListener("click", e=>{
     e.stopPropagation();
     const t = tIn.value.trim();
     if(!t){ tIn.focus(); return; }
-    onSave({ t, note: nIn.value.trim() || null });
+    onSave({ t, note: nIn.value.trim() || null, sec: secSel ? secSel.value : null });
   });
   cancel.addEventListener("click", e=>{ e.stopPropagation(); onCancel(); });
   ed.addEventListener("click", e=>e.stopPropagation());
@@ -933,7 +1039,12 @@ function openEditor(li){
   const ed = buildEditor(
     { t: it.t, note: it.note },
     vals=>{
-      db.ref(ROOT + "/items/" + id).update({ t: vals.t, note: vals.note });
+      const upd = { t: vals.t, note: vals.note };
+      if(vals.sec && vals.sec !== it.sec){
+        upd.sec = vals.sec;
+        upd.order = orderedItems(vals.sec).reduce((m,x)=>Math.max(m, x.order||0), 0) + 10;
+      }
+      db.ref(ROOT + "/items/" + id).update(upd);
       closeEditor();
     },
     closeEditor,
@@ -941,10 +1052,107 @@ function openEditor(li){
       if(!confirm("Delete this item for both of you?")) return;
       db.ref(ROOT).update({ ["items/" + id]: null, ["ticks/" + id]: null });
       closeEditor();
-    }
+    },
+    it.sec
   );
   txt.replaceWith(ed.el);
   ed.focus();
+}
+
+/* ---------------------------------------------------------------------
+   Panel and section editors (edit mode)
+   --------------------------------------------------------------------- */
+function fieldLabel(text){
+  const l = document.createElement("span");
+  l.className = "field-label";
+  l.textContent = text;
+  return l;
+}
+function editorButtons(onSave, onCancel){
+  const row = document.createElement("span");
+  row.className = "row";
+  const save = document.createElement("button");
+  save.type = "button"; save.className = "save"; save.textContent = "Save";
+  const cancel = document.createElement("button");
+  cancel.type = "button"; cancel.className = "cancel"; cancel.textContent = "Cancel";
+  save.addEventListener("click", e=>{ e.stopPropagation(); onSave(); });
+  cancel.addEventListener("click", e=>{ e.stopPropagation(); onCancel(); });
+  row.appendChild(save); row.appendChild(cancel);
+  return row;
+}
+
+function openPanelEditor(pid){
+  if(editorOpen || !db) return;
+  editorOpen = true;
+  const p = panels[pid] || {};
+  const el = document.querySelector('.panel[data-pid="' + pid + '"]');
+  const rows = Array.isArray(p.rows) ? p.rows : Object.values(p.rows || {});
+  const ed = document.createElement("div");
+  ed.className = "editor";
+  const tIn = document.createElement("input");
+  tIn.type = "text"; tIn.value = p.title || ""; tIn.placeholder = "Panel title";
+  const rIn = document.createElement("textarea");
+  rIn.value = rows.map(r=>r.l + " | " + r.v).join("\n");
+  rIn.placeholder = "e.g. Deposit | £100";
+  const fIn = document.createElement("textarea");
+  fIn.value = p.full || "";
+  fIn.placeholder = "Longer text, basic HTML like <strong>bold</strong> is fine.";
+  ed.appendChild(fieldLabel("Title"));
+  ed.appendChild(tIn);
+  ed.appendChild(fieldLabel("Rows, one per line: Label | Value"));
+  ed.appendChild(rIn);
+  ed.appendChild(fieldLabel("Footnote / free text"));
+  ed.appendChild(fIn);
+  ed.appendChild(editorButtons(()=>{
+    const parsed = rIn.value.split("\n").map(s=>s.trim()).filter(Boolean).map(line=>{
+      const i = line.indexOf("|");
+      return i === -1 ? {l:line, v:""} : {l:line.slice(0,i).trim(), v:line.slice(i+1).trim()};
+    });
+    db.ref(ROOT + "/panels/" + pid).set({
+      title: tIn.value.trim() || p.title || "Panel",
+      order: p.order || 0,
+      rows: parsed.length ? parsed : null,
+      full: fIn.value.trim() || null
+    });
+    closeEditor();
+  }, closeEditor));
+  el.innerHTML = "";
+  el.appendChild(ed);
+  tIn.focus();
+}
+
+function openSectionEditor(secEl, sid){
+  if(editorOpen || !db) return;
+  editorOpen = true;
+  const s = sections[sid] || {};
+  const ed = document.createElement("div");
+  ed.className = "editor";
+  const tIn = document.createElement("input");
+  tIn.type = "text"; tIn.value = s.title || ""; tIn.placeholder = "Section title";
+  const wIn = document.createElement("input");
+  wIn.type = "text"; wIn.value = s.when || ""; wIn.placeholder = "Timing label (top right)";
+  const bIn = document.createElement("textarea");
+  bIn.value = s.sub || "";
+  bIn.placeholder = "Subtitle (optional)";
+  ed.appendChild(fieldLabel("Title"));
+  ed.appendChild(tIn);
+  ed.appendChild(fieldLabel("Timing label"));
+  ed.appendChild(wIn);
+  ed.appendChild(fieldLabel("Subtitle"));
+  ed.appendChild(bIn);
+  ed.appendChild(editorButtons(()=>{
+    db.ref(ROOT + "/sections/" + sid).update({
+      title: tIn.value.trim() || s.title || "Section",
+      when: wIn.value.trim(),
+      sub: bIn.value.trim() || null
+    });
+    closeEditor();
+  }, closeEditor));
+  const head = secEl.querySelector(".sec-head");
+  const sub = secEl.querySelector(".sec-sub");
+  if(sub) sub.remove();
+  head.replaceWith(ed);
+  tIn.focus();
 }
 
 function newId(t){
@@ -1005,6 +1213,51 @@ document.getElementById("reset").addEventListener("click", ()=>{
     db.ref(ROOT + "/ticks").remove();
   }
 });
+
+/* ---------------------------------------------------------------------
+   Quilt bands: block builders ported from the invitation design
+   (flying geese, pinwheel, broken dishes, nine-patch, hourglass).
+   --------------------------------------------------------------------- */
+(function quilt(){
+  const CREAM = "#efe6d3";
+  function hstBg(dir, a, b){
+    switch(dir){
+      case "tl": return "linear-gradient(to bottom right, " + a + " 0 50%, " + b + " 50% 100%)";
+      case "br": return "linear-gradient(to bottom right, " + b + " 0 50%, " + a + " 50% 100%)";
+      case "tr": return "linear-gradient(to bottom left, " + a + " 0 50%, " + b + " 50% 100%)";
+      case "bl": return "linear-gradient(to bottom left, " + b + " 0 50%, " + a + " 50% 100%)";
+    }
+  }
+  function grid(c, r){
+    return { display:"grid", gridTemplateColumns:"repeat(" + c + ",1fr)", gridTemplateRows:"repeat(" + r + ",1fr)" };
+  }
+  const builders = [
+    ()=>({ wrap:grid(2,2), cells:["tr","tl","tr","tl"].map(d=>hstBg(d, "#a34a2c", CREAM)) }),
+    ()=>({ wrap:grid(2,2), cells:["tr","br","tl","bl"].map(d=>hstBg(d, "#7a7c47", CREAM)) }),
+    ()=>({ wrap:grid(2,2), cells:["br","bl","tr","tl"].map(d=>hstBg(d, "#c99a3f", CREAM)) }),
+    ()=>({ wrap:grid(3,3), cells:["#bf6a43",CREAM,"#bf6a43",CREAM,"#bf6a43",CREAM,"#bf6a43",CREAM,"#bf6a43"] }),
+    ()=>({ wrap:grid(1,1), cells:["conic-gradient(#4a3f2f 0 45deg, " + CREAM + " 45deg 135deg, #4a3f2f 135deg 225deg, " + CREAM + " 225deg 315deg, #4a3f2f 315deg)"] }),
+  ];
+  function fill(el, offset){
+    if(!el) return;
+    const px = 34;
+    for(let i = 0; i < 40; i++){
+      const blk = builders[(i + offset) % builders.length]();
+      const wrap = document.createElement("div");
+      wrap.className = "block";
+      Object.assign(wrap.style, blk.wrap, { width:px + "px", height:px + "px" });
+      blk.cells.forEach(bg=>{
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.style.background = bg;
+        wrap.appendChild(cell);
+      });
+      el.appendChild(wrap);
+    }
+  }
+  fill(document.getElementById("quilt-top"), 1);
+  fill(document.getElementById("quilt-bottom"), 3);
+})();
 
 /* ---------------------------------------------------------------------
    Kick off

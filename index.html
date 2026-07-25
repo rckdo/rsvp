@@ -130,15 +130,13 @@
     transform-origin: bottom center;
     scale: -1 1;              /* mirror -> face inward (left) */
     filter: drop-shadow(0 6px 7px rgba(59, 56, 47, 0.22));
-    animation: robin-in 0.9s ease 1.5s both, robin-bob 4.6s ease-in-out 2.4s infinite;
+    /* visible from the first frame; feet stay planted (pivot is
+       bottom center) while he sways gently side to side */
+    animation: robin-sway 4.6s ease-in-out infinite;
   }
-  @keyframes robin-in {
-    from { opacity: 0; transform: translateY(12px) scale(0.9); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  @keyframes robin-bob {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50%      { transform: translateY(-4px) rotate(-1.5deg); }
+  @keyframes robin-sway {
+    0%, 100% { transform: rotate(0deg); }
+    50%      { transform: rotate(-2.5deg); }
   }
   @media (max-width: 420px) { .robin { width: 96px; right: -6px; } }
 
