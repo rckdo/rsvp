@@ -204,6 +204,11 @@
     font-family:'Marcellus',serif;font-size:12px;letter-spacing:.28em;
     text-transform:uppercase;color:var(--eyebrowrust);
   }
+  /* handwritten guest-name line, echoing the reply card's write-on rule */
+  .to-line{display:flex;align-items:baseline;gap:10px;justify-content:center;margin:0 auto 26px;max-width:240px}
+  .to-word{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;color:var(--mutedbrown)}
+  .to-rule{flex:1;border-bottom:1px solid var(--rule);height:16px}
+
   .rule-olive{width:40px;height:2px;background:var(--olive);margin:12px auto}
   .rule-gold{width:60px;height:1px;background:var(--ochregold);margin:14px auto}
   .hero{
@@ -407,6 +412,7 @@
             <div class="inv-col" data-seq="front-col"></div>
             <div class="inv-body">
               <div>
+                <div class="to-line"><span class="to-word">To</span><span class="to-rule"></span></div>
                 <div class="eyebrow">An Invitation to Join Us</div>
                 <div class="rule-olive"></div>
                 <h2 class="hero">Lorraine<span class="amp2">&amp;</span>Richard</h2>
