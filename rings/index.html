@@ -154,6 +154,14 @@
 
   footer{margin-top:44px;text-align:center;color:var(--sage);font-size:13.5px}
   footer a{color:var(--gold)}
+  .site-menu{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .site-menu a{
+    font-size:13px;font-weight:700;letter-spacing:.04em;text-decoration:none;
+    color:var(--sage);background:var(--card);
+    border:1px solid var(--line-strong);border-radius:999px;padding:9px 20px;
+  }
+  .site-menu a:hover{border-color:var(--sage);color:var(--forest)}
+  .site-menu a.here{background:var(--forest);border-color:var(--forest);color:#f2f0e6}
 </style>
 </head>
 <body>
@@ -169,7 +177,7 @@
   </header>
 
   <h2 class="sec">The map</h2>
-  <p class="sec-sub">Every jeweller Google knows in the Quarter, filtered by the rating slider. Terracotta pins are vintage or antique specialists, olive are wedding-band specialists, gold are the rest; green is food, blue parking, dark landmarks. Tap any pin for ratings, reviews and hours.</p>
+  <p class="sec-sub">Every jeweller Google knows in the Quarter, filtered by the rating slider. Terracotta pins are anything with a sniff of vintage or antique about it, olive are wedding-band specialists, gold the rest; blue is parking, dark landmarks. Tap any pin for ratings, reviews and hours.</p>
   <div class="slider-row">
     <label for="minrating">Minimum rating</label>
     <input type="range" id="minrating" min="3.5" max="5" step="0.1" value="4.5">
@@ -182,7 +190,6 @@
     <span><span class="dot" style="background:#a34a2c"></span>Vintage / antique</span>
     <span><span class="dot" style="background:#7a7c47"></span>Wedding bands</span>
     <span><span class="dot" style="background:#a3762f"></span>Jewellers</span>
-    <span><span class="dot" style="background:#3c6b3f"></span>Food &amp; drink</span>
     <span><span class="dot" style="background:#33567c"></span>Parking</span>
     <span><span class="dot" style="background:#26332c"></span>Landmarks</span>
   </div>
@@ -251,22 +258,13 @@
     </div>
   </div>
 
-  <h2 class="sec">A bite nearby</h2>
-  <p class="sec-sub">Quick lunch options within a few minutes' walk of the shops.</p>
-  <div class="grid">
-    <div class="card wide">
-      <h3>Quick lunch</h3>
-      <ul>
-        <li><b>Saint Kitchen</b> (St Paul's Square): coffee, brunch and flatbread lunches, all homemade. Mondays 8am to 5pm.</li>
-        <li><b>The Rose Villa Tavern</b>: Victorian tiled beauty on the clock corner, pub lunch from midday.</li>
-        <li><b>The Button Factory</b> (Frederick St): relaxed menu and a big terrace, from midday.</li>
-      </ul>
-    </div>
-  </div>
-
   <footer>
-    <p>Pin positions are approximate; use each popup's map link for directions.<br>
-    <a href="/tracker/">Back to the tracker</a> &middot; <a href="/">The invitation</a></p>
+    <p>Pin positions are approximate; use each popup's map link for directions.</p>
+    <nav class="site-menu">
+      <a href="/tracker/">Tracker</a>
+      <a href="/rings/" class="here">Rings</a>
+      <a href="/stationery/">Stationery</a>
+    </nav>
   </footer>
 </div>
 
@@ -339,9 +337,6 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
     ["mark", 52.4900, -1.9113, "Museum of the Jewellery Quarter", "A preserved working factory, wonderful if there's time (closed Mondays)."],
     ["mark", 52.4879, -1.9139, "Birmingham Assay Office", "Where the anchor hallmark comes from; the world's busiest."],
     ["mark", 52.4890, -1.9096, "Jewellery Quarter station", "Trains and tram from the city centre."],
-    ["food", 52.4877, -1.9110, "The Rose Villa Tavern", "Victorian tiled pub on the clock corner; pub lunch from midday."],
-    ["food", 52.4867, -1.9095, "The Button Factory", "Terrace, relaxed menu, from midday."],
-    ["food", 52.4853, -1.9046, "Saint Kitchen", "St Paul's Square. Coffee, brunch and flatbread lunches, all homemade."],
   ];
   const FALLBACK_RINGS = [
     ["vint", 52.4877, -1.9098, "Vintage and Modern", "29a Warstone Lane. Family-run, sensibly priced vintage and modern pieces, restoration and repair in-house."],
@@ -349,7 +344,7 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
     ["ring", 52.4892, -1.9074, "Charles Green & Son", "Historic Birmingham makers; wedding rings since the 1820s."],
     ["ring", 52.4883, -1.9108, "Vyse Street cluster", "Dozens of ring retailers between the clock and the station. Walk, shortlist, return."],
   ];
-  const VINT_RE = /vintage|antique|estate|pre-?owned|second ?hand|heirloom/i;
+  const VINT_RE = /vintage|antique|estate|pre-?owned|second-? ?hand|heirloom|retro|deco|victorian|edwardian|georgian|period|old ?gold|curio/i;
   // Wedding-band specialists: matched by name, plus known specialists
   // whose names don't say it.
   const BAND_RE = /wedding|bridal|\bbands?\b/i;
@@ -554,15 +549,19 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
       applyFilter();
     });
 
-    function addJeweller(r){
+    function addJeweller(r, forceVint){
       if(!r.place_id || seen[r.place_id]) return;
       seen[r.place_id] = true;
       if(!r.rating || (r.user_ratings_total || 0) < 5) return;
+      // keep it to the Quarter: text search ranges wider than the radius
+      const lat = r.geometry.location.lat(), lng = r.geometry.location.lng();
+      if(Math.abs(lat - CENTER.lat) > 0.008 || Math.abs(lng - CENTER.lng) > 0.012) return;
+      const kind = forceVint ? "vint" : pinKind(r.name);
       const m = new google.maps.Marker({
         position: r.geometry.location,
         map: null,
         title: r.name,
-        icon: circleIcon(COLORS[pinKind(r.name)])
+        icon: circleIcon(COLORS[kind])
       });
       const basic = "<b>" + escT(r.name) + "</b>" +
         '<br><span style="color:#a3762f;font-weight:700">' + stars(r.rating) + " " + r.rating.toFixed(1) + "</span>" +
@@ -575,21 +574,34 @@ const GOOGLE_MAPS_KEY = "AIzaSyCizRqf4iWFIBxJQr2tKWhVlJhouYR_vcE";
 
     function searchJewellers(){
       if(!svc){ pinCount.textContent = "Jeweller search unavailable"; return; }
-      svc.nearbySearch({
+      // vintage sweep first: anything Google's own relevance matching
+      // surfaces for vintage/antique jewellery here gets the terracotta
+      // pin, whatever its name says
+      svc.textSearch({
+        query: "vintage antique jewellery",
         location: CENTER,
-        radius: 700,
-        type: "jewelry_store"
-      }, (results, st, pagination)=>{
-        if(st === google.maps.places.PlacesServiceStatus.REQUEST_DENIED){
-          pinCount.textContent = "Jeweller search needs the Places API enabled for this key";
-          return;
+        radius: 700
+      }, (vres, vst)=>{
+        if(vst === google.maps.places.PlacesServiceStatus.OK && vres){
+          vres.forEach(r=>addJeweller(r, true));
+          applyFilter();
         }
-        if(st !== google.maps.places.PlacesServiceStatus.OK || !results){ applyFilter(); return; }
-        results.forEach(addJeweller);
-        applyFilter();
-        if(pagination && pagination.hasNextPage){
-          setTimeout(()=>pagination.nextPage(), 1600);
-        }
+        svc.nearbySearch({
+          location: CENTER,
+          radius: 700,
+          type: "jewelry_store"
+        }, (results, st, pagination)=>{
+          if(st === google.maps.places.PlacesServiceStatus.REQUEST_DENIED){
+            pinCount.textContent = "Jeweller search needs the Places API enabled for this key";
+            return;
+          }
+          if(st !== google.maps.places.PlacesServiceStatus.OK || !results){ applyFilter(); return; }
+          results.forEach(r=>addJeweller(r, false));
+          applyFilter();
+          if(pagination && pagination.hasNextPage){
+            setTimeout(()=>pagination.nextPage(), 1600);
+          }
+        });
       });
     }
     applyFilter();

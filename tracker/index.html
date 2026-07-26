@@ -518,6 +518,14 @@
   #sync-note{margin-top:10px;font-size:12.5px}
   #sync-note .dot-live{color:#3c5c47}
   #sync-note .dot-off{color:#a3512f}
+  .site-menu{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .site-menu a{
+    font-size:13px;font-weight:700;letter-spacing:.04em;text-decoration:none;
+    color:var(--sage);background:var(--card);
+    border:1px solid var(--line-strong);border-radius:999px;padding:9px 20px;
+  }
+  .site-menu a:hover{border-color:var(--sage);color:var(--forest)}
+  .site-menu a.here{background:var(--forest);border-color:var(--forest);color:#f2f0e6}
 
   @media print{
     .box,.quilt,.quilt .cell{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -583,6 +591,11 @@
       <button class="reset" id="reset">Reset all ticks</button>
     </div>
     <p id="sync-note"></p>
+    <nav class="site-menu">
+      <a href="/tracker/" class="here">Tracker</a>
+      <a href="/rings/">Rings</a>
+      <a href="/stationery/">Stationery</a>
+    </nav>
   </footer>
 </div>
 
