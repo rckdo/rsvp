@@ -93,6 +93,8 @@
     position:fixed;inset:0;z-index:60;
     background:var(--ochre);
     display:none;
+    overflow:hidden;
+    cursor:pointer;
     transition:opacity .45s ease;
   }
   #intro.on{display:block}
@@ -119,6 +121,11 @@
   #intro .m-line{
     font-family:'Marcellus',serif;font-size:11px;letter-spacing:.24em;
     text-transform:uppercase;color:var(--mutedbrown);margin-top:10px;
+  }
+  #intro .m-hint{
+    font-family:'Marcellus',serif;font-size:9px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--sage);margin-top:16px;
+    opacity:0;animation:med-in .5s ease 1.4s forwards;
   }
   @media (prefers-reduced-motion: reduce){
     #intro-grid .qblock{animation:none;opacity:1}
@@ -204,7 +211,8 @@
   <div id="intro-grid"></div>
   <div class="medallion">
     <div class="m-names">Lorraine &amp; Richard</div>
-    <div class="m-line" id="greeting"></div>
+    <div class="m-line">Monday, 21 September 2026</div>
+    <div class="m-hint">Tap to enter</div>
   </div>
 </div>
 
@@ -318,11 +326,13 @@ function blockEl(shapeKey, colourKey){
    ===================================================================== */
 function dealQuilt(){
   const grid = document.getElementById("intro-grid");
-  const px = 76;
-  const cols = Math.ceil(window.innerWidth / px);
-  const rows = Math.ceil(window.innerHeight / px);
-  grid.style.gridTemplateColumns = "repeat(" + cols + ",1fr)";
-  grid.style.gridTemplateRows = "repeat(" + rows + ",1fr)";
+  // fixed square cells; the grid overruns the viewport edges and is
+  // cropped, so blocks bleed off like the printed bands
+  const px = 76, gap = 6;
+  const cols = Math.ceil((window.innerWidth + gap) / (px + gap));
+  const rows = Math.ceil((window.innerHeight + gap) / (px + gap));
+  grid.style.gridTemplateColumns = "repeat(" + cols + "," + px + "px)";
+  grid.style.gridTemplateRows = "repeat(" + rows + "," + px + "px)";
   const shapes = Object.keys(SHAPES);
   const colours = Object.keys(ACCENTS);
   const cells = [];
@@ -359,42 +369,15 @@ function dealQuilt(){
   });
 }
 
-const GREETINGS = [
-  "Married on a Monday",
-  "Dogs remain invited",
-  "Tea first, then the pub",
-  "Bath, in September",
-  "The quilt is coming together",
-  "Something borrowed",
-  "A small wedding, done well",
-];
-function pickGreeting(){
-  const now = new Date();
-  const h = now.getHours();
-  const tod = h < 12 ? "Good morning, both" : h < 18 ? "Good afternoon, both" : "Good evening, both";
-  const days = Math.ceil((new Date(2026, 8, 21, 13, 0, 0) - now) / 86400000);
-  const pool = [tod, ...GREETINGS];
-  if(days > 1) pool.push(days + " days to go", days + " days to go");
-  else if(days === 1) pool.push("Tomorrow.");
-  else if(days === 0) pool.push("Today.");
-  else pool.push("Married.");
-  return pool[Math.floor(Math.random() * pool.length)];
-}
-
-let introTimer = null;
+// The quilt builds in about a second, then holds until tapped.
 function runIntro(){
   const intro = document.getElementById("intro");
-  document.getElementById("greeting").textContent = pickGreeting();
   dealQuilt();
   intro.classList.add("on");
-  function away(){
-    clearTimeout(introTimer);
+  intro.addEventListener("click", ()=>{
     intro.classList.add("away");
     setTimeout(()=>{ intro.classList.remove("on"); }, 500);
-  }
-  intro.addEventListener("click", away, { once: true });
-  const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  introTimer = setTimeout(away, reduced ? 1100 : 1950);
+  }, { once: true });
 }
 
 /* =====================================================================
