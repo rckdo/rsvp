@@ -154,14 +154,27 @@
     border-radius:16px;
     padding:30px 18px;
   }
-  .stage{flex:0 1 auto;text-align:center}
+  .stage{flex:0 1 auto;text-align:center;max-width:100%}
+
+  /* flip card: front and reverse on one card, swipe or tap to turn */
+  .flipwrap{perspective:1600px;width:100%;height:100%;touch-action:pan-y;cursor:pointer;user-select:none;-webkit-user-select:none}
+  .flipper{
+    position:relative;width:100%;height:100%;
+    transform-style:preserve-3d;
+    transition:transform .7s cubic-bezier(.35,.1,.25,1);
+  }
+  .flipface{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  .flipface.back{transform:rotateY(180deg)}
+  .fliphint{font-size:12.5px;color:var(--mutedbrown);margin:12px 0 0}
+  body.plain .flipper{transform:none !important;transition:none}
+  body.plain .flipface{position:static;transform:none !important;backface-visibility:visible}
   .stage .label{
     font-family:'Marcellus',serif;font-size:12px;letter-spacing:.22em;
     text-transform:uppercase;color:var(--eyebrowrust);
     margin:0 0 12px;
   }
   .scalebox{overflow:hidden;margin:0 auto}
-  .scalebox > .face{transform-origin:top left}
+  .scalebox > .face, .scalebox > .flipsize{transform-origin:top left}
   .dl{
     display:inline-block;margin-top:14px;
     font-family:inherit;border:none;cursor:pointer;
@@ -348,9 +361,11 @@
   <!-- ==== Invite tab ==== -->
   <div class="pane on" id="pane-invite">
     <div class="stage-row">
-      <div class="stage" data-face="inv-front">
-        <p class="label">Invitation &middot; Front</p>
+      <div class="stage" data-face="inv-front" data-face2="inv-back">
+        <p class="label" id="label-inv">Invitation &middot; Front</p>
         <div class="scalebox" data-w="461" data-h="717">
+        <div class="flipsize" style="width:461px;height:717px"><div class="flipwrap"><div class="flipper" id="flip-inv">
+        <div class="flipface front">
           <div class="face inv" id="face-inv-front">
             <div class="inv-col" data-seq="front-col"></div>
             <div class="inv-body">
@@ -368,13 +383,7 @@
             </div>
           </div>
         </div>
-        <button class="dl" data-target="face-inv-front" data-file="invitation-front.png" data-w="461" data-h="717">Download PNG</button>
-        <div class="dl-note">Renders in your browser at 4&times; (1844 &times; 2868)</div>
-      </div>
-
-      <div class="stage" data-face="inv-back">
-        <p class="label">Invitation &middot; Reverse</p>
-        <div class="scalebox" data-w="461" data-h="717">
+        <div class="flipface back">
           <div class="face invb" id="face-inv-back">
             <div class="band" data-seq="rev-top"></div>
             <div class="invb-body">
@@ -408,7 +417,13 @@
             <div class="band" data-seq="rev-bot"></div>
           </div>
         </div>
-        <button class="dl" data-target="face-inv-back" data-file="invitation-reverse.png" data-w="461" data-h="717">Download PNG</button>
+        </div></div></div>
+        </div>
+        <p class="fliphint">Swipe or tap the card to flip it</p>
+        <div>
+          <button class="dl" data-target="face-inv-front" data-file="invitation-front.png" data-w="461" data-h="717">Front PNG</button>
+          <button class="dl" data-target="face-inv-back" data-file="invitation-reverse.png" data-w="461" data-h="717">Reverse PNG</button>
+        </div>
         <div class="dl-note">Renders in your browser at 4&times; (1844 &times; 2868)</div>
       </div>
     </div>
@@ -417,9 +432,11 @@
   <!-- ==== RSVP tab ==== -->
   <div class="pane" id="pane-rsvp">
     <div class="stage-row">
-      <div class="stage" data-face="rsvp-front">
-        <p class="label">Reply Card &middot; Front</p>
+      <div class="stage" data-face="rsvp-front" data-face2="rsvp-back">
+        <p class="label" id="label-rsvp">Reply Card &middot; Front</p>
         <div class="scalebox" data-w="350" data-h="500">
+        <div class="flipsize" style="width:350px;height:500px"><div class="flipwrap"><div class="flipper" id="flip-rsvp">
+        <div class="flipface front">
           <div class="face rsvp" id="face-rsvp-front">
             <div class="band" data-seq="rsvp-top"></div>
             <div class="rsvp-body">
@@ -435,13 +452,7 @@
             </div>
           </div>
         </div>
-        <button class="dl" data-target="face-rsvp-front" data-file="rsvp-front.png" data-w="350" data-h="500">Download PNG</button>
-        <div class="dl-note">Renders in your browser at 4&times; (1400 &times; 2000)</div>
-      </div>
-
-      <div class="stage" data-face="rsvp-back">
-        <p class="label">Reply Card &middot; Reverse</p>
-        <div class="scalebox" data-w="350" data-h="500">
+        <div class="flipface back">
           <div class="face rsvpb" id="face-rsvp-back">
             <div class="medallion">
               <h2 class="m-title">R.S.V.P.</h2>
@@ -451,7 +462,13 @@
             </div>
           </div>
         </div>
-        <button class="dl" data-target="face-rsvp-back" data-file="rsvp-reverse.png" data-w="350" data-h="500">Download PNG</button>
+        </div></div></div>
+        </div>
+        <p class="fliphint">Swipe or tap the card to flip it</p>
+        <div>
+          <button class="dl" data-target="face-rsvp-front" data-file="rsvp-front.png" data-w="350" data-h="500">Front PNG</button>
+          <button class="dl" data-target="face-rsvp-back" data-file="rsvp-reverse.png" data-w="350" data-h="500">Reverse PNG</button>
+        </div>
         <div class="dl-note">Renders in your browser at 4&times; (1400 &times; 2000)</div>
       </div>
     </div>
@@ -599,19 +616,49 @@ document.querySelectorAll(".tab").forEach(t=>{
   });
 });
 
-// scale faces down to fit narrow screens (never up)
+// scale faces down to fit narrow screens (never up). Available width
+// is measured from the stage row, not the stage, because the stage
+// shrink-wraps its content and always reported the full face width.
 function fitFaces(){
   document.querySelectorAll(".scalebox").forEach(box=>{
     const w = parseInt(box.dataset.w, 10), h = parseInt(box.dataset.h, 10);
-    const avail = Math.min(box.parentElement.clientWidth || w, w);
+    const row = box.closest(".stage-row");
+    const avail = Math.max(120, Math.min(w, row ? row.clientWidth - 36 : w));
     const k = Math.min(1, avail / w);
-    const face = box.firstElementChild;
-    face.style.transform = "scale(" + k + ")";
+    const inner = box.firstElementChild;
+    inner.style.transform = "scale(" + k + ")";
     box.style.width = (w * k) + "px";
     box.style.height = (h * k) + "px";
   });
 }
 window.addEventListener("resize", fitFaces);
+
+// flip cards: swipe flips in the swipe's direction, tap flips forward
+function setupFlip(flipId, labelId, frontName, backName){
+  const fl = document.getElementById(flipId);
+  const label = document.getElementById(labelId);
+  if(!fl) return;
+  let angle = 0, sx = null;
+  function apply(){
+    fl.style.transform = "rotateY(" + angle + "deg)";
+    const back = ((angle % 360) + 360) % 360 === 180;
+    if(label) label.textContent = back ? backName : frontName;
+  }
+  const wrap = fl.parentElement;
+  wrap.addEventListener("pointerdown", e=>{ sx = e.clientX; });
+  wrap.addEventListener("pointercancel", ()=>{ sx = null; });
+  wrap.addEventListener("pointerup", e=>{
+    if(sx === null) return;
+    const dx = e.clientX - sx;
+    sx = null;
+    if(dx <= -30) angle -= 180;
+    else angle += 180;   // swipe right, or a plain tap, turns forward
+    apply();
+  });
+  apply();
+}
+setupFlip("flip-inv", "label-inv", "Invitation · Front", "Invitation · Reverse");
+setupFlip("flip-rsvp", "label-rsvp", "Reply Card · Front", "Reply Card · Reverse");
 
 // QR and the decoded address (kept out of plain text in the source)
 document.getElementById("qr-img").src = "data:image/png;base64,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";
@@ -754,13 +801,21 @@ else{ pin.focus(); }
   document.body.classList.add("plain");
   document.querySelectorAll(".pane").forEach(p=>p.classList.remove("on"));
   document.querySelectorAll(".stage").forEach(s=>{
-    if(s.dataset.face === face){
+    if(s.dataset.face === face || s.dataset.face2 === face){
       s.closest(".pane").classList.add("on");
       s.style.display = "";
     } else {
       s.style.display = "none";
     }
   });
+  // show only the requested side of a flip card
+  const faceEl = document.getElementById("face-" + face);
+  if(faceEl){
+    const ff = faceEl.closest(".flipface");
+    if(ff) ff.parentElement.querySelectorAll(".flipface").forEach(x=>{
+      if(x !== ff) x.style.display = "none";
+    });
+  }
   // no scaling in render mode
   document.querySelectorAll(".scalebox").forEach(box=>{
     box.style.width = box.dataset.w + "px";
