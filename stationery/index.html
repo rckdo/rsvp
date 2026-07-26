@@ -239,8 +239,10 @@
   }
   .band .qblock{width:44px;height:44px;flex:0 0 auto}
   .invb-body{
-    flex:1;display:flex;flex-direction:column;justify-content:space-evenly;
+    flex:1;display:flex;flex-direction:column;justify-content:center;
     align-items:center;text-align:center;padding:16px 34px;
+    gap:24px;   /* between sections: clearly larger than the 6px from an
+                   eyebrow to its own lines, so headings attach downward */
   }
   .when-label{font-family:'Playfair Display',serif;font-weight:600;font-size:18px;letter-spacing:.02em;color:var(--rust)}
   .when-line{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--bodybrown);margin-top:2px}
