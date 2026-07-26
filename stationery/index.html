@@ -324,6 +324,21 @@
 
   footer{margin-top:40px;text-align:center;color:var(--sage);font-size:13.5px}
   footer a{color:var(--gold)}
+  .site-menu{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .site-menu a{
+    font-size:13px;font-weight:700;letter-spacing:.04em;text-decoration:none;
+    color:var(--sage);background:var(--card);
+    border:1px solid var(--line-strong);border-radius:999px;padding:9px 20px;
+  }
+  .site-menu a:hover{border-color:var(--sage);color:var(--forest)}
+  .site-menu a.here{background:var(--forest);border-color:var(--forest);color:#f2f0e6}
+  .rsvp-btn{
+    display:inline-block;margin-top:14px;
+    font-size:13px;font-weight:700;letter-spacing:.04em;text-decoration:none;
+    color:#f2f0e6;background:var(--rust);
+    border:1px solid var(--rust);border-radius:999px;padding:9px 22px;
+  }
+  .rsvp-btn:hover{background:#8a3f26}
 
   /* single-face render mode for the PNG pipeline */
   body.plain .wrap > *:not(.pane), body.plain header, body.plain .tabs, body.plain footer{display:none}
@@ -512,8 +527,13 @@
   </div>
 
   <footer>
-    <p>The downloads are 4&times; screen renders of this rebuild, faithful to the locked design tokens.<br>
-    <a href="/tracker/">The tracker</a> &middot; <a href="/rings/">The rings</a> &middot; <a href="/">The invitation</a></p>
+    <p>The downloads are 4&times; screen renders of this rebuild, faithful to the locked design tokens.</p>
+    <nav class="site-menu">
+      <a href="/tracker/">Tracker</a>
+      <a href="/rings/">Rings</a>
+      <a href="/stationery/" class="here">Stationery</a>
+    </nav>
+    <div><a class="rsvp-btn" href="/">The live R.S.V.P.</a></div>
   </footer>
 </div>
 
