@@ -20,7 +20,7 @@
 <title>The Stationery : Lorraine &amp; Richard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:wght@400;500;600&family=Marcellus&family=Parisienne&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:wght@400;500;600&family=Marcellus&family=Parisienne&family=Karla:wght@400;500;700&display=swap" rel="stylesheet" crossorigin="anonymous">
 <style>
   :root{
     --ink:#26332c;
@@ -826,6 +826,34 @@ else{ pin.focus(); }
 
 // Downloads: render the face to PNG in this browser (so the real fonts
 // are embedded), 4x scale, then save.
+//
+// The fonts are fetched and inlined as data URIs once, then handed to
+// the capture library directly (fontEmbedCSS). Left to its own devices
+// it tries to read the cross-origin Google Fonts stylesheet, the
+// browser refuses, and the render silently falls back to system fonts.
+let fontCssPromise = null;
+function inlineFontCss(){
+  if(fontCssPromise) return fontCssPromise;
+  fontCssPromise = (async ()=>{
+    const link = document.querySelector('link[href*="fonts.googleapis"]');
+    const css = await (await fetch(link.href)).text();
+    const urls = [...new Set([...css.matchAll(/url\((https:[^)]+)\)/g)].map(m=>m[1]))];
+    let out = css;
+    await Promise.all(urls.map(async u=>{
+      const buf = await (await fetch(u)).arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let bin = "";
+      for(let i = 0; i < bytes.length; i += 0x8000){
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      }
+      out = out.split(u).join("data:font/woff2;base64," + btoa(bin));
+    }));
+    return out;
+  })();
+  fontCssPromise.catch(()=>{ fontCssPromise = null; });
+  return fontCssPromise;
+}
+
 document.querySelectorAll("button.dl").forEach(btn=>{
   btn.addEventListener("click", async ()=>{
     const node = document.getElementById(btn.dataset.target);
@@ -834,10 +862,13 @@ document.querySelectorAll("button.dl").forEach(btn=>{
     btn.disabled = true;
     try{
       if(typeof htmlToImage === "undefined") throw new Error("capture library did not load");
+      await document.fonts.ready;
+      const fontEmbedCSS = await inlineFontCss();
       const dataUrl = await htmlToImage.toPng(node, {
         pixelRatio: 4,
         width: parseInt(btn.dataset.w, 10),
         height: parseInt(btn.dataset.h, 10),
+        fontEmbedCSS,
         style: { transform: "none", boxShadow: "none" }
       });
       const a = document.createElement("a");
