@@ -204,10 +204,11 @@
     font-family:'Marcellus',serif;font-size:12px;letter-spacing:.28em;
     text-transform:uppercase;color:var(--eyebrowrust);
   }
-  /* handwritten guest-name line, echoing the reply card's write-on rule */
-  .to-line{display:flex;align-items:baseline;gap:10px;justify-content:center;margin:0 auto 26px;max-width:240px}
-  .to-word{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;color:var(--mutedbrown)}
-  .to-rule{flex:1;border-bottom:1px solid var(--rule);height:16px}
+  /* handwritten guest names complete the sentence: "would love
+     [names] to join them as they marry", per formal invitation
+     etiquette; generous width so long names fit comfortably */
+  .guest-rule{width:88%;max-width:280px;border-bottom:1px solid var(--rule);height:24px;margin:2px auto 0}
+  .inv-line.tight{margin-top:10px}
 
   .rule-olive{width:40px;height:2px;background:var(--olive);margin:12px auto}
   .rule-gold{width:60px;height:1px;background:var(--ochregold);margin:14px auto}
@@ -412,12 +413,13 @@
             <div class="inv-col" data-seq="front-col"></div>
             <div class="inv-body">
               <div>
-                <div class="to-line"><span class="to-word">To</span><span class="to-rule"></span></div>
                 <div class="eyebrow">An Invitation to Join Us</div>
                 <div class="rule-olive"></div>
                 <h2 class="hero">Lorraine<span class="amp2">&amp;</span>Richard</h2>
                 <div class="formal">Lorraine Anne Damerell<br>Richard Colin Kevin Dorman</div>
-                <div class="inv-line">would love you to join them<br>as they marry</div>
+                <div class="inv-line">would love</div>
+                <div class="guest-rule"></div>
+                <div class="inv-line tight">to join them as they marry</div>
                 <div class="dateline">Monday, 21 September 2026</div>
                 <div class="timeline2">at one o'clock in the afternoon</div>
                 <div class="venue-name">The Temple of Minerva</div>
