@@ -240,13 +240,21 @@
   .band .qblock{width:44px;height:44px;flex:0 0 auto}
   .invb-body{
     flex:1;display:flex;flex-direction:column;justify-content:center;
-    align-items:center;text-align:center;padding:10px 30px;
-    gap:15px;   /* between sections: clearly larger than the 6px from an
+    align-items:center;text-align:center;padding:18px 30px;
+    gap:14px;   /* between sections: clearly larger than the 6px from an
                    eyebrow to its own lines, so headings attach downward,
                    but tight enough that the face never overflows */
     min-height:0;overflow:hidden;
   }
-  .invb-body .when-line{font-size:17px;line-height:1.3}
+  /* tighter leading inside sections buys breathing room at the edges */
+  .invb-body .when-line{font-size:16.5px;line-height:1.25}
+  .invb-body .when-label{line-height:1.15}
+  .invb-body .rule-olive{margin:8px auto}
+  .invb-body .qr-box{padding:8px}
+  /* postal details and QR sit side by side to save card height */
+  .rsvp-row{display:flex;align-items:center;justify-content:center;gap:18px}
+  .rsvp-row-text{max-width:210px;text-align:center}
+  .rsvp-row-qr{flex:0 0 auto}
   .when-label{font-family:'Playfair Display',serif;font-weight:600;font-size:18px;letter-spacing:.02em;color:var(--rust)}
   .when-line{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--bodybrown);margin-top:2px}
   .qr-box{
@@ -418,22 +426,24 @@
                 <div class="rule-olive"></div>
                 <div class="when-label">One o'clock</div>
                 <div class="when-line">Ceremony at the Temple of Minerva</div>
-                <div class="when-label" style="margin-top:10px">Afterwards</div>
+                <div class="when-label" style="margin-top:8px">Afterwards</div>
                 <div class="when-line">A cream tea in the Gardens</div>
-                <div class="when-label" style="margin-top:10px">Later on</div>
+                <div class="when-label" style="margin-top:8px">Later on</div>
                 <div class="when-line">To the pub, for those who'd like to</div>
               </div>
               <div>
                 <div class="eyebrow">What to Wear</div>
                 <div class="when-line" style="margin-top:6px">No dress code &mdash; wear whatever you feel happiest in.</div>
               </div>
-              <div>
-                <div class="eyebrow">R.S.V.P.</div>
-                <div class="when-line" style="margin-top:6px">Kindly return the enclosed card to<br><span id="addr-line"></span></div>
-              </div>
-              <div>
-                <div class="qr-box"><img id="qr-img" alt="QR code linking to the online reply page" src=""></div>
-                <div class="eyebrow" style="font-size:10px;margin-top:8px">Or Scan to Reply Online</div>
+              <div class="rsvp-row">
+                <div class="rsvp-row-text">
+                  <div class="eyebrow">R.S.V.P.</div>
+                  <div class="when-line" style="margin-top:6px">Kindly return the enclosed card to<br><span id="addr-line"></span></div>
+                </div>
+                <div class="rsvp-row-qr">
+                  <div class="qr-box"><img id="qr-img" alt="QR code linking to the online reply page" src=""></div>
+                  <div class="eyebrow" style="font-size:9px;letter-spacing:.18em;margin-top:6px">Or Scan to Reply</div>
+                </div>
               </div>
               <div>
                 <div class="eyebrow">Getting Here</div>
