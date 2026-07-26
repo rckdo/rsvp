@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<!--
+  The Stationery : Lorraine & Richard
+  Faithful web rebuild of the printed invitation suite, from the design
+  handoff bundle (README.md + QUILT_BLOCKS.md): four faces across three
+  tabs (Invite, RSVP, Design elements), each face downloadable as a 4x
+  PNG render. Gated behind the shared passcode. The postal address is
+  decoded at runtime rather than sitting in plain text.
+
+  The faces reproduce the locked print design exactly (copy, tokens,
+  block sequences); site-wide prose conventions deliberately do not
+  apply inside the artwork.
+
+  v1.0 (26/07/2026): Initial build.
+-->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Stationery : Lorraine &amp; Richard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:wght@400;500;600&family=Marcellus&family=Parisienne&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#26332c;
+    --forest:#2f4a3c;
+    --sage:#6f8a77;
+    --gold:#a3762f;
+    --paper:#eef1ea;
+    --card:#fbfaf5;
+    --line:#dce0d6;
+    --line-strong:#c6cdbe;
+    --shadow:0 1px 2px rgba(38,51,44,.05);
+    /* design tokens from the handoff */
+    --cream:#efe6d3;
+    --ochre:#e0cfa4;
+    --rust:#a34a2c;
+    --olive:#7a7c47;
+    --ochregold:#c99a3f;
+    --terracotta:#bf6a43;
+    --bark:#4a3f2f;
+    --bodybrown:#5c5241;
+    --mutedbrown:#8a7256;
+    --eyebrowrust:#9e5a30;
+    --rule:#b9a888;
+    --canvas:#e7e0d2;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Karla',system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px 96px}
+
+  /* Passcode splash (same pattern as the tracker) */
+  #splash{
+    position:fixed;inset:0;z-index:50;
+    background:var(--forest);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  #splash.hidden{display:none}
+  .splash-card{
+    background:var(--card);
+    border-radius:18px;
+    padding:38px 30px 34px;
+    max-width:340px;width:100%;
+    text-align:center;
+    box-shadow:0 18px 44px rgba(0,0,0,.28);
+  }
+  .splash-card h1{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;font-size:30px;color:var(--forest);
+    margin:0;line-height:1.1;
+  }
+  .splash-card .amp{color:var(--gold);font-style:italic;font-weight:500}
+  .splash-card p{font-size:14px;color:var(--sage);margin:10px 0 24px}
+  .dots{display:flex;gap:12px;justify-content:center;cursor:text;position:relative}
+  .dot{
+    width:50px;height:58px;
+    border:1.5px solid var(--line-strong);
+    border-radius:10px;background:#fff;
+    font-size:26px;font-weight:700;color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    transition:border-color .15s ease;
+  }
+  .dot.filled{border-color:var(--sage)}
+  #pin{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;font-size:26px}
+  .splash-err{font-size:13px;color:#a3512f;margin-top:14px;min-height:20px}
+  .dots.shake{animation:shake .4s ease}
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-7px)}
+    40%{transform:translateX(7px)}
+    60%{transform:translateX(-5px)}
+    80%{transform:translateX(5px)}
+  }
+
+  header{
+    background:var(--forest);
+    color:#f2f0e6;
+    margin:0 -20px 24px;
+    padding:40px 24px 34px;
+    text-align:center;
+  }
+  header .names{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;
+    font-size:clamp(34px,7vw,50px);
+    line-height:1;margin:0;letter-spacing:.5px;
+  }
+  header .amp{color:#c9a86a;font-style:italic;font-weight:500}
+  header .meta{margin:14px auto 0;color:#cdd6c9;font-size:15px}
+  header .venue{color:#eef0e6;font-weight:500}
+  .quilt{
+    display:flex;justify-content:center;align-items:center;gap:6px;
+    padding:10px 0;background:var(--ochre);overflow:hidden;
+  }
+  #quilt-top{margin:-40px -24px 30px}
+  #quilt-bottom{margin:30px -24px -34px}
+  .quilt .qblock{flex:0 0 auto}
+
+  /* Tabs */
+  .tabs{
+    display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
+    margin:0 0 26px;
+  }
+  .tab{
+    font-family:inherit;font-size:14px;font-weight:700;
+    letter-spacing:.04em;
+    background:var(--card);
+    border:1px solid var(--line-strong);
+    color:var(--sage);
+    border-radius:999px;
+    padding:10px 22px;
+    cursor:pointer;
+  }
+  .tab:hover{border-color:var(--sage);color:var(--forest)}
+  .tab.on{background:var(--forest);border-color:var(--forest);color:#f2f0e6}
+  .pane{display:none}
+  .pane.on{display:block}
+
+  /* Presentation stages */
+  .stage-row{
+    display:flex;gap:28px;justify-content:center;align-items:flex-start;flex-wrap:wrap;
+    background:var(--canvas);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:30px 18px;
+  }
+  .stage{flex:0 1 auto;text-align:center}
+  .stage .label{
+    font-family:'Marcellus',serif;font-size:12px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--eyebrowrust);
+    margin:0 0 12px;
+  }
+  .scalebox{overflow:hidden;margin:0 auto}
+  .scalebox > .face{transform-origin:top left}
+  .dl{
+    display:inline-block;margin-top:14px;
+    font-family:inherit;border:none;cursor:pointer;
+    font-size:13px;font-weight:700;color:#f2f0e6;
+    background:var(--forest);
+    border-radius:999px;padding:8px 18px;text-decoration:none;
+  }
+  .dl:hover{background:#3c5c4a}
+  .dl-note{font-size:12px;color:var(--mutedbrown);margin-top:8px}
+
+  /* ==== The four faces (locked print design) ==== */
+  .face{box-shadow:0 14px 34px rgba(59,56,47,.18);background:var(--cream);text-align:left}
+  .face, .face *{line-height:normal}
+
+  /* Invitation front: 461x717, left sampler column */
+  .face.inv{width:461px;height:717px;display:flex}
+  .inv-col{
+    width:108px;flex:0 0 auto;background:var(--ochre);
+    padding:10px;display:flex;flex-direction:column;justify-content:space-between;
+  }
+  .inv-col .qblock{width:88px;height:88px}
+  .inv-body{
+    flex:1;display:flex;flex-direction:column;justify-content:center;
+    text-align:center;padding:34px 30px;
+  }
+  .eyebrow{
+    font-family:'Marcellus',serif;font-size:12px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--eyebrowrust);
+  }
+  .rule-olive{width:40px;height:2px;background:var(--olive);margin:12px auto}
+  .rule-gold{width:60px;height:1px;background:var(--ochregold);margin:14px auto}
+  .hero{
+    font-family:'Playfair Display',serif;font-weight:600;
+    font-size:46px;color:var(--bark);line-height:1.05;margin:16px 0 0;
+  }
+  .hero .amp2{font-family:'Parisienne',cursive;font-weight:400;font-size:40px;color:var(--rust);display:block;line-height:1}
+  .formal{
+    font-family:'Cormorant Garamond',serif;font-style:italic;
+    font-size:16px;color:var(--mutedbrown);line-height:1.55;margin-top:18px;
+  }
+  .inv-line{
+    font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--bodybrown);
+    line-height:1.45;margin-top:20px;
+  }
+  .dateline{
+    font-family:'Marcellus',serif;font-size:14px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--bark);margin-top:22px;
+  }
+  .timeline2{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--bodybrown);margin-top:8px}
+  .venue-name{
+    font-family:'Cormorant Garamond',serif;font-weight:600;
+    font-size:22px;color:var(--rust);margin-top:20px;
+  }
+  .venue-addr{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--bodybrown);line-height:1.4;margin-top:6px}
+
+  /* Invitation reverse: bands top and bottom */
+  .face.invb{width:461px;height:717px;display:flex;flex-direction:column}
+  .band{
+    flex:0 0 auto;background:var(--ochre);
+    display:flex;gap:7px;justify-content:center;
+    padding:6px 0;overflow:hidden;
+  }
+  .band .qblock{width:44px;height:44px;flex:0 0 auto}
+  .invb-body{
+    flex:1;display:flex;flex-direction:column;justify-content:space-evenly;
+    align-items:center;text-align:center;padding:16px 34px;
+  }
+  .when-label{font-family:'Playfair Display',serif;font-weight:600;font-size:18px;letter-spacing:.02em;color:var(--rust)}
+  .when-line{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--bodybrown);margin-top:2px}
+  .qr-box{
+    background:#fff;padding:10px;border:1px solid #ddd0b4;display:inline-block;line-height:0;
+  }
+  .qr-box img{width:108px;height:108px;display:block}
+
+  /* RSVP front: 350x500 */
+  .face.rsvp{width:350px;height:500px;display:flex;flex-direction:column}
+  .rsvp .band{gap:6px;padding:11px 0}
+  .rsvp-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:30px 40px}
+  .rsvp-head{text-align:center}
+  .rsvp-title{font-family:'Playfair Display',serif;font-weight:600;font-size:30px;letter-spacing:.08em;color:var(--bark);margin:0}
+  .rsvp-sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:17px;color:var(--mutedbrown);margin-top:6px}
+  .rsvp-field{display:flex;align-items:baseline;gap:8px;margin-top:34px}
+  .rsvp-field .lbl{
+    font-family:'Marcellus',serif;font-size:13px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--eyebrowrust);
+  }
+  .rsvp-field .write{flex:1;border-bottom:1px solid var(--rule);height:20px}
+  .rsvp-choices{display:flex;flex-direction:column;gap:14px;margin-top:30px}
+  .rsvp-choice{display:flex;align-items:center;gap:12px;font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--bodybrown)}
+  .tickbox{width:16px;height:16px;border:1.5px solid var(--rust);flex:0 0 auto}
+
+  /* RSVP reverse: full-bleed field + medallion */
+  .face.rsvpb{
+    width:350px;height:500px;position:relative;background:var(--ochre);
+    display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(7,1fr);
+    gap:6px;padding:6px;
+  }
+  .face.rsvpb .qblock{width:100%;height:100%}
+  .medallion{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:var(--cream);
+    padding:26px 30px;text-align:center;
+    box-shadow:0 6px 24px rgba(59,56,47,.22);
+  }
+  .medallion .m-title{font-family:'Playfair Display',serif;font-weight:600;font-size:30px;letter-spacing:.12em;color:var(--bark);margin:0}
+  .medallion .m-rule{width:44px;height:1px;background:var(--ochregold);margin:12px auto}
+  .medallion .m-names{font-family:'Parisienne',cursive;font-size:27px;color:var(--rust);white-space:nowrap}
+  .medallion .m-date{font-family:'Marcellus',serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--mutedbrown);margin-top:10px}
+
+  /* ==== Design elements tab ==== */
+  h2.sec{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;font-size:28px;color:var(--forest);
+    margin:34px 0 6px;line-height:1.1;
+  }
+  p.sec-sub{font-size:14px;color:var(--sage);margin:0 0 14px}
+  .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px 20px;
+    box-shadow:var(--shadow);
+  }
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .swatch{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .swatch .chip{height:52px}
+  .swatch .info{padding:8px 10px;font-size:12px;line-height:1.4}
+  .swatch .info b{display:block;color:var(--ink)}
+  .swatch .info code{color:var(--sage)}
+  .speclist{display:flex;flex-direction:column;gap:14px}
+  .spec .demo{color:var(--bark)}
+  .spec .who{font-size:12px;color:var(--sage);margin-top:2px}
+  .blocklib{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:14px}
+  .blockcard{text-align:center}
+  .blockcard .qblock{width:80px;height:80px;margin:0 auto;box-shadow:var(--shadow)}
+  .blockcard .bname{font-size:12.5px;font-weight:700;color:var(--ink);margin-top:8px}
+  .blockcard .bmeta{font-size:11.5px;color:var(--sage)}
+  .seqrow{margin-top:10px}
+  .seqrow .seqlabel{font-size:12.5px;font-weight:700;color:var(--ink);margin:12px 0 6px}
+  .seqstrip{display:flex;gap:6px;flex-wrap:wrap;background:var(--ochre);padding:8px;border-radius:8px;width:fit-content;max-width:100%}
+  .seqstrip .qblock{width:40px;height:40px}
+  table.spec-table{border-collapse:collapse;width:100%;font-size:13.5px}
+  .spec-table th,.spec-table td{border:1px solid var(--line);padding:7px 10px;text-align:left}
+  .spec-table th{background:var(--paper);color:var(--forest)}
+
+  footer{margin-top:40px;text-align:center;color:var(--sage);font-size:13.5px}
+  footer a{color:var(--gold)}
+
+  /* single-face render mode for the PNG pipeline */
+  body.plain .wrap > *:not(.pane), body.plain header, body.plain .tabs, body.plain footer{display:none}
+  body.plain .stage-row{background:none;border:none;padding:0}
+  body.plain .stage .label, body.plain .dl, body.plain .dl-note{display:none}
+</style>
+<script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
+</head>
+<body>
+
+<div id="splash">
+  <div class="splash-card">
+    <h1>Lorraine <span class="amp">&amp;</span> Richard</h1>
+    <p>Enter the code to open the stationery</p>
+    <div class="dots" id="dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <input id="pin" type="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="4" aria-label="4 character passcode">
+    </div>
+    <div class="splash-err" id="splash-err"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="quilt" id="quilt-top" aria-hidden="true"></div>
+    <h1 class="names">Lorraine <span class="amp">&amp;</span> Richard</h1>
+    <p class="meta"><span class="venue">The Stationery</span><br>The printed suite, faithfully rebuilt</p>
+    <div class="quilt" id="quilt-bottom" aria-hidden="true"></div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab on" data-pane="pane-invite" role="tab">Invite</button>
+    <button class="tab" data-pane="pane-rsvp" role="tab">RSVP</button>
+    <button class="tab" data-pane="pane-design" role="tab">Design elements</button>
+  </div>
+
+  <!-- ==== Invite tab ==== -->
+  <div class="pane on" id="pane-invite">
+    <div class="stage-row">
+      <div class="stage" data-face="inv-front">
+        <p class="label">Invitation &middot; Front</p>
+        <div class="scalebox" data-w="461" data-h="717">
+          <div class="face inv" id="face-inv-front">
+            <div class="inv-col" data-seq="front-col"></div>
+            <div class="inv-body">
+              <div>
+                <div class="eyebrow">An Invitation to Join Us</div>
+                <div class="rule-olive"></div>
+                <h2 class="hero">Lorraine<span class="amp2">&amp;</span>Richard</h2>
+                <div class="formal">Lorraine Anne Damerell<br>Richard Colin Kevin Dorman</div>
+                <div class="inv-line">would love you to join them<br>as they marry</div>
+                <div class="dateline">Monday, 21st September 2026</div>
+                <div class="timeline2">at one o'clock in the afternoon</div>
+                <div class="venue-name">The Temple of Minerva</div>
+                <div class="venue-addr">Botanical Gardens, Royal Victoria Park<br>Bath BA1 2YA</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="dl" data-target="face-inv-front" data-file="invitation-front.png" data-w="461" data-h="717">Download PNG</button>
+        <div class="dl-note">Renders in your browser at 4&times; (1844 &times; 2868)</div>
+      </div>
+
+      <div class="stage" data-face="inv-back">
+        <p class="label">Invitation &middot; Reverse</p>
+        <div class="scalebox" data-w="461" data-h="717">
+          <div class="face invb" id="face-inv-back">
+            <div class="band" data-seq="rev-top"></div>
+            <div class="invb-body">
+              <div>
+                <div class="eyebrow">The Order of the Day</div>
+                <div class="rule-olive"></div>
+                <div class="when-label">One o'clock</div>
+                <div class="when-line">Ceremony at the Temple of Minerva</div>
+                <div class="when-label" style="margin-top:10px">Afterwards</div>
+                <div class="when-line">A cream tea in the Gardens</div>
+                <div class="when-label" style="margin-top:10px">Later on</div>
+                <div class="when-line">To the pub, for those who'd like to</div>
+              </div>
+              <div>
+                <div class="eyebrow">What to Wear</div>
+                <div class="when-line" style="margin-top:6px">No dress code &mdash; wear whatever you feel happiest in.</div>
+              </div>
+              <div>
+                <div class="eyebrow">R.S.V.P.</div>
+                <div class="when-line" style="margin-top:6px">Kindly return the enclosed card to<br><span id="addr-line"></span></div>
+              </div>
+              <div>
+                <div class="qr-box"><img id="qr-img" alt="QR code linking to the online reply page" src=""></div>
+                <div class="eyebrow" style="font-size:10px;margin-top:8px">Or Scan to Reply Online</div>
+              </div>
+              <div>
+                <div class="eyebrow">Getting Here</div>
+                <div class="when-line" style="margin-top:6px">Pay-and-display parking sits beside the<br>Gardens; for longer stays, Charlotte Street<br>car park is a ten-minute walk away.</div>
+              </div>
+            </div>
+            <div class="band" data-seq="rev-bot"></div>
+          </div>
+        </div>
+        <button class="dl" data-target="face-inv-back" data-file="invitation-reverse.png" data-w="461" data-h="717">Download PNG</button>
+        <div class="dl-note">Renders in your browser at 4&times; (1844 &times; 2868)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==== RSVP tab ==== -->
+  <div class="pane" id="pane-rsvp">
+    <div class="stage-row">
+      <div class="stage" data-face="rsvp-front">
+        <p class="label">Reply Card &middot; Front</p>
+        <div class="scalebox" data-w="350" data-h="500">
+          <div class="face rsvp" id="face-rsvp-front">
+            <div class="band" data-seq="rsvp-top"></div>
+            <div class="rsvp-body">
+              <div class="rsvp-head">
+                <h2 class="rsvp-title">R.S.V.P.</h2>
+                <div class="rsvp-sub">We hope you can join us</div>
+              </div>
+              <div class="rsvp-field"><span class="lbl">Name</span><span class="write"></span></div>
+              <div class="rsvp-choices">
+                <div class="rsvp-choice"><span class="tickbox"></span><span>Joyfully accepts</span></div>
+                <div class="rsvp-choice"><span class="tickbox"></span><span>Regretfully declines</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="dl" data-target="face-rsvp-front" data-file="rsvp-front.png" data-w="350" data-h="500">Download PNG</button>
+        <div class="dl-note">Renders in your browser at 4&times; (1400 &times; 2000)</div>
+      </div>
+
+      <div class="stage" data-face="rsvp-back">
+        <p class="label">Reply Card &middot; Reverse</p>
+        <div class="scalebox" data-w="350" data-h="500">
+          <div class="face rsvpb" id="face-rsvp-back">
+            <div class="medallion">
+              <h2 class="m-title">R.S.V.P.</h2>
+              <div class="m-rule"></div>
+              <div class="m-names">Lorraine &amp; Richard</div>
+              <div class="m-date">21 September 2026</div>
+            </div>
+          </div>
+        </div>
+        <button class="dl" data-target="face-rsvp-back" data-file="rsvp-reverse.png" data-w="350" data-h="500">Download PNG</button>
+        <div class="dl-note">Renders in your browser at 4&times; (1400 &times; 2000)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==== Design elements tab ==== -->
+  <div class="pane" id="pane-design">
+    <h2 class="sec">Palette</h2>
+    <p class="sec-sub">Authored in sRGB; convert to CMYK for litho printing.</p>
+    <div class="panel"><div class="swatches" id="swatches"></div></div>
+
+    <h2 class="sec">Typography</h2>
+    <p class="sec-sub">Google Fonts: Playfair Display, Cormorant Garamond, Marcellus, Parisienne.</p>
+    <div class="panel speclist" id="typespecs"></div>
+
+    <h2 class="sec">Quilt block library</h2>
+    <p class="sec-sub">Every block is a square grid of cells: solid fills or half-square triangles. Seven in use, four held in reserve.</p>
+    <div class="panel"><div class="blocklib" id="blocklib"></div></div>
+
+    <h2 class="sec">Placement sequences</h2>
+    <p class="sec-sub">Hand-composed: no two adjacent blocks share a shape or a colour, no shape-and-colour pair repeats within a piece, and the two square-on-point blocks are never adjacent. The reply-card reverse is the one generated field.</p>
+    <div class="panel" id="sequences"></div>
+
+    <h2 class="sec">Print specifications</h2>
+    <div class="panel">
+      <table class="spec-table">
+        <tr><th>Piece</th><th>Design px</th><th>Bleed sheet</th><th>Trim</th><th>300 DPI px</th></tr>
+        <tr><td>Invitation front &amp; reverse</td><td>461 &times; 717</td><td>120 &times; 185 mm</td><td>117 &times; 182 mm</td><td>1417 &times; 2185</td></tr>
+        <tr><td>RSVP card front &amp; reverse</td><td>350 &times; 500</td><td>108 &times; 151 mm</td><td>105 &times; 148 mm (A6)</td><td>1276 &times; 1783</td></tr>
+      </table>
+      <p style="font-size:13px;color:var(--sage);margin:12px 0 0">Bleed 1.5 mm per edge (included above); text at least 5 mm inside trim; square corners everywhere; no border radius, no gradients beyond the quilt construction. Browser print-to-PDF could not fully embed the fonts, so the print run used rasterised PNGs at roughly 384 DPI; a vector rebuild with embedded fonts remains the better long-term route.</p>
+    </div>
+  </div>
+
+  <footer>
+    <p>The downloads are 4&times; screen renders of this rebuild, faithful to the locked design tokens.<br>
+    <a href="/tracker/">The tracker</a> &middot; <a href="/rings/">The rings</a> &middot; <a href="/">The invitation</a></p>
+  </footer>
+</div>
+
+<script>
+/* =====================================================================
+   Quilt engine: the handoff geometry, verbatim.
+   ===================================================================== */
+const CREAM = "#efe6d3";
+const ACCENTS = { R:"#a34a2c", O:"#7a7c47", Y:"#c99a3f", T:"#bf6a43", K:"#4a3f2f" };
+const ACCENT_NAMES = { R:"Rust", O:"Olive", Y:"Ochre gold", T:"Terracotta", K:"Bark" };
+
+function hst(dir, a){
+  switch(dir){
+    case "tl": return "linear-gradient(to bottom right, " + a + " 0 50%, " + CREAM + " 50% 100%)";
+    case "br": return "linear-gradient(to bottom right, " + CREAM + " 0 50%, " + a + " 50% 100%)";
+    case "tr": return "linear-gradient(to bottom left, " + a + " 0 50%, " + CREAM + " 50% 100%)";
+    case "bl": return "linear-gradient(to bottom left, " + CREAM + " 0 50%, " + a + " 50% 100%)";
+  }
+}
+
+// shape definitions: grid size + cell list ("A"/"C" solids or HST dirs)
+const SHAPES = {
+  G: { name:"Flying geese",             grid:2, cells:["tr","tl","tr","tl"] },
+  P: { name:"Pinwheel",                 grid:2, cells:["tr","br","tl","bl"] },
+  D: { name:"Square on point",          grid:2, cells:["br","bl","tr","tl"] },
+  I: { name:"Square on point (inverse)",grid:2, cells:["tl","tr","bl","br"] },
+  N: { name:"Nine-patch",               grid:3, cells:["A","C","A","C","A","C","A","C","A"] },
+  F: { name:"Four-patch",               grid:2, cells:["A","C","C","A"] },
+  H: { name:"Hourglass",                grid:1, cells:["CONIC"] },
+};
+const CANDIDATES = {
+  S: { name:"Half-square triangle",   grid:1, cells:["tl"] },
+  B: { name:"Broken dishes",          grid:2, cells:["tl","tl","br","br"] },
+  W: { name:"Bow tie",                grid:2, cells:["tl","tr","tr","tl"] },
+  X: { name:"Checkerboard diagonal",  grid:3, cells:["A","C","C","C","A","C","C","C","A"] },
+};
+
+function blockEl(shapeKey, colourKey, defs){
+  const s = (defs || SHAPES)[shapeKey];
+  const a = ACCENTS[colourKey];
+  const el = document.createElement("div");
+  el.className = "qblock";
+  if(s.cells[0] === "CONIC"){
+    el.style.background = "conic-gradient(" + a + " 0 45deg, " + CREAM + " 45deg 135deg, " + a + " 135deg 225deg, " + CREAM + " 225deg 315deg, " + a + " 315deg)";
+    return el;
+  }
+  el.style.display = "grid";
+  el.style.gridTemplateColumns = "repeat(" + s.grid + ",1fr)";
+  el.style.gridTemplateRows = "repeat(" + s.grid + ",1fr)";
+  s.cells.forEach(c=>{
+    const cell = document.createElement("div");
+    if(c === "A") cell.style.background = a;
+    else if(c === "C") cell.style.background = CREAM;
+    else cell.style.background = hst(c, a);
+    el.appendChild(cell);
+  });
+  return el;
+}
+
+// hand-composed sequences from QUILT_BLOCKS.md
+const SEQS = {
+  "front-col": [["G","R"],["P","O"],["F","Y"],["D","K"],["N","T"],["H","O"],["I","Y"]],
+  "rev-top":   [["D","R"],["N","O"],["I","Y"],["P","K"],["H","T"],["F","O"],["N","Y"],["G","K"],["I","T"],["H","R"]],
+  "rev-bot":   [["H","O"],["I","R"],["F","K"],["G","T"],["D","Y"],["H","K"],["P","Y"],["N","R"],["G","O"],["D","T"]],
+  "rsvp-top":  [["N","T"],["I","O"],["H","K"],["D","R"],["F","T"],["P","Y"],["G","O"]],
+};
+document.querySelectorAll("[data-seq]").forEach(host=>{
+  SEQS[host.dataset.seq].forEach(([s,c])=>host.appendChild(blockEl(s,c)));
+});
+
+// RSVP reverse field: the deterministic 5x7 generation rule
+(function(){
+  const host = document.getElementById("face-rsvp-back");
+  const shapes = ["G","P","D","N","H","F","I"];
+  const colours = ["R","O","Y","T","K"];
+  for(let i = 0; i < 35; i++){
+    const s = shapes[(i*3 + Math.floor(i/7)) % 7];
+    const c = colours[(i*2 + Math.floor(i/5)) % 5];
+    host.insertBefore(blockEl(s, c), host.querySelector(".medallion"));
+  }
+})();
+
+/* =====================================================================
+   Page furniture
+   ===================================================================== */
+// header quilt bands (site style, invitation palette)
+(function(){
+  const order = [["G","R"],["P","O"],["D","Y"],["N","T"],["H","K"]];
+  function fill(el, offset){
+    if(!el) return;
+    for(let i = 0; i < 40; i++){
+      const [s,c] = order[(i + offset) % order.length];
+      const b = blockEl(s, c);
+      b.style.width = "34px"; b.style.height = "34px";
+      el.appendChild(b);
+    }
+  }
+  fill(document.getElementById("quilt-top"), 1);
+  fill(document.getElementById("quilt-bottom"), 3);
+})();
+
+// tabs
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on", x === t));
+    document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on", p.id === t.dataset.pane));
+    fitFaces();
+  });
+});
+
+// scale faces down to fit narrow screens (never up)
+function fitFaces(){
+  document.querySelectorAll(".scalebox").forEach(box=>{
+    const w = parseInt(box.dataset.w, 10), h = parseInt(box.dataset.h, 10);
+    const avail = Math.min(box.parentElement.clientWidth || w, w);
+    const k = Math.min(1, avail / w);
+    const face = box.firstElementChild;
+    face.style.transform = "scale(" + k + ")";
+    box.style.width = (w * k) + "px";
+    box.style.height = (h * k) + "px";
+  });
+}
+window.addEventListener("resize", fitFaces);
+
+// QR and the decoded address (kept out of plain text in the source)
+document.getElementById("qr-img").src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAbAAAAGwCAYAAADITjAqAAAAAklEQVR4AewaftIAAAsnSURBVO3B0bElNJIFwNMVzxJkAPpH5ssAOSBb2HFggg7N0pfiZeaPP37/7c/wj7bPzSesOfJin5tPWHPk1T43n7DmyCfsc/NqzZFO9rl5teYI/1wVAGioAgANVQCgoQoANFQBgIYqANBQBQAaqgBAQxUAaKgCAA1VAKChCgA0VAGAhioA0NBX/gf73PBz1hzh77XPTTf73HSzzw1/bZ8bfs6aIy8qANBQBQAaqgBAQxUAaKgCAA1VAKChCgA0VAGAhioA0FAFABqqAEBDFQBoqAIADVUAoKGvfMiaI93sc9PNmiP8vdYcebXPzas1R17tc/NqzZFfbZ+b72TNkW72ufnVKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANFQBgIYqANBQBQAaqgBAQxUAaKgCAA1VAKChr8B/sc/Nr7bmyKt9bj5hn5tu1hz5hH1uXqw58mqfG/6dKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANFQBgIYqANBQBQAaqgBAQxUAaKgCAA1VAKChr8B/sebIi31uPmHNke9kn5tXa458wpoj8P+lAgANVQCgoQoANFQBgIYqANBQBQAaqgBAQxUAaKgCAA1VAKChCgA0VAGAhioA0FAFABr6yofsc8M/2z43L9Yc+YR9bl6tOdLNmiOfsM/Nr7bmyHeyzw1/rQIADVUAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANFQBgIYqANBQBQAa+sr/YM0R+P+0z82rNUde7XPzas2RV/vcvFpz5NU+N6/WHHm1z813seYIf68KADRUAYCGKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANFQBgIYqANBQBQAaqgBAQxUAaOhrnxv4/7TPzas1R17tc/NqzZFX+9y8WnPk1T4338U+N5+wzw3/XBUAaKgCAA1VAKChCgA0VAGAhioA0FAFABqqAEBDFQBoqAIADVUAoKEKADRUAYCGKgDQ0NeaI6/2uXm15gg/Z5+bV/vcvFpz5MU+N93sc/NqzZFu1hx5tc/Nd7HmCD9nn5tfrQIADVUAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANFQBgIYqANBQBQAa+vHH77/9mQ/Y5+bVmiOv9rnpZs2RT9jn5sWaI6/2uflO1hz5hH1uPmHNEf5e+9x0s+bIiwoANFQBgIYqANBQBQAaqgBAQxUAaKgCAA1VAKChCgA0VAGAhioA0FAFABqqAEBDP/78jzSz5sgn7HPzas2RV/vcfBdrjrza54afs+bIJ+xz86utOfKd7HPzXVQAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANFQBgIYqANBQBQAaqgBAQ1/5kDVHXu1z8wlrjrza5+bVmiOv9rn51dYc+U7WHHm1z82rNUde7XPzas2RTva56WbNkW7WHHm1z82LCgA0VAGAhioA0FAFABqqAEBDFQBoqAIADVUAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGjoxx+///ZnHu1z082aI6/2uXm15sgn7HPzas2RF/vcfMKaI6/2uelmzZFP2Ofm1ZojL/a54eesOfIJ+9z8ahUAaKgCAA1VAKChCgA0VAGAhioA0FAFABqqAEBDFQBoqAIADVUAoKEKADRUAYCGKgDQ0Nc+N6/WHHm1z82rNUde7XPzCfvcfMKaI6/2ufku1hzpZp+b72LNEX7OPjev1hz5hDVHXlQAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANFQBgIYqANBQBQAaqgBAQ1/5ZtYc4eesOfJin5tXa4682ufm1Zoj3aw50s0+Ny/WHHm1z82rNUde7XPDz9nn5kUFABqqAEBDFQBoqAIADVUAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANPTjz/8I/1prjnSyz82rNUc+YZ+bV2uOvNrnpps1R17sc/NqzZFP2Ofm1Zojr/a5+YQ1R17tc/OiAgANVQCgoQoANFQBgIYqANBQBQAaqgBAQxUAaKgCAA1VAKChCgA0VAGAhioA0FAFABr68cfvv/2ZR/vcdLPmSDf73Lxac+TVPje/2pojn7DPzas1Rz5hn5tXa4682ueGv7bmyKt9bj5hzZFX+9z8ahUAaKgCAA1VAKChCgA0VAGAhioA0FAFABqqAEBDFQBoqAIADVUAoKEKADRUAYCGKgDQ0I8/fv/tzzza5+bVmiOv9rn5TtYc6WSfm09Yc+TVPjefsObIJ+xz8wlrjvDvtM/NqzVHXlQAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANFQBgIYqANBQBQAaqgBAQ1/hl1hz5NU+N5+w5kgn+9x0s8/NJ6w58mqfm1f73LxYc+TVPjffyZoj3exz86ICAA1VAKChCgA0VAGAhioA0FAFABqqAEBDFQBoqAIADVUAoKEKADRUAYCGKgDQUAUAGvpKQ2uOfMI+N6/2ufmENUc6WXPkE/a5ebXmyKt9bl6tOfJqn5tXa4682ufmxT4338maI6/2ufmENUde7XPzogIADVUAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANFQBgIYqANDQVxra5+bVmiOfsObIq31uXu1z82rNEf7aPjfdrDnyap+bV2uO8M+15sgnrDnyogIADVUAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANFQBgIYqANBQBQAa+vHnf4R/rTVHOtnn5tWaI9/JPjffxZojr/a56WbNEf5aBQAaqgBAQxUAaKgCAA1VAKChCgA0VAGAhioA0FAFABqqAEBDFQBoqAIADVUAoKEKADT044/ff/sz/KPtc/MJa450ss/NqzVHvpN9bl6tOdLJPjev1hx5tc/NqzVHutnn5lerAEBDFQBoqAIADVUAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANFQBgIa+8j/Y54afs+bIJ6w58mqfmxdrjnwn+9y8WnPk1T43/L32uflO9rnppAIADVUAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANFQBgIYqANBQBQAa+sqHrDnSzT43/Dvtc/NqzZFu1hz5hH1uXqw58mrNke9kn5tXa4682ufm1ZojLyoA0FAFABqqAEBDFQBoqAIADVUAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGioAgANVQCgoa/Af7HmyK+2z82rNUde7XPzap+bV2uOvFpzhL/XPjev1hx5tc/NqzVHutnn5kUFABqqAEBDFQBoqAIADVUAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGioAgANVQCgoQoANPQV+AdZc+TVPjev1hz5hH1uPmHNkVf73Pxq+9y8WnPk1Zojn7DmyKt9bj5hzZFX+9y8qABAQxUAaKgCAA1VAKChCgA0VAGAhioA0FAFABqqAEBDFQBoqAIADVUAoKEKADRUAYCGvvIh+9zw99vn5tWaIy/2ufmENUde7XPTzZojr/a5+YQ1R361fW5erTnyCfvcvFpz5NU+N51UAKChCgA0VAGAhioA0FAFABqqAEBDFQBoqAIADVUAoKEKADRUAYCGKgDQUAUAGqoAQEM//vj9tz/DP9o+N6/WHPnV9rl5tebIq31uXq058gn73HSz5sivts9NN2uOvNrn5hPWHHm1z82vVgGAhioA0FAFABqqAEBDFQBoqAIADVUAoKEKADRUAYCGKgDQUAUAGqoAQEMVAGjo/wBzjR9VHznptAAAAABJRU5ErkJggg==";
+document.getElementById("addr-line").textContent = atob("MTcgV2VsbGFuZCBBdmVudWUsIERpZGNvdCwgT3hvbiBPWDExIDdRTg==");
+
+/* =====================================================================
+   Design elements tab content
+   ===================================================================== */
+(function(){
+  const TOKENS = [
+    ["Cream ground","#efe6d3","Card background, light half of every block"],
+    ["Ochre band","#e0cfa4","Sampler column and band ground, sashing"],
+    ["Rust","#a34a2c","Ampersand, venue, timing labels, tick boxes"],
+    ["Olive","#7a7c47","Quilt accent; eyebrow divider rule"],
+    ["Ochre gold","#c99a3f","Quilt accent; hairline dividers"],
+    ["Terracotta","#bf6a43","Quilt accent"],
+    ["Bark","#4a3f2f","Headings, names, quilt accent"],
+    ["Body brown","#5c5241","Body copy"],
+    ["Muted brown","#8a7256","Secondary and italic captions"],
+    ["Eyebrow rust","#9e5a30","Small-caps eyebrow labels"],
+    ["Rule","#b9a888","Write-on line on the reply card"],
+    ["QR dark","#3b2f22","QR modules"],
+    ["QR light","#ffffff","QR background"],
+    ["Canvas","#e7e0d2","Screen presentation only, never printed"],
+  ];
+  const sw = document.getElementById("swatches");
+  TOKENS.forEach(([name, hex, use])=>{
+    const el = document.createElement("div");
+    el.className = "swatch";
+    el.innerHTML = '<div class="chip" style="background:' + hex + '"></div>' +
+      '<div class="info"><b>' + name + '</b><code>' + hex + '</code><br>' + use + '</div>';
+    sw.appendChild(el);
+  });
+
+  const SPECS = [
+    ["Hero first names", "font-family:'Playfair Display';font-weight:600;font-size:46px", "Lorraine", "Playfair Display 600, 46px"],
+    ["Ampersand", "font-family:'Parisienne';font-size:40px;color:#a34a2c", "&", "Parisienne 400, 40px, rust"],
+    ["Formal names", "font-family:'Cormorant Garamond';font-style:italic;font-size:16px;color:#8a7256", "Lorraine Anne Damerell", "Cormorant Garamond italic, 16px"],
+    ["Body", "font-family:'Cormorant Garamond';font-size:19px;color:#5c5241", "would love you to join them as they marry", "Cormorant Garamond 400, 18 to 20px"],
+    ["Venue name", "font-family:'Cormorant Garamond';font-weight:600;font-size:22px;color:#a34a2c", "The Temple of Minerva", "Cormorant Garamond 600, 22px"],
+    ["Date line", "font-family:'Marcellus';font-size:14px;letter-spacing:.1em;text-transform:uppercase", "Monday, 21st September 2026", "Marcellus, 14px, 0.1em tracking"],
+    ["Eyebrow", "font-family:'Marcellus';font-size:12px;letter-spacing:.29em;text-transform:uppercase;color:#9e5a30", "The Order of the Day", "Marcellus, 12px, 0.28 to 0.3em tracking"],
+    ["Timing label", "font-family:'Playfair Display';font-weight:600;font-size:18px;color:#a34a2c", "One o'clock", "Playfair Display 600, 18px"],
+    ["R.S.V.P. wordmark", "font-family:'Playfair Display';font-weight:600;font-size:28px;letter-spacing:.1em", "R.S.V.P.", "Playfair Display 600, 26 to 30px"],
+    ["Script names", "font-family:'Parisienne';font-size:27px;color:#a34a2c", "Lorraine & Richard", "Parisienne 400, 27px"],
+  ];
+  const ts = document.getElementById("typespecs");
+  SPECS.forEach(([role, css, sample, meta])=>{
+    const el = document.createElement("div");
+    el.className = "spec";
+    el.innerHTML = '<div class="demo" style="' + css + '">' + sample + '</div>' +
+      '<div class="who"><b>' + role + ':</b> ' + meta + '</div>';
+    ts.appendChild(el);
+  });
+
+  const lib = document.getElementById("blocklib");
+  function libCard(key, def, colour, tag){
+    const el = document.createElement("div");
+    el.className = "blockcard";
+    el.appendChild(blockEl(key, colour, Object.assign({}, SHAPES, CANDIDATES)));
+    const n = document.createElement("div");
+    n.className = "bname"; n.textContent = def.name;
+    const m = document.createElement("div");
+    m.className = "bmeta"; m.textContent = (def.grid === 1 && def.cells[0] === "CONIC" ? "conic split" : def.grid + "×" + def.grid) + (tag ? " · " + tag : "");
+    el.appendChild(n); el.appendChild(m);
+    return el;
+  }
+  const inUseColours = ["R","O","Y","K","T","O","Y"];
+  Object.entries(SHAPES).forEach(([k, d], i)=>lib.appendChild(libCard(k, d, inUseColours[i], "in use")));
+  const candColours = ["T","K","R","O"];
+  Object.entries(CANDIDATES).forEach(([k, d], i)=>lib.appendChild(libCard(k, d, candColours[i], "reserve")));
+
+  const seqHost = document.getElementById("sequences");
+  const SEQ_LABELS = [
+    ["front-col", "Invitation front, left column (top to bottom)"],
+    ["rev-top", "Invitation reverse, top band"],
+    ["rev-bot", "Invitation reverse, bottom band"],
+    ["rsvp-top", "Reply card front, top band"],
+  ];
+  SEQ_LABELS.forEach(([key, label])=>{
+    const wrap = document.createElement("div");
+    wrap.className = "seqrow";
+    const l = document.createElement("div");
+    l.className = "seqlabel";
+    l.textContent = label + " · " + SEQS[key].map(([s,c])=>s + "·" + c).join("  ");
+    const strip = document.createElement("div");
+    strip.className = "seqstrip";
+    SEQS[key].forEach(([s,c])=>strip.appendChild(blockEl(s,c)));
+    wrap.appendChild(l); wrap.appendChild(strip);
+    seqHost.appendChild(wrap);
+  });
+})();
+
+/* =====================================================================
+   Gate + boot
+   ===================================================================== */
+const PASSCODE = "DOGS";
+const UNLOCK_KEY = "rl-tracker-unlocked";   // shared with the tracker
+const splash = document.getElementById("splash");
+const pin = document.getElementById("pin");
+const dotsEl = document.getElementById("dots");
+const splashErr = document.getElementById("splash-err");
+
+function unlock(){
+  try{ sessionStorage.setItem(UNLOCK_KEY, "1"); }catch(e){}
+  splash.classList.add("hidden");
+}
+function paintDots(){
+  const v = pin.value;
+  dotsEl.querySelectorAll(".dot").forEach((d,i)=>{
+    d.textContent = v[i] ? v[i].toUpperCase() : "";
+    d.classList.toggle("filled", !!v[i]);
+  });
+}
+pin.addEventListener("input", ()=>{
+  pin.value = pin.value.replace(/[^a-zA-Z0-9]/g,"").slice(0,4);
+  paintDots();
+  if(pin.value.length === 4){
+    if(pin.value.toUpperCase() === PASSCODE.toUpperCase()){ unlock(); }
+    else{
+      splashErr.textContent = "That's not it. Try again.";
+      dotsEl.classList.add("shake");
+      setTimeout(()=>{ dotsEl.classList.remove("shake"); pin.value=""; paintDots(); }, 420);
+    }
+  } else {
+    splashErr.textContent = "";
+  }
+});
+dotsEl.addEventListener("click", ()=>pin.focus());
+
+let unlocked = false;
+try{ unlocked = sessionStorage.getItem(UNLOCK_KEY) === "1"; }catch(e){}
+if(unlocked){ splash.classList.add("hidden"); }
+else{ pin.focus(); }
+
+// single-face render mode for the PNG pipeline: ?face=inv-front etc.
+(function(){
+  const face = new URLSearchParams(location.search).get("face");
+  if(!face) { fitFaces(); return; }
+  document.body.classList.add("plain");
+  document.querySelectorAll(".pane").forEach(p=>p.classList.remove("on"));
+  document.querySelectorAll(".stage").forEach(s=>{
+    if(s.dataset.face === face){
+      s.closest(".pane").classList.add("on");
+      s.style.display = "";
+    } else {
+      s.style.display = "none";
+    }
+  });
+  // no scaling in render mode
+  document.querySelectorAll(".scalebox").forEach(box=>{
+    box.style.width = box.dataset.w + "px";
+    box.style.height = box.dataset.h + "px";
+    box.firstElementChild.style.transform = "none";
+  });
+})();
+
+// Downloads: render the face to PNG in this browser (so the real fonts
+// are embedded), 4x scale, then save.
+document.querySelectorAll("button.dl").forEach(btn=>{
+  btn.addEventListener("click", async ()=>{
+    const node = document.getElementById(btn.dataset.target);
+    const old = btn.textContent;
+    btn.textContent = "Rendering\u2026";
+    btn.disabled = true;
+    try{
+      if(typeof htmlToImage === "undefined") throw new Error("capture library did not load");
+      const dataUrl = await htmlToImage.toPng(node, {
+        pixelRatio: 4,
+        width: parseInt(btn.dataset.w, 10),
+        height: parseInt(btn.dataset.h, 10),
+        style: { transform: "none", boxShadow: "none" }
+      });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = btn.dataset.file;
+      a.click();
+      btn.textContent = old;
+    }catch(e){
+      btn.textContent = "Failed, reload and retry";
+      setTimeout(()=>{ btn.textContent = old; }, 3000);
+    }
+    btn.disabled = false;
+  });
+});
+</script>
+</body>
+</html>
