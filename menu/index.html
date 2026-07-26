@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<!--
+  Menu : Lorraine & Richard
+  The private hub for the wedding pages. Every load opens with a
+  freshly dealt quilt, generated under the design handoff's real
+  composition rules (no two adjacent blocks share a shape or colour,
+  the two square-on-point blocks are never adjacent), built in under
+  two seconds, then parting to a quiet three-tile menu. Gated behind
+  the shared passcode. No stats, no progress, no pressure.
+
+  v1.0 (26/07/2026): Initial build.
+-->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menu : Lorraine &amp; Richard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Playfair+Display:wght@600&family=Marcellus&family=Parisienne&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#26332c;
+    --forest:#2f4a3c;
+    --sage:#6f8a77;
+    --gold:#a3762f;
+    --paper:#eef1ea;
+    --card:#fbfaf5;
+    --line:#dce0d6;
+    --line-strong:#c6cdbe;
+    --shadow:0 1px 2px rgba(38,51,44,.05);
+    --cream:#efe6d3;
+    --ochre:#e0cfa4;
+    --rust:#a34a2c;
+    --bark:#4a3f2f;
+    --mutedbrown:#8a7256;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Karla',system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:0 20px 80px}
+
+  /* Passcode splash */
+  #splash{
+    position:fixed;inset:0;z-index:70;
+    background:var(--forest);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  #splash.hidden{display:none}
+  .splash-card{
+    background:var(--card);border-radius:18px;
+    padding:38px 30px 34px;max-width:340px;width:100%;
+    text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.28);
+  }
+  .splash-card h1{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;font-size:30px;color:var(--forest);
+    margin:0;line-height:1.1;
+  }
+  .splash-card .amp{color:var(--gold);font-style:italic;font-weight:500}
+  .splash-card p{font-size:14px;color:var(--sage);margin:10px 0 24px}
+  .dots{display:flex;gap:12px;justify-content:center;cursor:text;position:relative}
+  .dot{
+    width:50px;height:58px;
+    border:1.5px solid var(--line-strong);
+    border-radius:10px;background:#fff;
+    font-size:26px;font-weight:700;color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    transition:border-color .15s ease;
+  }
+  .dot.filled{border-color:var(--sage)}
+  #pin{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;font-size:26px}
+  .splash-err{font-size:13px;color:#a3512f;margin-top:14px;min-height:20px}
+  .dots.shake{animation:shake .4s ease}
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-7px)}
+    40%{transform:translateX(7px)}
+    60%{transform:translateX(-5px)}
+    80%{transform:translateX(5px)}
+  }
+
+  /* The quilt intro */
+  #intro{
+    position:fixed;inset:0;z-index:60;
+    background:var(--ochre);
+    display:none;
+    transition:opacity .45s ease;
+  }
+  #intro.on{display:block}
+  #intro.away{opacity:0;pointer-events:none}
+  #intro-grid{
+    position:absolute;inset:0;
+    display:grid;gap:6px;padding:6px;
+  }
+  #intro-grid .qblock{opacity:0;animation:bloom .32s ease forwards}
+  @keyframes bloom{
+    from{opacity:0;transform:scale(.55)}
+    to{opacity:1;transform:scale(1)}
+  }
+  #intro .medallion{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:var(--cream);
+    padding:26px 34px;text-align:center;
+    box-shadow:0 6px 24px rgba(59,56,47,.22);
+    opacity:0;animation:med-in .5s ease .35s forwards;
+    max-width:82vw;
+  }
+  @keyframes med-in{from{opacity:0}to{opacity:1}}
+  #intro .m-names{font-family:'Parisienne',cursive;font-size:30px;color:var(--rust);line-height:1.2}
+  #intro .m-line{
+    font-family:'Marcellus',serif;font-size:11px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--mutedbrown);margin-top:10px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    #intro-grid .qblock{animation:none;opacity:1}
+    #intro .medallion{animation:none;opacity:1}
+  }
+
+  /* Menu */
+  header{
+    background:var(--forest);
+    color:#f2f0e6;
+    margin:0 -20px 30px;
+    padding:40px 24px 34px;
+    text-align:center;
+  }
+  header .names{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;
+    font-size:clamp(34px,7vw,50px);
+    line-height:1;margin:0;letter-spacing:.5px;
+  }
+  header .amp{color:#c9a86a;font-style:italic;font-weight:500}
+  header .meta{margin:14px auto 0;color:#cdd6c9;font-size:15px}
+  .quilt{
+    display:flex;justify-content:center;align-items:center;gap:6px;
+    padding:10px 0;background:var(--ochre);overflow:hidden;
+  }
+  #quilt-top{margin:-40px -24px 30px}
+  #quilt-bottom{margin:30px -24px -34px}
+  .quilt .qblock{flex:0 0 auto}
+
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:680px){.tiles{grid-template-columns:1fr}}
+  .tile{
+    display:block;text-decoration:none;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:26px 22px;
+    text-align:center;
+    box-shadow:var(--shadow);
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .tile:hover{
+    transform:translateY(-3px);
+    border-color:var(--line-strong);
+    box-shadow:0 10px 26px rgba(38,51,44,.12);
+  }
+  .tile .qblock{width:56px;height:56px;margin:0 auto 14px;box-shadow:var(--shadow)}
+  .tile .t-name{
+    display:block;
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;font-size:24px;color:var(--forest);
+  }
+  .tile .t-desc{display:block;font-size:13.5px;color:var(--sage);margin-top:4px}
+
+  .rsvp-row{text-align:center;margin-top:26px}
+  .rsvp-btn{
+    display:inline-block;
+    font-size:13px;font-weight:700;letter-spacing:.04em;text-decoration:none;
+    color:#f2f0e6;background:var(--rust);
+    border-radius:999px;padding:9px 22px;
+  }
+  .rsvp-btn:hover{background:#8a3f26}
+
+  footer{margin-top:44px;text-align:center;color:var(--sage);font-size:13px}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="splash-card">
+    <h1>Lorraine <span class="amp">&amp;</span> Richard</h1>
+    <p>Enter the code</p>
+    <div class="dots" id="dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <input id="pin" type="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="4" aria-label="4 character passcode">
+    </div>
+    <div class="splash-err" id="splash-err"></div>
+  </div>
+</div>
+
+<div id="intro" aria-hidden="true">
+  <div id="intro-grid"></div>
+  <div class="medallion">
+    <div class="m-names">Lorraine &amp; Richard</div>
+    <div class="m-line" id="greeting"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="quilt" id="quilt-top" aria-hidden="true"></div>
+    <h1 class="names">Lorraine <span class="amp">&amp;</span> Richard</h1>
+    <p class="meta">Menu</p>
+    <div class="quilt" id="quilt-bottom" aria-hidden="true"></div>
+  </header>
+
+  <div class="tiles">
+    <a class="tile" href="/tracker/">
+      <span class="qblock" data-block="P" data-colour="O"></span>
+      <span class="t-name">Tracker</span>
+      <span class="t-desc">Plans, preferences and ticks</span>
+    </a>
+    <a class="tile" href="/rings/">
+      <span class="qblock" data-block="D" data-colour="Y"></span>
+      <span class="t-name">Rings</span>
+      <span class="t-desc">The Jewellery Quarter map</span>
+    </a>
+    <a class="tile" href="/stationery/">
+      <span class="qblock" data-block="G" data-colour="R"></span>
+      <span class="t-name">Stationery</span>
+      <span class="t-desc">The printed suite and downloads</span>
+    </a>
+  </div>
+
+  <div class="rsvp-row">
+    <a class="rsvp-btn" href="/">The live R.S.V.P.</a>
+  </div>
+
+  <footer>
+    <p>Monday 21 September 2026 &middot; Temple of Minerva, Bath</p>
+  </footer>
+</div>
+
+<script>
+/* =====================================================================
+   Quilt engine (handoff geometry)
+   ===================================================================== */
+const CREAM = "#efe6d3";
+const ACCENTS = { R:"#a34a2c", O:"#7a7c47", Y:"#c99a3f", T:"#bf6a43", K:"#4a3f2f" };
+const SHAPES = {
+  G: ["tr","tl","tr","tl"],
+  P: ["tr","br","tl","bl"],
+  D: ["br","bl","tr","tl"],
+  I: ["tl","tr","bl","br"],
+  N: ["A","C","A","C","A","C","A","C","A"],
+  F: ["A","C","C","A"],
+  H: ["CONIC"],
+};
+function hst(dir, a){
+  switch(dir){
+    case "tl": return "linear-gradient(to bottom right, " + a + " 0 50%, " + CREAM + " 50% 100%)";
+    case "br": return "linear-gradient(to bottom right, " + CREAM + " 0 50%, " + a + " 50% 100%)";
+    case "tr": return "linear-gradient(to bottom left, " + a + " 0 50%, " + CREAM + " 50% 100%)";
+    case "bl": return "linear-gradient(to bottom left, " + CREAM + " 0 50%, " + a + " 50% 100%)";
+  }
+}
+function blockEl(shapeKey, colourKey){
+  const cells = SHAPES[shapeKey];
+  const a = ACCENTS[colourKey];
+  const el = document.createElement("div");
+  el.className = "qblock";
+  if(cells[0] === "CONIC"){
+    el.style.background = "conic-gradient(" + a + " 0 45deg, " + CREAM + " 45deg 135deg, " + a + " 135deg 225deg, " + CREAM + " 225deg 315deg, " + a + " 315deg)";
+    return el;
+  }
+  const g = Math.sqrt(cells.length);
+  el.style.display = "grid";
+  el.style.gridTemplateColumns = "repeat(" + g + ",1fr)";
+  el.style.gridTemplateRows = "repeat(" + g + ",1fr)";
+  cells.forEach(c=>{
+    const cell = document.createElement("div");
+    if(c === "A") cell.style.background = a;
+    else if(c === "C") cell.style.background = CREAM;
+    else cell.style.background = hst(c, a);
+    el.appendChild(cell);
+  });
+  return el;
+}
+
+// header bands + tile icons
+(function(){
+  const order = [["G","R"],["P","O"],["D","Y"],["N","T"],["H","K"]];
+  function fill(el, offset){
+    if(!el) return;
+    for(let i = 0; i < 40; i++){
+      const [s,c] = order[(i + offset) % order.length];
+      const b = blockEl(s, c);
+      b.style.width = "34px"; b.style.height = "34px";
+      el.appendChild(b);
+    }
+  }
+  fill(document.getElementById("quilt-top"), 1);
+  fill(document.getElementById("quilt-bottom"), 3);
+  document.querySelectorAll(".tile .qblock").forEach(ph=>{
+    const b = blockEl(ph.dataset.block, ph.dataset.colour);
+    b.style.width = "56px"; b.style.height = "56px"; b.style.margin = "0 auto 14px";
+    ph.replaceWith(b);
+  });
+})();
+
+/* =====================================================================
+   The intro: a freshly dealt, rules-legal quilt on every load.
+   Composition rules from the handoff: no two adjacent blocks share a
+   shape or a colour, and the two square-on-point blocks (D, I) are
+   never adjacent. Under 2 seconds start to finish; tap to skip.
+   ===================================================================== */
+function dealQuilt(){
+  const grid = document.getElementById("intro-grid");
+  const px = 76;
+  const cols = Math.ceil(window.innerWidth / px);
+  const rows = Math.ceil(window.innerHeight / px);
+  grid.style.gridTemplateColumns = "repeat(" + cols + ",1fr)";
+  grid.style.gridTemplateRows = "repeat(" + rows + ",1fr)";
+  const shapes = Object.keys(SHAPES);
+  const colours = Object.keys(ACCENTS);
+  const cells = [];
+  for(let i = 0; i < cols * rows; i++){
+    const left = (i % cols) ? cells[i - 1] : null;
+    const top = (i >= cols) ? cells[i - cols] : null;
+    const legal = [];
+    shapes.forEach(s=>{
+      if(left && left[0] === s) return;
+      if(top && top[0] === s) return;
+      const sq = (s === "D" || s === "I");
+      if(sq && left && (left[0] === "D" || left[0] === "I")) return;
+      if(sq && top && (top[0] === "D" || top[0] === "I")) return;
+      colours.forEach(c=>{
+        if(left && left[1] === c) return;
+        if(top && top[1] === c) return;
+        legal.push([s, c]);
+      });
+    });
+    cells.push(legal[Math.floor(Math.random() * legal.length)]);
+  }
+  const total = cells.length;
+  const order = cells.map((_, i)=>i);
+  for(let i = order.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  const delayOf = [];
+  order.forEach((cellIdx, rank)=>{ delayOf[cellIdx] = (rank / total) * 1.05; });
+  cells.forEach(([s, c], i)=>{
+    const b = blockEl(s, c);
+    b.style.animationDelay = delayOf[i].toFixed(2) + "s";
+    grid.appendChild(b);
+  });
+}
+
+const GREETINGS = [
+  "Married on a Monday",
+  "Dogs remain invited",
+  "Tea first, then the pub",
+  "Bath, in September",
+  "The quilt is coming together",
+  "Something borrowed",
+  "A small wedding, done well",
+];
+function pickGreeting(){
+  const now = new Date();
+  const h = now.getHours();
+  const tod = h < 12 ? "Good morning, both" : h < 18 ? "Good afternoon, both" : "Good evening, both";
+  const days = Math.ceil((new Date(2026, 8, 21, 13, 0, 0) - now) / 86400000);
+  const pool = [tod, ...GREETINGS];
+  if(days > 1) pool.push(days + " days to go", days + " days to go");
+  else if(days === 1) pool.push("Tomorrow.");
+  else if(days === 0) pool.push("Today.");
+  else pool.push("Married.");
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+let introTimer = null;
+function runIntro(){
+  const intro = document.getElementById("intro");
+  document.getElementById("greeting").textContent = pickGreeting();
+  dealQuilt();
+  intro.classList.add("on");
+  function away(){
+    clearTimeout(introTimer);
+    intro.classList.add("away");
+    setTimeout(()=>{ intro.classList.remove("on"); }, 500);
+  }
+  intro.addEventListener("click", away, { once: true });
+  const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  introTimer = setTimeout(away, reduced ? 1100 : 1950);
+}
+
+/* =====================================================================
+   Gate
+   ===================================================================== */
+const PASSCODE = "DOGS";
+const UNLOCK_KEY = "rl-tracker-unlocked";
+const splash = document.getElementById("splash");
+const pin = document.getElementById("pin");
+const dotsEl = document.getElementById("dots");
+const splashErr = document.getElementById("splash-err");
+
+function unlock(){
+  try{ sessionStorage.setItem(UNLOCK_KEY, "1"); }catch(e){}
+  splash.classList.add("hidden");
+  runIntro();
+}
+function paintDots(){
+  const v = pin.value;
+  dotsEl.querySelectorAll(".dot").forEach((d,i)=>{
+    d.textContent = v[i] ? v[i].toUpperCase() : "";
+    d.classList.toggle("filled", !!v[i]);
+  });
+}
+pin.addEventListener("input", ()=>{
+  pin.value = pin.value.replace(/[^a-zA-Z0-9]/g,"").slice(0,4);
+  paintDots();
+  if(pin.value.length === 4){
+    if(pin.value.toUpperCase() === PASSCODE.toUpperCase()){ unlock(); }
+    else{
+      splashErr.textContent = "That's not it. Try again.";
+      dotsEl.classList.add("shake");
+      setTimeout(()=>{ dotsEl.classList.remove("shake"); pin.value=""; paintDots(); }, 420);
+    }
+  } else {
+    splashErr.textContent = "";
+  }
+});
+dotsEl.addEventListener("click", ()=>pin.focus());
+
+let unlocked = false;
+try{ unlocked = sessionStorage.getItem(UNLOCK_KEY) === "1"; }catch(e){}
+if(unlocked){
+  splash.classList.add("hidden");
+  runIntro();
+} else {
+  pin.focus();
+}
+</script>
+</body>
+</html>
