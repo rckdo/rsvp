@@ -329,6 +329,12 @@
   body.plain .stage .label, body.plain .dl, body.plain .dl-note{display:none}
 </style>
 <script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
+<script>
+  // backup CDN if unpkg is blocked or down
+  if(typeof htmlToImage === "undefined"){
+    document.write('<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"><\/script>');
+  }
+</script>
 </head>
 <body>
 
@@ -861,24 +867,36 @@ document.querySelectorAll("button.dl").forEach(btn=>{
     btn.textContent = "Rendering\u2026";
     btn.disabled = true;
     try{
-      if(typeof htmlToImage === "undefined") throw new Error("capture library did not load");
+      if(typeof htmlToImage === "undefined") throw new Error("capture library blocked (unpkg + jsdelivr)");
       await document.fonts.ready;
-      const fontEmbedCSS = await inlineFontCss();
-      const dataUrl = await htmlToImage.toPng(node, {
+      const opts = {
         pixelRatio: 4,
         width: parseInt(btn.dataset.w, 10),
         height: parseInt(btn.dataset.h, 10),
-        fontEmbedCSS,
         style: { transform: "none", boxShadow: "none" }
-      });
+      };
+      let dataUrl;
+      try{
+        // preferred path: fonts fetched and inlined by us
+        opts.fontEmbedCSS = await inlineFontCss();
+        dataUrl = await htmlToImage.toPng(node, opts);
+      }catch(inner){
+        // fallback: let the library embed fonts itself (the stylesheet
+        // link is CORS-readable now), better than failing outright
+        console.error("font-inline path failed, retrying default:", inner);
+        delete opts.fontEmbedCSS;
+        dataUrl = await htmlToImage.toPng(node, opts);
+      }
       const a = document.createElement("a");
       a.href = dataUrl;
       a.download = btn.dataset.file;
       a.click();
       btn.textContent = old;
     }catch(e){
-      btn.textContent = "Failed, reload and retry";
-      setTimeout(()=>{ btn.textContent = old; }, 3000);
+      console.error("download failed:", e);
+      const why = (e && e.message ? String(e.message) : "unknown").slice(0, 60);
+      btn.textContent = "Failed: " + why;
+      setTimeout(()=>{ btn.textContent = old; }, 6000);
     }
     btn.disabled = false;
   });
