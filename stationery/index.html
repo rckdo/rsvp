@@ -230,8 +230,11 @@
   }
   .venue-addr{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--bodybrown);line-height:1.4;margin-top:6px}
 
-  /* Invitation reverse: bands top and bottom */
-  .face.invb{width:461px;height:717px;display:flex;flex-direction:column}
+  /* Invitation reverse: bands top and bottom, pulled inside the trim
+     and safety zone (roughly 20px here ≈ 5mm at print) so the cut can
+     never slice through the blocks; the cream still bleeds to every
+     edge and the bands stay full width */
+  .face.invb{width:461px;height:717px;display:flex;flex-direction:column;padding:20px 0}
   .band{
     flex:0 0 auto;background:var(--ochre);
     display:flex;gap:7px;justify-content:center;
