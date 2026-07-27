@@ -100,8 +100,9 @@
   #intro.on{display:block}
   #intro.away{opacity:0;pointer-events:none}
   #intro-grid{
-    position:absolute;inset:0;
-    display:grid;gap:6px;padding:6px;
+    position:absolute;top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    display:grid;gap:6px;
   }
   #intro-grid .qblock{opacity:0;animation:bloom .32s ease forwards}
   @keyframes bloom{
@@ -343,13 +344,15 @@ function blockEl(shapeKey, colourKey){
    ===================================================================== */
 function dealQuilt(){
   const grid = document.getElementById("intro-grid");
-  // fixed square cells; the grid overruns the viewport edges and is
-  // cropped, so blocks bleed off like the printed bands
+  // fixed square cells; the grid overruns the viewport and is centred,
+  // so partial blocks bleed off both edges equally
   const px = window.innerWidth < 680 ? 100 : 128, gap = 6;
   const cols = Math.ceil((window.innerWidth + gap) / (px + gap));
   const rows = Math.ceil((window.innerHeight + gap) / (px + gap));
   grid.style.gridTemplateColumns = "repeat(" + cols + "," + px + "px)";
   grid.style.gridTemplateRows = "repeat(" + rows + "," + px + "px)";
+  grid.style.width = (cols * (px + gap) - gap) + "px";
+  grid.style.height = (rows * (px + gap) - gap) + "px";
   const shapes = Object.keys(SHAPES);
   const colours = Object.keys(ACCENTS);
   const cells = [];
