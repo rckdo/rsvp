@@ -18,6 +18,10 @@
   v1.2 (27/07/2026): Spotify logo icon replaces the text link; shared
     thumbs-down hides a track into a collapsed list per section
     (stored under weddingTracker/musicHidden); intro note removed.
+  v1.3 (27/07/2026): Add-a-piece button per section: song, artist and
+    an optional Spotify link, shared between devices via
+    weddingTracker/musicCustom, with the same player, heart, hide and
+    a remove option.
 -->
 <html lang="en-GB">
 <head>
@@ -177,6 +181,41 @@
   .hidden-list .hide{color:var(--sage)}
   .hidden-list .hide:hover{color:var(--forest)}
   .hidden-list .hide svg{transform:rotate(180deg)}
+  .track.custom .tag{background:#f3ead7;border-color:#e0cfa4;color:var(--gold)}
+  .rm{
+    font-size:11.5px;color:var(--line-strong);
+    background:none;border:none;cursor:pointer;padding:0;font-family:inherit;
+  }
+  .rm:hover{color:var(--rust)}
+  .addwrap{margin-top:10px}
+  .add-btn{
+    background:none;border:1px dashed var(--line-strong);border-radius:999px;
+    color:var(--sage);font-size:12.5px;font-weight:700;font-family:inherit;
+    padding:7px 18px;cursor:pointer;
+    transition:color .15s ease,border-color .15s ease;
+  }
+  .add-btn:hover{border-color:var(--sage);color:var(--forest)}
+  .addform{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:14px;margin-top:8px;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .addform input{
+    border:1px solid var(--line-strong);border-radius:8px;
+    padding:8px 10px;font-family:inherit;font-size:14px;color:var(--ink);
+    background:#fff;
+  }
+  .addform input:focus{outline:none;border-color:var(--sage)}
+  .af-row{display:flex;gap:8px;align-items:center}
+  .af-add{
+    background:var(--forest);color:#f2f0e6;border:none;border-radius:999px;
+    padding:8px 20px;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer;
+  }
+  .af-cancel{
+    background:none;border:1px solid var(--line-strong);border-radius:999px;
+    padding:8px 16px;color:var(--sage);font-size:13px;font-family:inherit;cursor:pointer;
+  }
+  .af-err{font-size:12px;color:#a3512f}
   .t-perf{font-size:11.5px;color:var(--line-strong);line-height:1.3}
   .track.playing .t-perf{color:var(--sage)}
   .heart{
@@ -323,10 +362,22 @@ const SPOTIFY_SVG =
 const THUMB_SVG =
   '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>';
 
+function trackRowHtml(spotifyExtras){
+  return '<button class="play" type="button" aria-label="Play preview">&#9654;</button>' +
+    '<div class="t-info">' +
+      '<div class="t-title"></div>' +
+      '<div class="t-artist"></div>' +
+      '<div class="t-meta"><span class="tag"></span><a class="sp" target="_blank" rel="noopener" aria-label="Open in Spotify">' + SPOTIFY_SVG + '</a>' + (spotifyExtras || "") + '</div>' +
+      '<div class="t-perf"></div>' +
+    '</div>' +
+    '<button class="heart" type="button" aria-label="Favourite">&#10084;</button>' +
+    '<button class="hide" type="button" aria-label="Hide this piece">' + THUMB_SVG + '</button>';
+}
+
 /* build the lists */
 const root = document.getElementById("sections");
 const sectionRefs = [];
-MOMENTS.forEach(m=>{
+MOMENTS.forEach((m, mi)=>{
   const h = document.createElement("h2");
   h.className = "sec";
   h.textContent = m.title;
@@ -342,16 +393,7 @@ MOMENTS.forEach(m=>{
     row.className = "track";
     row.dataset.id = id;
     row.dataset.term = title + " " + artist;
-    row.innerHTML =
-      '<button class="play" type="button" aria-label="Play preview">&#9654;</button>' +
-      '<div class="t-info">' +
-        '<div class="t-title"></div>' +
-        '<div class="t-artist"></div>' +
-        '<div class="t-meta"><span class="tag"></span><a class="sp" target="_blank" rel="noopener" aria-label="Open in Spotify">' + SPOTIFY_SVG + '</a></div>' +
-        '<div class="t-perf"></div>' +
-      '</div>' +
-      '<button class="heart" type="button" aria-label="Favourite">&#10084;</button>' +
-      '<button class="hide" type="button" aria-label="Hide this piece">' + THUMB_SVG + '</button>';
+    row.innerHTML = trackRowHtml();
     row.querySelector(".t-title").textContent = title;
     row.querySelector(".t-artist").textContent = artist;
     row.querySelector(".tag").textContent = genre;
@@ -367,19 +409,42 @@ MOMENTS.forEach(m=>{
   hlist.className = "tracklist";
   det.appendChild(sum);
   det.appendChild(hlist);
+
+  const addWrap = document.createElement("div");
+  addWrap.className = "addwrap";
+  addWrap.innerHTML =
+    '<button class="add-btn" type="button">+ Add a piece</button>' +
+    '<div class="addform" hidden>' +
+      '<input class="af-t" placeholder="Song title">' +
+      '<input class="af-a" placeholder="Artist or composer">' +
+      '<input class="af-sp" placeholder="Spotify link (optional)">' +
+      '<div class="af-err" hidden></div>' +
+      '<div class="af-row"><button class="af-add" type="button">Add</button><button class="af-cancel" type="button">Cancel</button></div>' +
+    '</div>';
+  wireAddForm(addWrap, mi);
+
   root.appendChild(h);
   root.appendChild(sub);
   root.appendChild(list);
   root.appendChild(det);
-  sectionRefs.push({ list, hlist, det, sum, rows });
+  root.appendChild(addWrap);
+  sectionRefs.push({ list, hlist, det, sum, rows, customRows: [] });
 });
+
+/* shared heart state, reapplied whenever rows are added */
+let lastHearts = {};
+function applyHearts(){
+  document.querySelectorAll(".track").forEach(row=>{
+    row.querySelector(".heart").classList.toggle("on", !!lastHearts[row.dataset.id]);
+  });
+}
 
 /* shared hidden state: rows fold away into the per-section list */
 let hiddenState = {};
 function applyHidden(){
   sectionRefs.forEach(s=>{
     let n = 0;
-    s.rows.forEach(row=>{
+    s.rows.concat(s.customRows).forEach(row=>{
       const off = !!hiddenState[row.dataset.id];
       if(off){ n++; }
       (off ? s.hlist : s.list).appendChild(row);
@@ -462,7 +527,7 @@ async function findPreview(term){
   return hit ? { src: hit.previewUrl, by: hit.artistName } : null;
 }
 
-document.querySelectorAll(".track .play").forEach(btn=>{
+function wirePlay(btn){
   btn.addEventListener("click", async ()=>{
     const row = btn.closest(".track");
     if(row === playingRow){ stopPlayback(); return; }
@@ -492,7 +557,8 @@ document.querySelectorAll(".track .play").forEach(btn=>{
     btn.innerHTML = "&#10073;&#10073;";
     playingRow = row;
   });
-});
+}
+document.querySelectorAll(".track .play").forEach(wirePlay);
 
 /* =====================================================================
    Favourites: shared hearts under weddingTracker/music (covered by the
@@ -505,35 +571,107 @@ function startDb(){
   db = firebase.database();
   firebase.auth().signInAnonymously().then(()=>{
     db.ref("weddingTracker/music").on("value", snap=>{
-      const v = snap.val() || {};
-      document.querySelectorAll(".track").forEach(row=>{
-        row.querySelector(".heart").classList.toggle("on", !!v[row.dataset.id]);
-      });
+      lastHearts = snap.val() || {};
+      applyHearts();
     });
     db.ref("weddingTracker/musicHidden").on("value", snap=>{
       hiddenState = snap.val() || {};
       applyHidden();
     });
+    db.ref("weddingTracker/musicCustom").on("value", snap=>{
+      renderCustom(snap.val());
+    });
   }).catch(()=>{});
 }
 
-document.querySelectorAll(".track .heart").forEach(h=>{
+function wireHeart(h){
   h.addEventListener("click", ()=>{
     if(!db) return;
     const row = h.closest(".track");
     const on = h.classList.contains("on");
     db.ref("weddingTracker/music/" + row.dataset.id).set(on ? null : true);
   });
-});
-
-document.querySelectorAll(".track .hide").forEach(b=>{
+}
+function wireHide(b){
   b.addEventListener("click", ()=>{
     if(!db) return;
     const row = b.closest(".track");
     const off = !!hiddenState[row.dataset.id];
     db.ref("weddingTracker/musicHidden/" + row.dataset.id).set(off ? null : true);
   });
-});
+}
+document.querySelectorAll(".track .heart").forEach(wireHeart);
+document.querySelectorAll(".track .hide").forEach(wireHide);
+
+/* =====================================================================
+   Your own additions: shared under weddingTracker/musicCustom, one
+   entry per piece with its moment, rendered with the same player,
+   heart and hide controls plus a remove link.
+   ===================================================================== */
+function renderCustom(v){
+  sectionRefs.forEach(s=>{
+    s.customRows.forEach(r=>r.remove());
+    s.customRows = [];
+  });
+  Object.keys(v || {}).sort().forEach(key=>{
+    const c = v[key];
+    const s = sectionRefs[c.m];
+    if(!s || !c.t) return;
+    const row = document.createElement("div");
+    row.className = "track custom";
+    row.dataset.id = "c-" + key;
+    row.dataset.term = c.t + " " + (c.a || "");
+    row.innerHTML = trackRowHtml('<button class="rm" type="button">Remove</button>');
+    row.querySelector(".t-title").textContent = c.t;
+    row.querySelector(".t-artist").textContent = c.a || "";
+    row.querySelector(".tag").textContent = "Added";
+    row.querySelector(".sp").href = c.sp || ("https://open.spotify.com/search/" + encodeURIComponent(row.dataset.term.trim()));
+    wirePlay(row.querySelector(".play"));
+    wireHeart(row.querySelector(".heart"));
+    wireHide(row.querySelector(".hide"));
+    row.querySelector(".rm").addEventListener("click", ()=>{
+      if(!db) return;
+      if(!confirm('Remove "' + c.t + '"?')) return;
+      db.ref("weddingTracker/musicCustom/" + key).remove();
+      db.ref("weddingTracker/music/c-" + key).set(null);
+      db.ref("weddingTracker/musicHidden/c-" + key).set(null);
+    });
+    s.list.appendChild(row);
+    s.customRows.push(row);
+  });
+  applyHidden();
+  applyHearts();
+}
+
+function wireAddForm(wrap, mi){
+  const btn = wrap.querySelector(".add-btn");
+  const form = wrap.querySelector(".addform");
+  const err = wrap.querySelector(".af-err");
+  const inT = wrap.querySelector(".af-t");
+  const inA = wrap.querySelector(".af-a");
+  const inSp = wrap.querySelector(".af-sp");
+  function close(){
+    form.hidden = true; btn.hidden = false;
+    inT.value = ""; inA.value = ""; inSp.value = "";
+    err.hidden = true;
+  }
+  btn.addEventListener("click", ()=>{
+    form.hidden = false; btn.hidden = true;
+    inT.focus();
+  });
+  wrap.querySelector(".af-cancel").addEventListener("click", close);
+  wrap.querySelector(".af-add").addEventListener("click", ()=>{
+    const t = inT.value.trim(), a = inA.value.trim(), sp = inSp.value.trim();
+    if(!t){ err.textContent = "A song title is needed."; err.hidden = false; return; }
+    if(sp && !/^https:\/\/open\.spotify\.com\//.test(sp)){
+      err.textContent = "Spotify links start with open.spotify.com. Use the share button in Spotify.";
+      err.hidden = false; return;
+    }
+    if(!db){ err.textContent = "Not connected just now. Try again shortly."; err.hidden = false; return; }
+    db.ref("weddingTracker/musicCustom").push({ t: t, a: a, sp: sp || null, m: mi, at: new Date().toISOString() });
+    close();
+  });
+}
 
 /* =====================================================================
    Gate
