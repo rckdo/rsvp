@@ -609,8 +609,9 @@
    CONFIG : the only two things you should need to touch.
    ===================================================================== */
 
-// 4-character passcode for the splash screen. Case doesn't matter.
-const PASSCODE = "DOGS";
+// 4-character passcodes for the splash screen. Case doesn't matter.
+// DOGS unlocks as Lorraine (L), EGGS as Richard (R).
+const PASSCODES = { DOGS: "L", EGGS: "R" };
 
 // Web config from Firebase console > Project settings > Your apps.
 // Public by design; the security lives in the database rules.
@@ -838,8 +839,11 @@ const pin = document.getElementById("pin");
 const dotsEl = document.getElementById("dots");
 const splashErr = document.getElementById("splash-err");
 
-function unlock(){
-  try{ sessionStorage.setItem(UNLOCK_KEY, "1"); }catch(e){}
+function unlock(who){
+  try{
+    sessionStorage.setItem(UNLOCK_KEY, "1");
+    if(who) sessionStorage.setItem("rl-tracker-who", who);
+  }catch(e){}
   splash.classList.add("hidden");
   start();
 }
@@ -856,7 +860,8 @@ pin.addEventListener("input", ()=>{
   pin.value = pin.value.replace(/[^a-zA-Z0-9]/g,"").slice(0,4);
   paintDots();
   if(pin.value.length === 4){
-    if(pin.value.toUpperCase() === PASSCODE.toUpperCase()){ unlock(); }
+    const who = PASSCODES[pin.value.toUpperCase()];
+    if(who){ unlock(who); }
     else{
       splashErr.textContent = "That's not it. Try again.";
       dotsEl.classList.add("shake");

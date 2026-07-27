@@ -809,15 +809,18 @@ document.getElementById("addr-line").textContent = atob("MTcgV2VsbGFuZCBBdmVudWU
 /* =====================================================================
    Gate + boot
    ===================================================================== */
-const PASSCODE = "DOGS";
+const PASSCODES = { DOGS: "L", EGGS: "R" };   // Lorraine and Richard
 const UNLOCK_KEY = "rl-tracker-unlocked";   // shared with the tracker
 const splash = document.getElementById("splash");
 const pin = document.getElementById("pin");
 const dotsEl = document.getElementById("dots");
 const splashErr = document.getElementById("splash-err");
 
-function unlock(){
-  try{ sessionStorage.setItem(UNLOCK_KEY, "1"); }catch(e){}
+function unlock(who){
+  try{
+    sessionStorage.setItem(UNLOCK_KEY, "1");
+    if(who) sessionStorage.setItem("rl-tracker-who", who);
+  }catch(e){}
   splash.classList.add("hidden");
 }
 function paintDots(){
@@ -831,7 +834,8 @@ pin.addEventListener("input", ()=>{
   pin.value = pin.value.replace(/[^a-zA-Z0-9]/g,"").slice(0,4);
   paintDots();
   if(pin.value.length === 4){
-    if(pin.value.toUpperCase() === PASSCODE.toUpperCase()){ unlock(); }
+    const who = PASSCODES[pin.value.toUpperCase()];
+    if(who){ unlock(who); }
     else{
       splashErr.textContent = "That's not it. Try again.";
       dotsEl.classList.add("shake");
