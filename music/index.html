@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<!--
+  Music : Lorraine & Richard
+  Ceremony music candidates for the four moments the preferences doc
+  asks for: guests arriving, the entrance, the signing, the exit.
+  Twenty-four pieces, classical and modern classical, each playable in
+  place via the iTunes preview API (30-second official previews, no
+  account needed), with shared favourite hearts synced through the
+  same database as the tracker (stored under weddingTracker/music so
+  the existing rules cover them). Gated behind the shared passcode.
+
+  v1.0 (26/07/2026): Initial build.
+-->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music : Lorraine &amp; Richard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Karla:wght@400;500;700&family=Marcellus&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#26332c;
+    --forest:#2f4a3c;
+    --sage:#6f8a77;
+    --gold:#a3762f;
+    --paper:#eef1ea;
+    --card:#fbfaf5;
+    --line:#dce0d6;
+    --line-strong:#c6cdbe;
+    --shadow:0 1px 2px rgba(38,51,44,.05);
+    --ochre:#e0cfa4;
+    --rust:#a34a2c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Karla',system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px 96px}
+
+  /* Passcode splash */
+  #splash{
+    position:fixed;inset:0;z-index:50;
+    background:var(--forest);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  #splash.hidden{display:none}
+  .splash-card{
+    background:var(--card);border-radius:18px;
+    padding:38px 30px 34px;max-width:340px;width:100%;
+    text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.28);
+  }
+  .splash-card h1{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;font-size:30px;color:var(--forest);
+    margin:0;line-height:1.1;
+  }
+  .splash-card .amp{color:var(--gold);font-style:italic;font-weight:500}
+  .splash-card p{font-size:14px;color:var(--sage);margin:10px 0 24px}
+  .dots{display:flex;gap:12px;justify-content:center;cursor:text;position:relative}
+  .dot{
+    width:50px;height:58px;
+    border:1.5px solid var(--line-strong);
+    border-radius:10px;background:#fff;
+    font-size:26px;font-weight:700;color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    transition:border-color .15s ease;
+  }
+  .dot.filled{border-color:var(--sage)}
+  #pin{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;font-size:26px}
+  .splash-err{font-size:13px;color:#a3512f;margin-top:14px;min-height:20px}
+  .dots.shake{animation:shake .4s ease}
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-7px)}
+    40%{transform:translateX(7px)}
+    60%{transform:translateX(-5px)}
+    80%{transform:translateX(5px)}
+  }
+
+  header{
+    background:var(--forest);
+    color:#f2f0e6;
+    margin:0 -20px 28px;
+    padding:40px 24px 34px;
+    text-align:center;
+  }
+  header .names{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;
+    font-size:clamp(34px,7vw,50px);
+    line-height:1;margin:0;letter-spacing:.5px;
+  }
+  header .amp{color:#c9a86a;font-style:italic;font-weight:500}
+  header .meta{margin:14px auto 0;color:#cdd6c9;font-size:15px}
+  header .venue{color:#eef0e6;font-weight:500}
+  .quilt{
+    display:flex;justify-content:center;align-items:center;gap:6px;
+    padding:10px 0;background:var(--ochre);overflow:hidden;
+  }
+  #quilt-top{margin:-40px -24px 30px}
+  #quilt-bottom{margin:30px -24px -34px}
+  .quilt .qblock{flex:0 0 auto}
+
+  .intro-note{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 18px;
+    font-size:14px;color:var(--sage);
+    margin-bottom:6px;
+  }
+  .intro-note b{color:var(--forest)}
+
+  h2.sec{
+    font-family:'Cormorant Garamond',Georgia,serif;
+    font-weight:600;font-size:28px;color:var(--forest);
+    margin:34px 0 2px;line-height:1.1;
+  }
+  p.sec-sub{font-size:14px;color:var(--sage);margin:0 0 12px}
+
+  .tracklist{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .track{
+    display:flex;align-items:center;gap:14px;
+    padding:12px 16px;
+    border-top:1px solid var(--line);
+  }
+  .track:first-child{border-top:none}
+  .play{
+    flex:0 0 auto;
+    width:40px;height:40px;border-radius:50%;
+    border:1.5px solid var(--line-strong);
+    background:#fff;color:var(--forest);
+    font-size:15px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .15s ease,border-color .15s ease,color .15s ease;
+  }
+  .play:hover{border-color:var(--sage)}
+  .track.playing .play{background:var(--forest);border-color:var(--forest);color:#f2f0e6}
+  .t-info{flex:1 1 auto;min-width:0}
+  .t-title{font-weight:700;color:var(--ink);font-size:15.5px;line-height:1.3}
+  .t-artist{font-size:13px;color:var(--gold);line-height:1.3}
+  .t-note{font-size:12.5px;color:var(--sage);line-height:1.35;margin-top:1px}
+  .t-perf{font-size:11.5px;color:var(--line-strong);line-height:1.3}
+  .track.playing .t-perf{color:var(--sage)}
+  .heart{
+    flex:0 0 auto;
+    background:none;border:none;cursor:pointer;
+    font-size:21px;line-height:1;color:var(--line-strong);
+    padding:6px;
+    transition:color .15s ease, transform .15s ease;
+  }
+  .heart:hover{color:var(--sage)}
+  .heart.on{color:var(--rust)}
+  .heart.on:active{transform:scale(1.2)}
+  .t-fail{font-size:11.5px;color:#a3512f}
+  .t-fail a{color:var(--gold)}
+
+  footer{margin-top:44px;text-align:center;color:var(--sage);font-size:13.5px}
+  .site-menu{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .site-menu a{
+    font-size:13px;font-weight:700;letter-spacing:.04em;text-decoration:none;
+    color:var(--sage);background:var(--card);
+    border:1px solid var(--line-strong);border-radius:999px;padding:9px 20px;
+  }
+  .site-menu a:hover{border-color:var(--sage);color:var(--forest)}
+  .site-menu a.here{background:var(--forest);border-color:var(--forest);color:#f2f0e6}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="splash-card">
+    <h1>Lorraine <span class="amp">&amp;</span> Richard</h1>
+    <p>Enter the code</p>
+    <div class="dots" id="dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <input id="pin" type="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="4" aria-label="4 character passcode">
+    </div>
+    <div class="splash-err" id="splash-err"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="quilt" id="quilt-top" aria-hidden="true"></div>
+    <h1 class="names">Lorraine <span class="amp">&amp;</span> Richard</h1>
+    <p class="meta">
+      <span class="venue">Music</span><br>
+      Four moments, twenty-four candidates
+    </p>
+    <div class="quilt" id="quilt-bottom" aria-hidden="true"></div>
+  </header>
+
+  <div class="intro-note">
+    <b>How this works.</b> Tap play for an official 30-second preview of each piece; heart the ones you love and the other of you sees it instantly. The register office asks for one piece per moment, so aim for four hearts winning out. Everything here is non-religious, as B&amp;NES requires.
+  </div>
+
+  <div id="sections"></div>
+
+  <footer>
+    <p>Previews via Apple's public preview service; heart syncs are shared between your devices.</p>
+    <nav class="site-menu">
+      <a href="/menu/">Menu</a>
+      <a href="/tracker/">Tracker</a>
+      <a href="/rings/">Rings</a>
+      <a href="/stationery/">Stationery</a>
+      <a href="/music/" class="here">Music</a>
+    </nav>
+  </footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBI-BFXh8BzvsaDw3Mm0Mxi7UmqyU1Y_g8",
+  authDomain: "rl-wedding-fe94a.firebaseapp.com",
+  databaseURL: "https://rl-wedding-fe94a-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "rl-wedding-fe94a",
+  storageBucket: "rl-wedding-fe94a.firebasestorage.app",
+  messagingSenderId: "54300603401",
+  appId: "1:54300603401:web:b743cdc18f80b9626874d8"
+};
+
+const MOMENTS = [
+  { title:"Guests arriving", sub:"Fifteen minutes of settling in. Calm, unhurried, golden.", tracks:[
+    ["Gymnopédie No. 1", "Erik Satie", "Still and unhurried; the room settles."],
+    ["Clair de Lune", "Claude Debussy", "Golden-hour calm."],
+    ["Nocturne Op. 9 No. 2", "Frédéric Chopin", "Softly romantic."],
+    ["I Giorni", "Ludovico Einaudi", "The modern prelude staple."],
+    ["Near Light", "Ólafur Arnalds", "Quiet electronics under strings."],
+    ["On the Nature of Daylight", "Max Richter", "Slow-building and deeply felt."],
+  ]},
+  { title:"The entrance", sub:"The walk in. This is the one everyone remembers.", tracks:[
+    ["Canon in D", "Johann Pachelbel", "The classic, for a reason."],
+    ["Air on the G String", "Johann Sebastian Bach", "Stately and serene."],
+    ["Recomposed: Spring 1", "Max Richter", "Vivaldi made new; radiant."],
+    ["Nuvole Bianche", "Ludovico Einaudi", "The modern favourite for the walk in."],
+    ["River Flows in You", "Yiruma", "Gentle and instantly familiar."],
+    ["Arrival of the Queen of Sheba", "George Frideric Handel", "Bright, buoyant arrival music."],
+  ]},
+  { title:"The signing", sub:"Five or so minutes while the register is signed. Reflective, tender.", tracks:[
+    ["Salut d'Amour", "Edward Elgar", "Written as a love token; the signing standard."],
+    ["Arabesque No. 1", "Claude Debussy", "Light as pen on paper."],
+    ["Pavane", "Gabriel Fauré", "Elegant and unhurried."],
+    ["Divenire", "Ludovico Einaudi", "Swelling and cinematic."],
+    ["Saman", "Ólafur Arnalds", "Intimate, close to silence."],
+    ["Opus 20", "Dustin O'Halloran", "Modern classical tenderness."],
+  ]},
+  { title:"The exit", sub:"Married. Out into the Gardens. Joy, energy, sunshine.", tracks:[
+    ["Wedding March", "Felix Mendelssohn", "The traditional triumphant exit."],
+    ["Spring, The Four Seasons", "Antonio Vivaldi", "Pure joy."],
+    ["Hornpipe, Water Music", "George Frideric Handel", "Processional sparkle."],
+    ["Brandenburg Concerto No. 3", "Johann Sebastian Bach", "Busy, bright, glorious."],
+    ["Fly", "Ludovico Einaudi", "Uplift with momentum."],
+    ["Bluebird", "Alexis Ffrench", "Modern classical sunshine."],
+  ]},
+];
+
+function slug(s){
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
+
+/* build the lists */
+const root = document.getElementById("sections");
+MOMENTS.forEach(m=>{
+  const h = document.createElement("h2");
+  h.className = "sec";
+  h.textContent = m.title;
+  const sub = document.createElement("p");
+  sub.className = "sec-sub";
+  sub.textContent = m.sub;
+  const list = document.createElement("div");
+  list.className = "tracklist";
+  m.tracks.forEach(([title, artist, note])=>{
+    const id = slug(title);
+    const row = document.createElement("div");
+    row.className = "track";
+    row.dataset.id = id;
+    row.dataset.term = title + " " + artist;
+    row.innerHTML =
+      '<button class="play" type="button" aria-label="Play preview">&#9654;</button>' +
+      '<div class="t-info">' +
+        '<div class="t-title"></div>' +
+        '<div class="t-artist"></div>' +
+        '<div class="t-note"></div>' +
+        '<div class="t-perf"></div>' +
+      '</div>' +
+      '<button class="heart" type="button" aria-label="Favourite">&#10084;</button>';
+    row.querySelector(".t-title").textContent = title;
+    row.querySelector(".t-artist").textContent = artist;
+    row.querySelector(".t-note").textContent = note;
+    list.appendChild(row);
+  });
+  root.appendChild(h);
+  root.appendChild(sub);
+  root.appendChild(list);
+});
+
+/* header quilt bands */
+(function(){
+  const CREAM = "#efe6d3";
+  const ACCENTS = { R:"#a34a2c", O:"#7a7c47", Y:"#c99a3f", T:"#bf6a43", K:"#4a3f2f" };
+  function hst(dir, a){
+    switch(dir){
+      case "tl": return "linear-gradient(to bottom right, " + a + " 0 50%, " + CREAM + " 50% 100%)";
+      case "br": return "linear-gradient(to bottom right, " + CREAM + " 0 50%, " + a + " 50% 100%)";
+      case "tr": return "linear-gradient(to bottom left, " + a + " 0 50%, " + CREAM + " 50% 100%)";
+      case "bl": return "linear-gradient(to bottom left, " + CREAM + " 0 50%, " + a + " 50% 100%)";
+    }
+  }
+  const SHAPES = {
+    G: ["tr","tl","tr","tl"], P: ["tr","br","tl","bl"], D: ["br","bl","tr","tl"],
+    N: ["A","C","A","C","A","C","A","C","A"], H: ["CONIC"],
+  };
+  function blockEl(sk, ck){
+    const cells = SHAPES[sk], a = ACCENTS[ck];
+    const el = document.createElement("div");
+    el.className = "qblock";
+    el.style.width = "34px"; el.style.height = "34px";
+    if(cells[0] === "CONIC"){
+      el.style.background = "conic-gradient(" + a + " 0 45deg, " + CREAM + " 45deg 135deg, " + a + " 135deg 225deg, " + CREAM + " 225deg 315deg, " + a + " 315deg)";
+      return el;
+    }
+    const g = Math.sqrt(cells.length);
+    el.style.display = "grid";
+    el.style.gridTemplateColumns = "repeat(" + g + ",1fr)";
+    el.style.gridTemplateRows = "repeat(" + g + ",1fr)";
+    cells.forEach(c=>{
+      const cell = document.createElement("div");
+      cell.style.background = c === "A" ? a : c === "C" ? CREAM : hst(c, a);
+      el.appendChild(cell);
+    });
+    return el;
+  }
+  const order = [["G","R"],["P","O"],["D","Y"],["N","T"],["H","K"]];
+  function fill(el, offset){
+    if(!el) return;
+    for(let i = 0; i < 40; i++){
+      el.appendChild(blockEl(order[(i + offset) % 5][0], order[(i + offset) % 5][1]));
+    }
+  }
+  fill(document.getElementById("quilt-top"), 1);
+  fill(document.getElementById("quilt-bottom"), 3);
+})();
+
+/* =====================================================================
+   Playback: official 30s previews via the public iTunes search API,
+   fetched lazily on first play, one track at a time.
+   ===================================================================== */
+const audio = new Audio();
+let playingRow = null;
+
+function stopPlayback(){
+  audio.pause();
+  if(playingRow){
+    playingRow.classList.remove("playing");
+    playingRow.querySelector(".play").innerHTML = "&#9654;";
+    playingRow = null;
+  }
+}
+audio.addEventListener("ended", stopPlayback);
+
+async function findPreview(term){
+  const url = "https://itunes.apple.com/search?media=music&entity=song&limit=5&term=" + encodeURIComponent(term);
+  const res = await fetch(url);
+  const data = await res.json();
+  const hit = (data.results || []).find(r=>r.previewUrl);
+  return hit ? { src: hit.previewUrl, by: hit.artistName } : null;
+}
+
+document.querySelectorAll(".track .play").forEach(btn=>{
+  btn.addEventListener("click", async ()=>{
+    const row = btn.closest(".track");
+    if(row === playingRow){ stopPlayback(); return; }
+    stopPlayback();
+    if(!row.dataset.src){
+      btn.textContent = "…";
+      try{
+        const hit = await findPreview(row.dataset.term);
+        if(!hit) throw new Error("no preview");
+        row.dataset.src = hit.src;
+        row.querySelector(".t-perf").textContent = "performed by " + hit.by;
+      }catch(e){
+        btn.innerHTML = "&#9654;";
+        const fail = document.createElement("div");
+        fail.className = "t-fail";
+        fail.innerHTML = 'Preview unavailable here. <a href="https://www.youtube.com/results?search_query=' +
+          encodeURIComponent(row.dataset.term) + '" target="_blank" rel="noopener">Listen elsewhere</a>';
+        const prev = row.querySelector(".t-fail");
+        if(prev) prev.remove();
+        row.querySelector(".t-info").appendChild(fail);
+        return;
+      }
+    }
+    audio.src = row.dataset.src;
+    audio.play().catch(()=>{});
+    row.classList.add("playing");
+    btn.innerHTML = "&#10073;&#10073;";
+    playingRow = row;
+  });
+});
+
+/* =====================================================================
+   Favourites: shared hearts under weddingTracker/music (covered by the
+   existing database rules), synced live.
+   ===================================================================== */
+let db = null;
+function startDb(){
+  if(typeof firebase === "undefined") return;
+  try{ firebase.initializeApp(FIREBASE_CONFIG); }catch(e){ return; }
+  db = firebase.database();
+  firebase.auth().signInAnonymously().then(()=>{
+    db.ref("weddingTracker/music").on("value", snap=>{
+      const v = snap.val() || {};
+      document.querySelectorAll(".track").forEach(row=>{
+        row.querySelector(".heart").classList.toggle("on", !!v[row.dataset.id]);
+      });
+    });
+  }).catch(()=>{});
+}
+
+document.querySelectorAll(".track .heart").forEach(h=>{
+  h.addEventListener("click", ()=>{
+    if(!db) return;
+    const row = h.closest(".track");
+    const on = h.classList.contains("on");
+    db.ref("weddingTracker/music/" + row.dataset.id).set(on ? null : true);
+  });
+});
+
+/* =====================================================================
+   Gate
+   ===================================================================== */
+const PASSCODE = "DOGS";
+const UNLOCK_KEY = "rl-tracker-unlocked";
+const splash = document.getElementById("splash");
+const pin = document.getElementById("pin");
+const dotsEl = document.getElementById("dots");
+const splashErr = document.getElementById("splash-err");
+
+function unlock(){
+  try{ sessionStorage.setItem(UNLOCK_KEY, "1"); }catch(e){}
+  splash.classList.add("hidden");
+  startDb();
+}
+function paintDots(){
+  const v = pin.value;
+  dotsEl.querySelectorAll(".dot").forEach((d,i)=>{
+    d.textContent = v[i] ? v[i].toUpperCase() : "";
+    d.classList.toggle("filled", !!v[i]);
+  });
+}
+pin.addEventListener("input", ()=>{
+  pin.value = pin.value.replace(/[^a-zA-Z0-9]/g,"").slice(0,4);
+  paintDots();
+  if(pin.value.length === 4){
+    if(pin.value.toUpperCase() === PASSCODE.toUpperCase()){ unlock(); }
+    else{
+      splashErr.textContent = "That's not it. Try again.";
+      dotsEl.classList.add("shake");
+      setTimeout(()=>{ dotsEl.classList.remove("shake"); pin.value=""; paintDots(); }, 420);
+    }
+  } else {
+    splashErr.textContent = "";
+  }
+});
+dotsEl.addEventListener("click", ()=>pin.focus());
+
+let unlocked = false;
+try{ unlocked = sessionStorage.getItem(UNLOCK_KEY) === "1"; }catch(e){}
+if(unlocked){
+  splash.classList.add("hidden");
+  startDb();
+} else {
+  pin.focus();
+}
+</script>
+</body>
+</html>

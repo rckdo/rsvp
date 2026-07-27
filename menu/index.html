@@ -156,7 +156,7 @@
   #quilt-bottom{margin:30px -24px -34px}
   .quilt .qblock{flex:0 0 auto}
 
-  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:16px}
   @media(max-width:680px){.tiles{grid-template-columns:1fr}}
   .tile{
     display:block;text-decoration:none;
@@ -239,6 +239,11 @@
       <span class="qblock" data-block="G" data-colour="R"></span>
       <span class="t-name">Stationery</span>
       <span class="t-desc">Invitations and reply cards</span>
+    </a>
+    <a class="tile" href="/music/">
+      <span class="qblock" data-block="H" data-colour="T"></span>
+      <span class="t-name">Music</span>
+      <span class="t-desc">The four ceremony moments</span>
     </a>
   </div>
 
