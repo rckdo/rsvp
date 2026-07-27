@@ -25,6 +25,8 @@
   v1.4 (27/07/2026): Sticky bottom player tray slides in while a
     piece is loaded: title and artist, play/pause, back to start,
     seekable progress bar with times, close.
+  v1.5 (27/07/2026): Spotify icon in the tray, linking to the loaded
+    piece's Spotify destination.
 -->
 <html lang="en-GB">
 <head>
@@ -255,6 +257,8 @@
   }
   .tr-fill{position:absolute;top:0;bottom:0;left:0;width:0;background:var(--sage);border-radius:999px}
   .tr-time{font-size:10.5px;color:var(--sage);margin-top:4px}
+  #tr-sp{flex:0 0 auto;padding:4px}
+  #tr-sp svg{width:22px;height:22px}
   body.tray-open .wrap{padding-bottom:200px}
   .t-perf{font-size:11.5px;color:var(--line-strong);line-height:1.3}
   .track.playing .t-perf{color:var(--sage)}
@@ -331,6 +335,7 @@
       <div class="tr-bar" id="tr-bar"><div class="tr-fill" id="tr-fill"></div></div>
       <div class="tr-time" id="tr-time">0:00 / 0:30</div>
     </div>
+    <a id="tr-sp" class="sp" target="_blank" rel="noopener" aria-label="Open in Spotify"></a>
     <button id="tr-close" type="button" aria-label="Close the player">&#10005;</button>
   </div>
 </div>
@@ -571,6 +576,8 @@ const trArtist = document.getElementById("tr-artist");
 const trBar = document.getElementById("tr-bar");
 const trFill = document.getElementById("tr-fill");
 const trTime = document.getElementById("tr-time");
+const trSp = document.getElementById("tr-sp");
+trSp.innerHTML = SPOTIFY_SVG;
 
 function fmt(s){
   s = Math.max(0, Math.floor(s || 0));
@@ -604,6 +611,7 @@ audio.addEventListener("ended", ()=>{ audio.currentTime = 0; updateProgress(); s
 function openTray(row){
   trTitle.textContent = row.querySelector(".t-title").textContent;
   trArtist.textContent = row.querySelector(".t-artist").textContent;
+  trSp.href = row.querySelector(".sp").href;
   updateProgress();
   tray.classList.add("open");
   tray.setAttribute("aria-hidden", "false");
