@@ -27,6 +27,10 @@
     seekable progress bar with times, close.
   v1.5 (27/07/2026): Spotify icon in the tray, linking to the loaded
     piece's Spotify destination.
+  v1.6 (27/07/2026): Per-person hearts. DOGS unlocks as Lorraine (L),
+    EGGS as Richard (R), identity kept in sessionStorage. Each half
+    of the heart lights with its letter when that person favourites;
+    hearts store {L,R} flags under weddingTracker/music/{slug}.
 -->
 <html lang="en-GB">
 <head>
@@ -263,15 +267,33 @@
   .t-perf{font-size:11.5px;color:var(--line-strong);line-height:1.3}
   .track.playing .t-perf{color:var(--sage)}
   .heart{
-    flex:0 0 auto;
+    flex:0 0 auto;position:relative;
+    width:36px;height:34px;
     background:none;border:none;cursor:pointer;
-    font-size:21px;line-height:1;color:var(--line-strong);
-    padding:6px;
-    transition:color .15s ease, transform .15s ease;
+    font-size:22px;line-height:1;padding:0;
   }
-  .heart:hover{color:var(--sage)}
-  .heart.on{color:var(--rust)}
-  .heart.on:active{transform:scale(1.2)}
+  .h-glyph{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    pointer-events:none;
+  }
+  .h-base{color:var(--line-strong);transition:color .15s ease}
+  .heart:hover .h-base{color:var(--sage)}
+  .h-half{color:var(--rust);opacity:0;transition:opacity .15s ease}
+  .h-l{clip-path:inset(0 50% 0 0)}
+  .h-r{clip-path:inset(0 0 0 50%)}
+  .heart.l .h-l{opacity:1}
+  .heart.r .h-r{opacity:1}
+  .h-tag{
+    position:absolute;top:50%;transform:translate(-50%,-64%);
+    font-size:7.5px;font-weight:700;font-family:'Karla',sans-serif;
+    color:#fbfaf5;opacity:0;transition:opacity .15s ease;
+    pointer-events:none;line-height:1;
+  }
+  .h-tl{left:calc(50% - 4.5px)}
+  .h-tr{left:calc(50% + 4.5px)}
+  .heart.l .h-tl{opacity:1}
+  .heart.r .h-tr{opacity:1}
   .t-fail{font-size:11.5px;color:#a3512f}
   .t-fail a{color:var(--gold)}
 
@@ -430,7 +452,13 @@ function trackRowHtml(spotifyExtras){
       '<div class="t-meta"><span class="tag"></span><a class="sp" target="_blank" rel="noopener" aria-label="Open in Spotify">' + SPOTIFY_SVG + '</a>' + (spotifyExtras || "") + '</div>' +
       '<div class="t-perf"></div>' +
     '</div>' +
-    '<button class="heart" type="button" aria-label="Favourite">&#10084;</button>' +
+    '<button class="heart" type="button" aria-label="Favourite">' +
+      '<span class="h-glyph h-base" aria-hidden="true">&#10084;</span>' +
+      '<span class="h-glyph h-half h-l" aria-hidden="true">&#10084;</span>' +
+      '<span class="h-glyph h-half h-r" aria-hidden="true">&#10084;</span>' +
+      '<span class="h-tag h-tl" aria-hidden="true">L</span>' +
+      '<span class="h-tag h-tr" aria-hidden="true">R</span>' +
+    '</button>' +
     '<button class="hide" type="button" aria-label="Hide this piece">' + THUMB_SVG + '</button>';
 }
 
@@ -491,11 +519,23 @@ MOMENTS.forEach((m, mi)=>{
   sectionRefs.push({ list, hlist, det, sum, rows, customRows: [] });
 });
 
-/* shared heart state, reapplied whenever rows are added */
+/* who is using this device: "L" (DOGS) or "R" (EGGS), set at unlock */
+let WHO = null;
+try{ WHO = sessionStorage.getItem("rl-tracker-who"); }catch(e){}
+
+/* shared heart state, reapplied whenever rows are added.
+   Values are {L:true, R:true} flags; a legacy plain true counts as both. */
 let lastHearts = {};
+function heartState(id){
+  const v = lastHearts[id];
+  return v === true ? { L: true, R: true } : (v || {});
+}
 function applyHearts(){
   document.querySelectorAll(".track").forEach(row=>{
-    row.querySelector(".heart").classList.toggle("on", !!lastHearts[row.dataset.id]);
+    const s = heartState(row.dataset.id);
+    const h = row.querySelector(".heart");
+    h.classList.toggle("l", !!s.L);
+    h.classList.toggle("r", !!s.R);
   });
 }
 
@@ -711,10 +751,17 @@ function startDb(){
 
 function wireHeart(h){
   h.addEventListener("click", ()=>{
-    if(!db) return;
-    const row = h.closest(".track");
-    const on = h.classList.contains("on");
-    db.ref("weddingTracker/music/" + row.dataset.id).set(on ? null : true);
+    if(!db || !WHO) return;
+    const id = h.closest(".track").dataset.id;
+    const cur = heartState(id);
+    const on = !!cur[WHO];
+    if(lastHearts[id] === true){
+      const next = { L: true, R: true };
+      if(on) delete next[WHO];
+      db.ref("weddingTracker/music/" + id).set(next);
+    } else {
+      db.ref("weddingTracker/music/" + id + "/" + WHO).set(on ? null : true);
+    }
   });
 }
 function wireHide(b){
@@ -815,15 +862,19 @@ function wireAddForm(wrap, mi){
 /* =====================================================================
    Gate
    ===================================================================== */
-const PASSCODE = "DOGS";
+const PASSCODES = { DOGS: "L", EGGS: "R" };   // Lorraine and Richard
 const UNLOCK_KEY = "rl-tracker-unlocked";
 const splash = document.getElementById("splash");
 const pin = document.getElementById("pin");
 const dotsEl = document.getElementById("dots");
 const splashErr = document.getElementById("splash-err");
 
-function unlock(){
-  try{ sessionStorage.setItem(UNLOCK_KEY, "1"); }catch(e){}
+function unlock(who){
+  if(who) WHO = who;
+  try{
+    sessionStorage.setItem(UNLOCK_KEY, "1");
+    if(who) sessionStorage.setItem("rl-tracker-who", who);
+  }catch(e){}
   splash.classList.add("hidden");
   startDb();
 }
@@ -838,7 +889,8 @@ pin.addEventListener("input", ()=>{
   pin.value = pin.value.replace(/[^a-zA-Z0-9]/g,"").slice(0,4);
   paintDots();
   if(pin.value.length === 4){
-    if(pin.value.toUpperCase() === PASSCODE.toUpperCase()){ unlock(); }
+    const who = PASSCODES[pin.value.toUpperCase()];
+    if(who){ unlock(who); }
     else{
       splashErr.textContent = "That's not it. Try again.";
       dotsEl.classList.add("shake");
@@ -852,7 +904,9 @@ dotsEl.addEventListener("click", ()=>pin.focus());
 
 let unlocked = false;
 try{ unlocked = sessionStorage.getItem(UNLOCK_KEY) === "1"; }catch(e){}
-if(unlocked){
+// hearts need to know who is tapping, so an unlocked session without a
+// stored identity (from before per-person codes) re-enters its code once
+if(unlocked && WHO){
   splash.classList.add("hidden");
   startDb();
 } else {
