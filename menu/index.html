@@ -111,20 +111,20 @@
   #intro .medallion{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     background:var(--cream);
-    padding:26px 34px;text-align:center;
+    padding:32px clamp(18px,5vw,42px);text-align:center;
     box-shadow:0 6px 24px rgba(59,56,47,.22);
     opacity:0;animation:med-in .5s ease .35s forwards;
-    max-width:82vw;
+    max-width:86vw;
   }
   @keyframes med-in{from{opacity:0}to{opacity:1}}
-  #intro .m-names{font-family:'Parisienne',cursive;font-size:30px;color:var(--rust);line-height:1.2}
+  #intro .m-names{font-family:'Parisienne',cursive;font-size:clamp(30px,8.6vw,56px);color:var(--rust);line-height:1.2;white-space:nowrap}
   #intro .m-line{
-    font-family:'Marcellus',serif;font-size:11px;letter-spacing:.24em;
-    text-transform:uppercase;color:var(--mutedbrown);margin-top:10px;
+    font-family:'Marcellus',serif;font-size:clamp(12px,3.4vw,15px);letter-spacing:.24em;
+    text-transform:uppercase;color:var(--mutedbrown);margin-top:12px;
   }
   #intro .m-hint{
-    font-family:'Marcellus',serif;font-size:9px;letter-spacing:.28em;
-    text-transform:uppercase;color:var(--sage);margin-top:16px;
+    font-family:'Marcellus',serif;font-size:clamp(10px,2.8vw,12px);letter-spacing:.28em;
+    text-transform:uppercase;color:var(--sage);margin-top:18px;
     opacity:0;animation:med-in .5s ease 1.4s forwards;
   }
   @media (prefers-reduced-motion: reduce){
@@ -345,7 +345,7 @@ function dealQuilt(){
   const grid = document.getElementById("intro-grid");
   // fixed square cells; the grid overruns the viewport edges and is
   // cropped, so blocks bleed off like the printed bands
-  const px = 76, gap = 6;
+  const px = window.innerWidth < 680 ? 100 : 128, gap = 6;
   const cols = Math.ceil((window.innerWidth + gap) / (px + gap));
   const rows = Math.ceil((window.innerHeight + gap) / (px + gap));
   grid.style.gridTemplateColumns = "repeat(" + cols + "," + px + "px)";
