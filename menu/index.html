@@ -156,8 +156,7 @@
   #quilt-bottom{margin:30px -24px -34px}
   .quilt .qblock{flex:0 0 auto}
 
-  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:16px}
-  @media(max-width:680px){.tiles{grid-template-columns:1fr}}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
   .tile{
     display:block;text-decoration:none;
     background:var(--card);
@@ -189,6 +188,19 @@
     border-radius:999px;padding:9px 22px;
   }
   .rsvp-btn:hover{background:#8a3f26}
+
+  @media(max-width:680px){
+    .tiles{grid-template-columns:1fr 1fr;gap:12px}
+    .tile{padding:16px 10px}
+    .tile .qblock{width:46px;height:46px;margin-bottom:8px}
+    .tile .t-name{font-size:20px}
+    .tile .t-desc{display:none}
+    header{padding:30px 24px 26px;margin-bottom:22px}
+    #quilt-top{margin:-30px -24px 22px}
+    #quilt-bottom{margin:22px -24px -26px}
+    header .meta{margin-top:10px}
+    .rsvp-row{margin-top:18px}
+  }
 
   footer{margin-top:44px;text-align:center;color:var(--sage);font-size:13px}
 </style>
