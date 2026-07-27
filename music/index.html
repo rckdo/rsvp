@@ -15,6 +15,9 @@
   v1.1 (27/07/2026): Twelve candidates per moment including
     contemporary picks; genre tags instead of per-track blurbs; drier
     section copy; Spotify links for full versions.
+  v1.2 (27/07/2026): Spotify logo icon replaces the text link; shared
+    thumbs-down hides a track into a collapsed list per section
+    (stored under weddingTracker/musicHidden); intro note removed.
 -->
 <html lang="en-GB">
 <head>
@@ -115,16 +118,6 @@
   #quilt-bottom{margin:30px -24px -34px}
   .quilt .qblock{flex:0 0 auto}
 
-  .intro-note{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:14px;
-    padding:14px 18px;
-    font-size:14px;color:var(--sage);
-    margin-bottom:6px;
-  }
-  .intro-note b{color:var(--forest)}
-
   h2.sec{
     font-family:'Cormorant Garamond',Georgia,serif;
     font-weight:600;font-size:28px;color:var(--forest);
@@ -165,8 +158,25 @@
     color:var(--sage);background:var(--paper);
     border:1px solid var(--line);border-radius:999px;padding:1.5px 9px;
   }
-  .sp{font-size:11.5px;color:var(--gold);text-decoration:none}
-  .sp:hover{text-decoration:underline}
+  .sp{color:#1db954;display:inline-flex;align-items:center;line-height:1}
+  .sp:hover{color:#169c46}
+  .hide{
+    flex:0 0 auto;
+    background:none;border:none;cursor:pointer;
+    color:var(--line-strong);padding:6px 4px;line-height:1;
+    transition:color .15s ease;
+  }
+  .hide:hover{color:var(--rust)}
+  .hidden-list{margin-top:10px}
+  .hidden-list summary{
+    cursor:pointer;
+    font-size:12.5px;font-weight:700;letter-spacing:.03em;
+    color:var(--sage);padding:2px 4px;
+  }
+  .hidden-list .tracklist{margin-top:8px;opacity:.72}
+  .hidden-list .hide{color:var(--sage)}
+  .hidden-list .hide:hover{color:var(--forest)}
+  .hidden-list .hide svg{transform:rotate(180deg)}
   .t-perf{font-size:11.5px;color:var(--line-strong);line-height:1.3}
   .track.playing .t-perf{color:var(--sage)}
   .heart{
@@ -216,10 +226,6 @@
     </p>
     <div class="quilt" id="quilt-bottom" aria-hidden="true"></div>
   </header>
-
-  <div class="intro-note">
-    <b>How this works.</b> Tap play for a 30-second preview, or open the full track on Spotify. Hearts are shared between your devices. One piece is needed for each of the four moments, and everything must be non-religious.
-  </div>
 
   <div id="sections"></div>
 
@@ -312,8 +318,14 @@ function slug(s){
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 }
 
+const SPOTIFY_SVG =
+  '<svg viewBox="0 0 496 512" width="19" height="19" fill="currentColor" aria-hidden="true"><path d="M248 8C111.1 8 0 119.1 0 256s111.1 248 248 248 248-111.1 248-248S384.9 8 248 8zm100.7 364.9c-4.2 6.8-13.2 8.9-20 4.7-55-33.6-124.6-41.2-206.3-22.5-7.8 1.8-15.5-3.1-17.3-10.9-1.8-7.8 3.1-15.5 10.9-17.3 89.7-20.5 166.6-11.7 228.1 25.9 6.8 4.3 8.9 13.3 4.6 20.1zm26.9-65.6c-5.3 8.6-16.5 11.3-25.1 6.1-62.9-38.7-158.8-49.9-233.2-27.3-9.7 2.9-19.9-2.5-22.9-12.2-2.9-9.7 2.5-19.9 12.2-22.9 85-25.8 190.7-13.3 263 31.2 8.6 5.3 11.3 16.6 6 25.1zm2.3-62.7c-75.5-44.8-200-49-272-27.1-11.6 3.5-23.9-3-27.4-14.6-3.5-11.6 3-23.9 14.6-27.4 82.7-25.1 220.2-20.3 307.1 31.3 10.4 6.2 13.8 19.6 7.7 30-6.2 10.5-19.6 13.9-30 7.7z"/></svg>';
+const THUMB_SVG =
+  '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>';
+
 /* build the lists */
 const root = document.getElementById("sections");
+const sectionRefs = [];
 MOMENTS.forEach(m=>{
   const h = document.createElement("h2");
   h.className = "sec";
@@ -323,6 +335,7 @@ MOMENTS.forEach(m=>{
   sub.textContent = m.sub;
   const list = document.createElement("div");
   list.className = "tracklist";
+  const rows = [];
   m.tracks.forEach(([title, artist, genre])=>{
     const id = slug(title);
     const row = document.createElement("div");
@@ -334,20 +347,48 @@ MOMENTS.forEach(m=>{
       '<div class="t-info">' +
         '<div class="t-title"></div>' +
         '<div class="t-artist"></div>' +
-        '<div class="t-meta"><span class="tag"></span><a class="sp" target="_blank" rel="noopener">Full track on Spotify</a></div>' +
+        '<div class="t-meta"><span class="tag"></span><a class="sp" target="_blank" rel="noopener" aria-label="Open in Spotify">' + SPOTIFY_SVG + '</a></div>' +
         '<div class="t-perf"></div>' +
       '</div>' +
-      '<button class="heart" type="button" aria-label="Favourite">&#10084;</button>';
+      '<button class="heart" type="button" aria-label="Favourite">&#10084;</button>' +
+      '<button class="hide" type="button" aria-label="Hide this piece">' + THUMB_SVG + '</button>';
     row.querySelector(".t-title").textContent = title;
     row.querySelector(".t-artist").textContent = artist;
     row.querySelector(".tag").textContent = genre;
     row.querySelector(".sp").href = "https://open.spotify.com/search/" + encodeURIComponent(title + " " + artist);
     list.appendChild(row);
+    rows.push(row);
   });
+  const det = document.createElement("details");
+  det.className = "hidden-list";
+  det.style.display = "none";
+  const sum = document.createElement("summary");
+  const hlist = document.createElement("div");
+  hlist.className = "tracklist";
+  det.appendChild(sum);
+  det.appendChild(hlist);
   root.appendChild(h);
   root.appendChild(sub);
   root.appendChild(list);
+  root.appendChild(det);
+  sectionRefs.push({ list, hlist, det, sum, rows });
 });
+
+/* shared hidden state: rows fold away into the per-section list */
+let hiddenState = {};
+function applyHidden(){
+  sectionRefs.forEach(s=>{
+    let n = 0;
+    s.rows.forEach(row=>{
+      const off = !!hiddenState[row.dataset.id];
+      if(off){ n++; }
+      (off ? s.hlist : s.list).appendChild(row);
+      row.querySelector(".hide").setAttribute("aria-label", off ? "Bring this piece back" : "Hide this piece");
+    });
+    s.det.style.display = n ? "" : "none";
+    s.sum.textContent = "Hidden (" + n + ")";
+  });
+}
 
 /* header quilt bands */
 (function(){
@@ -469,6 +510,10 @@ function startDb(){
         row.querySelector(".heart").classList.toggle("on", !!v[row.dataset.id]);
       });
     });
+    db.ref("weddingTracker/musicHidden").on("value", snap=>{
+      hiddenState = snap.val() || {};
+      applyHidden();
+    });
   }).catch(()=>{});
 }
 
@@ -478,6 +523,15 @@ document.querySelectorAll(".track .heart").forEach(h=>{
     const row = h.closest(".track");
     const on = h.classList.contains("on");
     db.ref("weddingTracker/music/" + row.dataset.id).set(on ? null : true);
+  });
+});
+
+document.querySelectorAll(".track .hide").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    if(!db) return;
+    const row = b.closest(".track");
+    const off = !!hiddenState[row.dataset.id];
+    db.ref("weddingTracker/musicHidden/" + row.dataset.id).set(off ? null : true);
   });
 });
 
