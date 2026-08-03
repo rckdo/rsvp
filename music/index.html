@@ -28,15 +28,24 @@
   v1.5 (27/07/2026): Spotify icon in the tray, linking to the loaded
     piece's Spotify destination.
   v1.6 (27/07/2026): Per-person hearts. DOGS unlocks as Lorraine (L),
-    EGGS as Richard (R), identity kept in sessionStorage. Each half
+    EGGS as Richard (R), identity remembered on the device. Each half
     of the heart lights with its letter when that person favourites;
     hearts store {L,R} flags under weddingTracker/music/{slug}.
+  v1.7 (27/07/2026): Installable as the L&R app: manifest, pinwheel
+    icon, service worker, and the unlock kept in localStorage so the
+    installed app opens straight to the page.
 -->
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Music : Lorraine &amp; Richard</title>
+<link rel="manifest" href="/app.webmanifest">
+<meta name="theme-color" content="#2f4a3c">
+<link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="L&amp;R">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Karla:wght@400;500;700&family=Marcellus&display=swap" rel="stylesheet">
@@ -521,7 +530,7 @@ MOMENTS.forEach((m, mi)=>{
 
 /* who is using this device: "L" (DOGS) or "R" (EGGS), set at unlock */
 let WHO = null;
-try{ WHO = sessionStorage.getItem("rl-tracker-who"); }catch(e){}
+try{ WHO = localStorage.getItem("rl-tracker-who"); }catch(e){}
 
 /* shared heart state, reapplied whenever rows are added.
    Values are {L:true, R:true} flags; a legacy plain true counts as both. */
@@ -872,8 +881,8 @@ const splashErr = document.getElementById("splash-err");
 function unlock(who){
   if(who) WHO = who;
   try{
-    sessionStorage.setItem(UNLOCK_KEY, "1");
-    if(who) sessionStorage.setItem("rl-tracker-who", who);
+    localStorage.setItem(UNLOCK_KEY, "1");
+    if(who) localStorage.setItem("rl-tracker-who", who);
   }catch(e){}
   splash.classList.add("hidden");
   startDb();
@@ -903,7 +912,7 @@ pin.addEventListener("input", ()=>{
 dotsEl.addEventListener("click", ()=>pin.focus());
 
 let unlocked = false;
-try{ unlocked = sessionStorage.getItem(UNLOCK_KEY) === "1"; }catch(e){}
+try{ unlocked = localStorage.getItem(UNLOCK_KEY) === "1"; }catch(e){}
 // hearts need to know who is tapping, so an unlocked session without a
 // stored identity (from before per-person codes) re-enters its code once
 if(unlocked && WHO){
@@ -911,6 +920,11 @@ if(unlocked && WHO){
   startDb();
 } else {
   pin.focus();
+}
+</script>
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{ navigator.serviceWorker.register("/sw.js").catch(()=>{}); });
 }
 </script>
 </body>

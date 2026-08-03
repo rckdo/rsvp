@@ -1,0 +1,23 @@
+{
+  "id": "/menu/",
+  "name": "L&R",
+  "short_name": "L&R",
+  "description": "Lorraine and Richard's wedding pages",
+  "start_url": "/menu/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#efe6d3",
+  "theme_color": "#2f4a3c",
+  "lang": "en-GB",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Tracker", "url": "/tracker/" },
+    { "name": "Music", "url": "/music/" },
+    { "name": "Stationery", "url": "/stationery/" }
+  ]
+}
