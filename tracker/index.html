@@ -78,6 +78,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wedding Tracker : Lorraine &amp; Richard</title>
+<link rel="manifest" href="/app.webmanifest">
+<meta name="theme-color" content="#2f4a3c">
+<link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="L&amp;R">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
@@ -841,8 +847,8 @@ const splashErr = document.getElementById("splash-err");
 
 function unlock(who){
   try{
-    sessionStorage.setItem(UNLOCK_KEY, "1");
-    if(who) sessionStorage.setItem("rl-tracker-who", who);
+    localStorage.setItem(UNLOCK_KEY, "1");
+    if(who) localStorage.setItem("rl-tracker-who", who);
   }catch(e){}
   splash.classList.add("hidden");
   start();
@@ -1634,7 +1640,7 @@ document.getElementById("reset").addEventListener("click", ()=>{
    Kick off
    --------------------------------------------------------------------- */
 let unlocked = false;
-try{ unlocked = sessionStorage.getItem(UNLOCK_KEY) === "1"; }catch(e){}
+try{ unlocked = localStorage.getItem(UNLOCK_KEY) === "1"; }catch(e){}
 if(unlocked){
   splash.classList.add("hidden");
   start();
@@ -1643,6 +1649,11 @@ if(unlocked){
 }
 updateCountdown();
 setInterval(updateCountdown, 60000);
+</script>
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{ navigator.serviceWorker.register("/sw.js").catch(()=>{}); });
+}
 </script>
 </body>
 </html>
