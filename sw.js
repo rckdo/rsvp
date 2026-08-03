@@ -3,7 +3,7 @@
    cache is a fallback for a poor signal or no signal at all.
    Bump CACHE when the shell changes so old copies are cleared. */
 
-const CACHE = "lr-v1";
+const CACHE = "lr-v2";
 
 const SHELL = [
   "/menu/",
