@@ -9,6 +9,10 @@
   Deliberately unlinked from the rest of the site for now.
 
   v1.0 (03/09/2026): Initial build, moved over from the design demo.
+  v1.1 (03/09/2026): Pinch to zoom on the map, up to 2x, panned within
+       the map's own edges; labels keep their size while the map grows.
+       One finger scrolls the page as normal until you are zoomed in,
+       then it pans the map.
 -->
 <html lang="en-GB">
 <head>
@@ -59,7 +63,7 @@
 
   /* The map stays put. The robin lives inside it, in map units, so his feet stay on the pin. */
   .mapwrap{position:relative;margin:6px 8px 0}
-  .map{display:block;width:100%;height:auto;overflow:visible}
+  .map{display:block;width:100%;height:auto;overflow:visible;touch-action:pan-y}
   .map text{font-family:'Marcellus',serif;fill:var(--bark);letter-spacing:.06em}
   .map .park{fill:#7a7c47}
   .map .gardens{fill:#66693a}
@@ -451,10 +455,60 @@
   var RW=+robin.getAttribute('width'), RH=+robin.getAttribute('height');
   /* Luggage tags: one per pin, tied under the disc. They hang still; the one he lands on lifts, swells, swings, settles. */
   var NS='http://www.w3.org/2000/svg', TAGS=[];
+  /* ---- Pinch zoom: up to 2x, bounded to the map, labels hold their size ---- */
+  var VB_H=svg.viewBox.baseVal.height;
+  var vb={x:0,y:0,w:VB_W,h:VB_H};
+  function applyVB(){
+    svg.setAttribute('viewBox',vb.x.toFixed(1)+' '+vb.y.toFixed(1)+' '+vb.w.toFixed(1)+' '+vb.h.toFixed(1));
+    var zoomed=vb.w<VB_W-1;
+    // zoomed in, the map clips at its frame and one finger pans it;
+    // at rest it overflows gently (the robin's head) and the page scrolls
+    svg.style.overflow=zoomed?'hidden':'visible';
+    svg.style.touchAction=zoomed?'none':'pan-y';
+  }
+  function clampVB(){
+    vb.w=Math.max(VB_W/2,Math.min(VB_W,vb.w)); vb.h=vb.w*VB_H/VB_W;
+    vb.x=Math.max(0,Math.min(VB_W-vb.w,vb.x));
+    vb.y=Math.max(0,Math.min(VB_H-vb.h,vb.y));
+  }
+  (function(){
+    var last=null, panned=false;
+    function pt(t){ var r=svg.getBoundingClientRect(); return {x:(t.clientX-r.left)/r.width, y:(t.clientY-r.top)/r.height}; }
+    svg.addEventListener('touchstart',function(e){
+      if(e.touches.length===2){ last={a:pt(e.touches[0]),b:pt(e.touches[1])}; }
+      else if(e.touches.length===1){ last={a:pt(e.touches[0])}; }
+    },{passive:true});
+    svg.addEventListener('touchmove',function(e){
+      if(e.touches.length===2&&last&&last.b){
+        e.preventDefault(); panned=true;
+        var a=pt(e.touches[0]), b=pt(e.touches[1]);
+        var d0=Math.hypot(last.b.x-last.a.x,last.b.y-last.a.y)||1e-4;
+        var d1=Math.hypot(b.x-a.x,b.y-a.y)||1e-4;
+        var mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+        var mMapX=vb.x+mx*vb.w, mMapY=vb.y+my*vb.h;
+        vb.w=vb.w*(d0/d1);
+        clampVB();
+        vb.x=mMapX-mx*vb.w; vb.y=mMapY-my*vb.h;
+        clampVB(); applyVB();
+        last={a:a,b:b};
+      } else if(e.touches.length===1&&last&&!last.b&&vb.w<VB_W-1){
+        e.preventDefault(); panned=true;
+        var a1=pt(e.touches[0]);
+        vb.x-=(a1.x-last.a.x)*vb.w; vb.y-=(a1.y-last.a.y)*vb.h;
+        clampVB(); applyVB();
+        last={a:a1};
+      }
+    },{passive:false});
+    svg.addEventListener('touchend',function(e){ if(e.touches.length===0){ last=null; setTimeout(function(){panned=false;},80); } else if(e.touches.length===1){ last={a:pt(e.touches[0])}; } },{passive:true});
+    // a pan or pinch is never also a tap on a pin
+    svg.addEventListener('click',function(e){ if(panned){ e.preventDefault(); e.stopPropagation(); } },true);
+  })();
+  applyVB();
+
   var strLayer=document.createElementNS(NS,'g'); svg.insertBefore(strLayer,robinG);
   var tagLayer=document.createElementNS(NS,'g'); tagLayer.setAttribute('id','tags'); svg.insertBefore(tagLayer,robinG);
   var wrap=document.getElementById('mapwrap');
-  function px(){ return VB_W/Math.max(1,wrap.clientWidth); }        // map units per screen pixel
+  function px(){ return vb.w/Math.max(1,wrap.clientWidth); }        // map units per screen pixel, zoom-aware
   function splitLabel(s){
     if(s.indexOf('|')>=0)return s.split('|');
     if(s.length<=15)return [s];
