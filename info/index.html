@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<!--
+  For our guests : Lorraine & Richard
+  The public guest information page. A locked map of Bath traced from
+  OpenStreetMap (source data and build script in /info/map-source/),
+  hanging name tags at each stop, a snap-scrolling deck of cards for
+  the order of the day, and Mr Robin hopping between the pins. Icons
+  are Lucide (loaded from jsDelivr, hand-drawn fallbacks inline).
+  Deliberately unlinked from the rest of the site for now.
+
+  v1.0 (03/09/2026): Initial build, moved over from the design demo.
+-->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Where to find us, where to park and how to get about on Monday 21 September 2026.">
+<link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<title>For our guests &middot; Lorraine &amp; Richard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:wght@600&family=Marcellus&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#efe6d3; --ochre:#e0cfa4; --card:#f5eddc; --paper:#fff8ea;
+    --rust:#a34a2c; --olive:#7a7c47; --gold:#c99a3f; --terra:#bf6a43; --bark:#4a3f2f;
+    --sage:#6f8a77; --ink:#3b382f; --muted:#8a7256; --line:#d9caa7;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    min-height:100vh;background:#e7e0d2;color:var(--ink);
+    font-family:'Cormorant Garamond',Georgia,serif;
+    display:flex;align-items:flex-start;justify-content:center;padding:18px 10px 30px;
+  }
+  @media(max-width:520px){ body{padding:0 0 24px} .card{box-shadow:none;animation:none} }
+  .sky{position:fixed;inset:-12%;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(42% 38% at 26% 22%, rgba(224,188,128,.42), transparent 72%),
+      radial-gradient(40% 36% at 78% 74%, rgba(159,124,89,.30), transparent 72%),
+      radial-gradient(46% 50% at 62% 40%, rgba(122,124,71,.18), transparent 74%),
+      #e7e0d2;
+    animation:sky 30s ease-in-out infinite alternate}
+  @keyframes sky{from{transform:none}to{transform:translate3d(2.5%,-2%,0) scale(1.08)}}
+
+  .card{width:460px;max-width:100%;background:var(--cream);position:relative;z-index:1;
+    box-shadow:0 18px 44px rgba(59,56,47,.20);animation:card-in 1s cubic-bezier(.22,1,.36,1) both;overflow:hidden}
+  @keyframes card-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+  .band{background:var(--ochre);display:flex;justify-content:center;gap:5px;padding:8px 0;overflow:hidden}
+  .band .block{flex:0 0 auto;animation:bloom .6s ease both}
+  .band .block .cell{width:100%;height:100%}
+  @keyframes bloom{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+
+  .head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:14px 22px 0}
+  .head h1{font-family:'Playfair Display',serif;font-weight:600;font-size:22px;letter-spacing:.03em;color:var(--bark);margin:0;white-space:nowrap}
+  .head .when{font-family:'Marcellus',serif;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#9e5a30;text-align:right;line-height:1.5}
+
+  /* The map stays put. The robin lives inside it, in map units, so his feet stay on the pin. */
+  .mapwrap{position:relative;margin:6px 8px 0}
+  .map{display:block;width:100%;height:auto;overflow:visible}
+  .map text{font-family:'Marcellus',serif;fill:var(--bark);letter-spacing:.06em}
+  .map .park{fill:#7a7c47}
+  .map .gardens{fill:#66693a}
+  .map .square{fill:none;stroke:#c99a3f;stroke-width:3.5;stroke-linejoin:round}
+  .map .river{fill:none;stroke:#6f8a77;stroke-width:14;stroke-linecap:round;stroke-linejoin:round}
+  .map .crescent{fill:none;stroke:#c99a3f;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+  .map .circus{fill:none;stroke:#c99a3f;stroke-width:4.5;stroke-linejoin:round}
+  .map .abbey{fill:#4a3f2f}
+  .map .bridge{fill:none;stroke:#4a3f2f;stroke-width:5;stroke-linecap:round}
+  .map .street{fill:none;stroke:#4a3f2f;stroke-width:1.6;stroke-dasharray:4 4;opacity:.38;stroke-linecap:round;stroke-linejoin:round}
+  .map .pin{cursor:pointer}
+  .map .pin circle.disc{fill:var(--cream);stroke-width:3.5;transition:transform .15s ease;transform-origin:center;transform-box:fill-box}
+  .map .pin:hover circle.disc{transform:scale(1.08)}
+  .map .pin:focus{outline:none}
+  .map .pin:focus-visible circle.disc{stroke-dasharray:4 3}
+  .map .pin.here circle.disc{fill:var(--paper)}
+  .map .town{fill:#e6d9b9;stroke:#e6d9b9;stroke-width:26;stroke-linejoin:round}
+  .map .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;fill:#8a7256;paint-order:stroke;stroke:#efe6d3;stroke-width:3px;stroke-linejoin:round}
+  .map .lbl.onpark{stroke:none;fill:#efe6d3;opacity:.9}
+  #robin{pointer-events:none;filter:drop-shadow(0 3px 3px rgba(59,56,47,.28))}
+  .map .tag{cursor:pointer}
+  .map .string{stroke:var(--bark);stroke-width:1.2;fill:none}
+  .map .string.post{stroke-width:4;stroke-linecap:round}
+  .map .tag .plate{fill:var(--paper);stroke:var(--bark);stroke-width:1.1;filter:url(#tagshadow);transition:fill .25s ease}
+  .map .tag .hole{fill:#e7e0d2;stroke:var(--bark);stroke-width:1}
+  .map .tag text{font-family:'Playfair Display',serif;font-weight:600;font-size:15px;fill:var(--bark);letter-spacing:0;transition:fill .25s ease}
+  .map .tag.up .plate{fill:#fffdf6}
+  .map .tag.up text{fill:var(--rust)}
+  .map .pin.taxi .board{fill:var(--paper);stroke:var(--bark);stroke-width:2;filter:url(#tagshadow);transition:fill .25s ease,transform .15s ease;transform-origin:center;transform-box:fill-box}
+  .map .pin.taxi:hover .board{transform:scale(1.03)}
+  .map .pin.taxi.here .board{fill:#fffdf6}
+  .map .pin.taxi .boardtxt{font-family:'Playfair Display',serif;font-weight:600;font-size:26px;fill:var(--bark);letter-spacing:.01em}
+  .map .pin.taxi.here .boardtxt{fill:var(--rust)}
+  .map .pin.taxi:focus-visible .board{stroke-dasharray:4 3}
+
+
+  /* The deck: one card per stop, snaps, never hides the map. */
+  .deck{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 8% 6px;touch-action:pan-x pan-y;cursor:grab;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+  .deck.dragging{scroll-snap-type:none;scroll-behavior:auto;cursor:grabbing;user-select:none}
+  .deck.dragging .stop a{pointer-events:none}
+  .deck::-webkit-scrollbar{display:none}
+  .stop{flex:0 0 84%;scroll-snap-align:center;background:var(--card);border:1px solid var(--line);
+    padding:16px 18px 16px;min-height:150px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+  .stop .top{display:flex;align-items:center;gap:12px}
+  .stop .glyph{flex:0 0 auto;width:40px;height:40px;border-radius:50%;background:var(--cream);border:2.5px solid currentColor;display:grid;place-items:center}
+  .stop .glyph svg{width:24px;height:24px;display:block}
+  .stop .eyebrow{font-family:'Marcellus',serif;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#9e5a30}
+  .stop .name{font-weight:600;font-size:21px;color:var(--bark);line-height:1.15;margin-top:1px}
+  .stop .detail{font-size:15.5px;font-style:italic;color:var(--muted);line-height:1.35;margin:0}
+  .stop .acts{display:flex;gap:8px;flex-wrap:wrap}
+  .stop .act{display:inline-block;text-decoration:none;font-family:'Marcellus',serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--cream);background:var(--rust);padding:9px 14px;white-space:nowrap}
+  .stop .act:hover{background:#8a3f26}
+  .stop .act.go{display:inline-flex;align-items:center;gap:8px;background:var(--paper);color:var(--bark);border:1.3px solid var(--bark);padding:7px 14px 7px 9px}
+  .stop .act.go:hover{background:#fff}
+  .stop .act.go svg{width:20px;height:20px;display:block}
+  .stop .act.go .dia{fill:#4285f4}
+  .stop .act.go .arr{fill:#fff}
+  .stop .act:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
+  .dots{display:flex;justify-content:center;gap:7px;padding:4px 0 18px}
+  .dots button{width:8px;height:8px;border-radius:50%;border:none;padding:0;background:var(--line);cursor:pointer}
+  .dots button.on{background:var(--rust)}
+  .dots button:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
+
+  .credit-line{text-align:center;font-family:'Marcellus',serif;font-size:9px;letter-spacing:.08em;color:#8a7256;opacity:.75;padding:0 0 12px}
+
+  @media(prefers-reduced-motion:reduce){
+    .card,.band .block,.sky{animation:none}
+    .deck{scroll-behavior:auto}
+  }
+</style>
+</head>
+<body>
+
+<div class="sky" aria-hidden="true"></div>
+
+<main class="card">
+  <div class="band" id="band" aria-hidden="true"></div>
+
+  <div class="head">
+    <h1>For our guests</h1>
+    <div class="when">21 September 2026<br>One o&rsquo;clock</div>
+  </div>
+
+  <div class="mapwrap" id="mapwrap">
+    <svg class="map" viewBox="0 0 720 677" role="img" aria-label="A map of Bath, traced from OpenStreetMap, showing the Temple of Minerva, the car parks, the Bath Cider House and Bath Spa station">
+      <defs>
+        <symbol id="g-rings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="14.5" r="4.6"/><circle cx="15" cy="11.5" r="4.6"/><path d="M15 2.6l2.1 2.1L15 6.8l-2.1-2.1z" fill="currentColor" stroke="none"/></symbol>
+        <symbol id="g-car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5H3.6a1 1 0 0 1-1-1v-2.2c0-.9.6-1.7 1.5-1.9l1.7-.5 1.9-3.9A2 2 0 0 1 9.5 6h5a2 2 0 0 1 1.8 1.1l1.9 3.8 1.7.5c.9.2 1.5 1 1.5 1.9v2.2a1 1 0 0 1-1 1h-.9"/><path d="M6.3 10.9h11.4"/><circle cx="7.7" cy="16.8" r="2"/><circle cx="16.3" cy="16.8" r="2"/><path d="M9.7 16.8h4.6"/></symbol>
+        <symbol id="g-cider" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 7.5h7v10.2a2.3 2.3 0 0 1-2.3 2.3h-2.4a2.3 2.3 0 0 1-2.3-2.3z"/><path d="M8.5 7.5c-.9-.3-1.4-1-1.4-1.9 0-1.2.9-2.1 2.1-2.1.3-1 1.3-1.7 2.4-1.7 1 0 1.9.6 2.3 1.5 1.3-.2 2.5.8 2.5 2.1 0 1-.6 1.8-1.4 2.1"/><path d="M15.5 10h1.6a2 2 0 0 1 2 2v2.4a2 2 0 0 1-2 2h-1.6"/><path d="M11 11v5M13.5 11v5" opacity=".45"/></symbol>
+        <symbol id="g-train" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="13.5" rx="2.6"/><path d="M6 9.5h12"/><circle cx="9.2" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="14.8" cy="13" r="1" fill="currentColor" stroke="none"/><path d="M9 16.5 6.8 21M15 16.5 17.2 21M7.8 19.3h8.4"/></symbol>
+        <symbol id="g-cab" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9.6" y="1.5" width="4.8" height="2.6" rx=".8"/><path d="M4.5 17.5H3.6a1 1 0 0 1-1-1v-2.2c0-.9.6-1.7 1.5-1.9l1.7-.5 1.9-3.9A2 2 0 0 1 9.5 7h5a2 2 0 0 1 1.8 1.1l1.9 3.8 1.7.5c.9.2 1.5 1 1.5 1.9v2.2a1 1 0 0 1-1 1h-.9"/><path d="M6.3 11.9h11.4"/><circle cx="7.7" cy="17.8" r="2"/><circle cx="16.3" cy="17.8" r="2"/><path d="M9.7 17.8h4.6"/></symbol>
+        <symbol id="g-tea" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.1 7.6C6.7 9.4 6.4 12.3 7.9 15.3c.6 1.2 1.7 1.9 3 1.9h2.2c1.3 0 2.4-.7 3-1.9 1.5-3 1.2-5.9-.2-7.7z"/><path d="M8.6 7.6h6.8"/><circle cx="12" cy="5" r="1.4"/><path d="M7.3 9.6C5.2 9.9 3.9 11.2 3.7 13.2l2.8 1"/><path d="M16.8 9.6c1.9.4 3.1 1.6 3.1 3.1 0 1.3-.9 2.4-2.4 2.9"/><path d="M9 20.5h6"/></symbol>
+        <clipPath id="mapclip"><rect x="0" y="0" width="720" height="677"/></clipPath>
+        <filter id="tagshadow" x="-10%" y="-10%" width="120%" height="140%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-color="#4a3f2f" flood-opacity=".28"/></filter>
+      </defs>
+      <g clip-path="url(#mapclip)">
+      <!-- Traced from OpenStreetMap (© OpenStreetMap contributors, ODbL), simplified and painted -->
+<path class="town" d="M270,254 L276,302 L308,329 L561,475 L625,421 L580,87 L443,33 L270,116 Z"/>
+<path class="park" d="M374,220 L378,199 L302,178 L296,181 L283,221 L263,218 L252,201 L245,200 L234,207 L226,207 L223,205 L224,201 L248,177 L257,161 L261,142 L257,121 L218,107 L108,91 L91,85 L81,89 L76,118 L74,195 L78,215 L87,228 L156,245 L162,238 L166,217 L287,233 L291,235 L294,246 L299,251 L321,254 L339,267 L364,267 L372,258 L388,263 L381,281 L405,296 L412,287 L423,280 L438,277 L442,282 L434,253 L422,244 L412,232 L374,220 Z"/>
+<path class="gardens" d="M90,156 L108,162 L123,162 L171,147 L175,141 L172,117 L145,112 L106,123 L94,135 L90,156 Z"/>
+<path class="square" d="M453,334 L475,329 L470,307 L448,312 L453,334 Z"/>
+<path class="street" d="M535,247 L515,256"/>
+<path class="street" d="M465,272 L472,304"/>
+<path class="street" d="M504,260 L522,323"/>
+<path class="street" d="M570,541 L560,543"/>
+<path class="street" d="M560,470 L550,426 L544,424"/>
+<path class="street" d="M584,388 L543,398"/>
+<path class="street" d="M543,398 L494,404"/>
+<path class="street" d="M536,355 L542,397"/>
+<path class="street" d="M629,468 L629,481"/>
+<path class="street" d="M528,356 L522,329"/>
+<path class="street" d="M584,388 L579,383 L576,364"/>
+<path class="street" d="M568,328 L570,337"/>
+<path class="street" d="M568,328 L566,326"/>
+<path class="street" d="M495,584 L526,592 L532,586 L528,578"/>
+<path class="street" d="M545,581 L526,595 L495,584"/>
+<path class="street" d="M495,584 L467,575 L436,576 L355,596 L341,609"/>
+<path class="street" d="M413,319 L373,328"/>
+<path class="street" d="M441,312 L413,319"/>
+<path class="street" d="M80,233 L71,183 L73,116 L78,88 L84,81"/>
+<path class="street" d="M437,213 L379,197"/>
+<path class="street" d="M395,141 L465,157 L485,151"/>
+<path class="street" d="M459,208 L474,194 L519,184"/>
+<path class="street" d="M426,356 L432,345 L448,340"/>
+<path class="street" d="M379,197 L399,128"/>
+<path class="street" d="M310,118 L368,131 L373,128 L430,131 L506,159 L517,159"/>
+<path class="street" d="M581,86 L565,105 L555,127 L554,192 L535,247"/>
+<path class="street" d="M560,528 L561,533"/>
+<path class="street" d="M254,294 L282,222"/>
+<path class="street" d="M-35,26 L90,83 L130,93"/>
+<path class="street" d="M453,229 L465,272"/>
+<path class="street" d="M629,468 L627,427"/>
+<path class="street" d="M614,332 L602,340"/>
+<path class="street" d="M368,131 L391,156"/>
+<path class="street" d="M547,416 L545,410"/>
+<path class="street" d="M561,533 L561,534"/>
+<path class="street" d="M406,170 L388,165"/>
+<path class="street" d="M566,269 L566,317"/>
+<path class="street" d="M522,323 L523,327"/>
+<path class="street" d="M472,304 L477,327"/>
+<path class="street" d="M438,287 L430,260 L413,247 L356,231 L282,222"/>
+<path class="street" d="M282,222 L310,118"/>
+<path class="street" d="M572,345 L573,347"/>
+<path class="street" d="M556,334 L566,332 L566,326"/>
+<path class="street" d="M477,396 L453,373"/>
+<path class="street" d="M618,401 L610,398"/>
+<path class="street" d="M618,401 L627,427"/>
+<path class="street" d="M351,322 L300,310 L252,293"/>
+<path class="street" d="M561,534 L570,541"/>
+<path class="street" d="M650,308 L675,295"/>
+<path class="street" d="M575,357 L580,349"/>
+<path class="street" d="M573,347 L576,349"/>
+<path class="street" d="M771,241 L756,245"/>
+<path class="street" d="M561,534 L560,543"/>
+<path class="street" d="M575,357 L573,352"/>
+<path class="street" d="M756,245 L675,295"/>
+<path class="street" d="M504,260 L465,272"/>
+<path class="street" d="M570,337 L572,345"/>
+<path class="street" d="M556,334 L570,337"/>
+<path class="street" d="M407,145 L400,169"/>
+<path class="street" d="M413,146 L406,170"/>
+<path class="street" d="M523,327 L528,333"/>
+<path class="street" d="M529,334 L552,334"/>
+<path class="street" d="M572,172 L560,224 L563,240"/>
+<path class="street" d="M434,361 L424,362"/>
+<path class="street" d="M458,-42 L443,25 L443,38 L475,78 L500,97"/>
+<path class="street" d="M476,332 L456,337"/>
+<path class="street" d="M545,283 L535,247"/>
+<path class="street" d="M631,545 L596,543"/>
+<path class="street" d="M596,543 L586,543"/>
+<path class="street" d="M-4,267 L-63,289 L-119,278"/>
+<path class="street" d="M410,348 L376,334 L373,328"/>
+<path class="street" d="M441,312 L449,309"/>
+<path class="street" d="M756,245 L766,232"/>
+<path class="street" d="M675,295 L652,311"/>
+<path class="street" d="M573,352 L573,347"/>
+<path class="street" d="M566,317 L568,328"/>
+<path class="street" d="M73,233 L45,240 L10,258"/>
+<path class="street" d="M252,293 L215,281"/>
+<path class="street" d="M445,314 L449,309"/>
+<path class="street" d="M448,340 L450,334"/>
+<path class="street" d="M456,337 L448,340"/>
+<path class="street" d="M363,326 L373,328"/>
+<path class="street" d="M545,410 L543,399"/>
+<path class="street" d="M337,620 L329,677"/>
+<path class="street" d="M341,609 L337,620"/>
+<path class="street" d="M445,314 L441,312"/>
+<path class="street" d="M373,328 L363,326"/>
+<path class="street" d="M215,281 L160,249 L132,242"/>
+<path class="street" d="M578,107 L572,172"/>
+<path class="street" d="M563,240 L566,269"/>
+<path class="street" d="M559,319 L553,312 L546,285"/>
+<path class="street" d="M552,334 L556,334"/>
+<path class="street" d="M546,285 L545,283"/>
+<path class="street" d="M456,337 L450,334"/>
+<path class="street" d="M450,334 L445,314"/>
+<path class="street" d="M566,326 L559,319"/>
+<path class="street" d="M130,93 L213,104 L252,115"/>
+<path class="street" d="M252,115 L310,118"/>
+<path class="street" d="M10,258 L-2,265"/>
+<path class="street" d="M515,256 L504,260"/>
+<path class="street" d="M576,364 L575,357"/>
+<path class="street" d="M477,330 L476,332"/>
+<path class="street" d="M449,309 L472,304"/>
+<path class="street" d="M561,525 L561,473"/>
+<path class="street" d="M547,416 L548,424"/>
+<path class="street" d="M124,240 L106,236"/>
+<path class="street" d="M106,236 L96,234"/>
+<path class="street" d="M96,234 L73,233"/>
+<path class="street" d="M132,242 L124,240"/>
+<path class="street" d="M363,326 L351,322"/>
+<path class="street" d="M477,327 L477,330"/>
+<path class="street" d="M500,97 L515,133 L522,211 L535,247"/>
+<path class="street" d="M586,543 L570,541"/>
+<path class="street" d="M630,516 L631,545"/>
+<path class="street" d="M453,373 L426,356"/>
+<path class="street" d="M486,405 L477,396"/>
+<path class="street" d="M-2,265 L-4,267"/>
+<path class="street" d="M528,333 L529,334"/>
+<path class="street" d="M629,481 L630,516"/>
+<path class="river" d="M673,573 L653,581 L624,580 L510,550 L448,521 L408,488 L350,477 L332,466 L313,442"/>
+<path class="river" d="M620,353 L648,384"/>
+<path class="river" d="M611,343 L620,353"/>
+<path class="river" d="M648,384 L672,421 L688,455 L688,466 L681,491 L685,549 L680,564 L673,573"/>
+<path class="river" d="M313,442 L309,432 L303,397 L250,337 L214,319 L189,298 L170,288 L69,270 L41,276 L2,297 L-39,339 L-76,351 L-123,376 L-198,397"/>
+<path class="river" d="M634,352 L644,365"/>
+<path class="river" d="M644,365 L648,384"/>
+<path class="river" d="M611,343 L634,352"/>
+<path class="river" d="M991,-43 L984,-38 L909,-17 L839,22 L758,26 L732,32 L697,47 L663,73 L618,146 L608,166 L605,182 L592,284 L596,312 L611,343"/>
+<path class="river" d="M679,574 L673,573"/>
+<path class="crescent" d="M297,174 L311,178 L323,164 L333,162 L345,163 L361,174 L364,193 L379,197"/>
+<path class="circus" d="M453,229 L442,226 L438,222 L437,213"/>
+<path class="circus" d="M437,213 L439,209 L447,204 L455,205 L459,208 L463,218 L459,225 L453,229"/>
+<path class="abbey" d="M570,399 L572,408 L574,408 L574,410 L589,410 L591,406 L597,405 L596,395 L588,396 L587,394 L583,394 L584,397 L570,399 Z"/>
+<path class="bridge" d="M614,332 L602,340"/>
+      </g>
+      <g class="landmarks">
+<rect x="278" y="139" width="129" height="20" rx="2" fill="#5c6136"/><text class="lbl onpark" x="342" y="153" text-anchor="middle" font-size="12" style="fill:#efe6d3">Royal Crescent</text>
+<rect x="394" y="180" width="97" height="20" rx="2" fill="#5c6136"/><text class="lbl onpark" x="442" y="194" text-anchor="middle" font-size="12" style="fill:#efe6d3">The Circus</text>
+<rect x="595" y="393" width="89" height="20" rx="2" fill="#5c6136"/><text class="lbl onpark" x="603" y="407" text-anchor="start" font-size="12" style="fill:#efe6d3">The Abbey</text>
+<rect x="267" y="229" width="170" height="20" rx="2" fill="#5c6136"/><text class="lbl onpark" x="352" y="243" text-anchor="middle" font-size="12" style="fill:#efe6d3">Royal Victoria Park</text>
+      <rect x="376" y="305" width="56" height="18" rx="2" fill="#5c6136"/><text class="lbl onpark" x="426" y="319" text-anchor="end" font-size="12" style="fill:#efe6d3">Queen</text><rect x="369" y="324" width="63" height="18" rx="2" fill="#5c6136"/><text class="lbl onpark" x="426" y="338" text-anchor="end" font-size="12" style="fill:#efe6d3">Square</text>
+      </g>
+      <g class="pin" id="pin-temple" data-target="row-temple" data-x="143" data-y="98" data-len="40" data-post="0" data-tie="0" data-cx="143" data-cy="117" data-label="The Temple of Minerva" tabindex="0" role="button" aria-label="The Temple of Minerva" color="#a34a2c">
+        <path d="M143,143 l-7,-12 h14z" fill="#a34a2c"/>
+        <circle class="disc" cx="143" cy="117" r="19" stroke="#a34a2c"/>
+        <use href="#g-rings" x="130" y="104" width="26" height="26"/>
+        
+      </g>
+      <g class="pin" id="pin-local" data-target="row-local" data-x="90" data-y="64" data-len="6" data-post="1" data-tie="0" data-cx="90" data-cy="83" data-label="Street|parking" tabindex="0" role="button" aria-label="Street parking" color="#7a7c47">
+        <path d="M90,109 l-7,-12 h14z" fill="#7a7c47"/>
+        <circle class="disc" cx="90" cy="83" r="19" stroke="#7a7c47"/>
+        <use href="#g-car" x="77" y="70" width="26" height="26"/>
+        
+      </g>
+      <g class="pin" id="pin-long" data-target="row-long" data-x="339" data-y="254" data-len="34" data-post="0" data-tie="0" data-cx="339" data-cy="273" data-label="Charlotte Street car park" tabindex="0" role="button" aria-label="Charlotte Street car park" color="#c99a3f">
+        <path d="M339,299 l-7,-12 h14z" fill="#c99a3f"/>
+        <circle class="disc" cx="339" cy="273" r="19" stroke="#c99a3f"/>
+        <use href="#g-car" x="326" y="260" width="26" height="26"/>
+        
+      </g>
+      <g class="pin" id="pin-pub" data-target="row-pub" data-x="544" data-y="217" data-len="6" data-post="0" data-tie="0" data-cx="544" data-cy="236" data-label="The Bath Cider House" tabindex="0" role="button" aria-label="The Bath Cider House" color="#bf6a43">
+        <path d="M544,262 l-7,-12 h14z" fill="#bf6a43"/>
+        <circle class="disc" cx="544" cy="236" r="19" stroke="#bf6a43"/>
+        <use href="#g-cider" x="531" y="223" width="26" height="26"/>
+        
+      </g>
+      <g class="pin" id="pin-gardens" data-target="row-gardens" data-x="167" data-y="131" data-len="96" data-tie="0" data-cx="167" data-cy="150" data-label="Botanical|Gardens" tabindex="0" role="button" aria-label="Botanical Gardens" color="#66693a">
+        <path d="M167,176 l-7,-12 h14z" fill="#66693a"/>
+        <circle class="disc" cx="167" cy="150" r="19" stroke="#66693a"/>
+        <use href="#g-tea" x="154" y="137" width="26" height="26"/>
+      </g>
+      <g class="pin" id="pin-station" data-target="row-station" data-x="639" data-y="539" data-len="6" data-post="0" data-tie="-2" data-cx="639" data-cy="558" data-label="Bath Spa station" tabindex="0" role="button" aria-label="Bath Spa station" color="#4a3f2f">
+        <path d="M639,584 l-7,-12 h14z" fill="#4a3f2f"/>
+        <circle class="disc" cx="639" cy="558" r="19" stroke="#4a3f2f"/>
+        <use href="#g-train" x="626" y="545" width="26" height="26"/>
+        
+      </g>
+      <g class="pin taxi" id="pin-taxis" data-target="row-taxis" data-x="112" data-y="585" data-len="0" data-cx="112" data-cy="617" data-label="" tabindex="0" role="button" aria-label="Taxis" color="#4a3f2f">
+        <rect class="board" x="22" y="585" width="180" height="66" rx="4"/>
+        <use href="#g-cab" x="36" y="597" width="42" height="42"/>
+        <text class="boardtxt" x="92" y="627">Taxis</text>
+      </g>
+      <g id="robinG" aria-hidden="true"><image id="robin" href="data:image/webp;base64,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" x="-43" y="-93" width="86" height="93"/></g>
+    </svg>
+  </div>
+
+  <div class="deck" id="deck" tabindex="0" aria-label="The stops of the day. Swipe or use the arrow keys.">
+    <section class="stop" data-pin="pin-local" style="color:#7a7c47">
+      <div class="top"><span class="glyph"><svg><use href="#g-car"/></svg></span>
+        <div><div class="eyebrow">Beside the park</div><div class="name">Street parking</div></div></div>
+      <p class="detail">Pay and display on the streets at the north-west corner of the park, a short walk from the temple. Limited spaces.</p>
+      <div class="acts"><a class="act go" href="https://maps.app.goo.gl/HvwJraNztTsZ16qg7" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="dia" d="M12 1.5 22.5 12 12 22.5 1.5 12z"/><path class="arr" d="M13.2 7.6 17.4 11.4 13.2 15.2v-2.6H9.6a1 1 0 0 0-1 1V16H6.5v-2.4a3 3 0 0 1 3-3h3.7z"/></svg>Directions</a></div>
+    </section>
+    <section class="stop" data-pin="pin-temple" style="color:#a34a2c">
+      <div class="top"><span class="glyph"><svg><use href="#g-rings"/></svg></span>
+        <div><div class="eyebrow">The ceremony</div><div class="name">The Temple of Minerva</div></div></div>
+      <p class="detail">Botanical Gardens, Royal Victoria Park, BA1 2YA. At the western end of the park.</p>
+      <div class="acts"><a class="act go" href="https://www.google.com/maps/dir/?api=1&destination=Temple+of+Minerva%2C+Botanical+Gardens%2C+Royal+Victoria+Park%2C+Bath+BA1+2YA" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="dia" d="M12 1.5 22.5 12 12 22.5 1.5 12z"/><path class="arr" d="M13.2 7.6 17.4 11.4 13.2 15.2v-2.6H9.6a1 1 0 0 0-1 1V16H6.5v-2.4a3 3 0 0 1 3-3h3.7z"/></svg>Directions</a></div>
+    </section>
+    <section class="stop" data-pin="pin-gardens" style="color:#66693a">
+      <div class="top"><span class="glyph"><svg><use href="#g-tea"/></svg></span>
+        <div><div class="eyebrow">Then cream tea</div><div class="name">The Botanical Gardens</div></div></div>
+      <p class="detail">Cream tea in the gardens after the ceremony, a few steps from the temple.</p>
+      <div class="acts"><a class="act go" href="https://www.google.com/maps/dir/?api=1&destination=Botanical+Gardens%2C+Royal+Victoria+Park%2C+Bath" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="dia" d="M12 1.5 22.5 12 12 22.5 1.5 12z"/><path class="arr" d="M13.2 7.6 17.4 11.4 13.2 15.2v-2.6H9.6a1 1 0 0 0-1 1V16H6.5v-2.4a3 3 0 0 1 3-3h3.7z"/></svg>Directions</a></div>
+    </section>
+    <section class="stop" data-pin="pin-pub" style="color:#bf6a43">
+      <div class="top"><span class="glyph"><svg><use href="#g-cider"/></svg></span>
+        <div><div class="eyebrow">Then the pub</div><div class="name">The Bath Cider House</div></div></div>
+      <p class="detail">7 Bladud Buildings, BA1 5LS. Cider (and other drinks!), pizzas and sides await. About a fifteen minute walk into town.</p>
+      <div class="acts"><a class="act go" href="https://www.google.com/maps/dir/?api=1&destination=The+Bath+Cider+House%2C+7+Bladud+Buildings%2C+Bath+BA1+5LS" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="dia" d="M12 1.5 22.5 12 12 22.5 1.5 12z"/><path class="arr" d="M13.2 7.6 17.4 11.4 13.2 15.2v-2.6H9.6a1 1 0 0 0-1 1V16H6.5v-2.4a3 3 0 0 1 3-3h3.7z"/></svg>Directions</a></div>
+    </section>
+    <section class="stop" data-pin="pin-long" style="color:#c99a3f">
+      <div class="top"><span class="glyph"><svg><use href="#g-car"/></svg></span>
+        <div><div class="eyebrow">Long stay</div><div class="name">Charlotte Street car park</div></div></div>
+      <p class="detail">BA1 2NE. A ten to fifteen minute stroll through Royal Victoria Park to the temple. Cashless, pay in the MiPermit app &mdash; worth installing before you travel.</p>
+      <div class="acts"><a class="act go" href="https://www.google.com/maps/dir/?api=1&destination=Charlotte+Street+Car+Park%2C+Bath+BA1+2NE" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="dia" d="M12 1.5 22.5 12 12 22.5 1.5 12z"/><path class="arr" d="M13.2 7.6 17.4 11.4 13.2 15.2v-2.6H9.6a1 1 0 0 0-1 1V16H6.5v-2.4a3 3 0 0 1 3-3h3.7z"/></svg>Directions</a><a class="act" href="https://apps.apple.com/gb/app/mipermit/id338671523" target="_blank" rel="noopener">App Store</a><a class="act" href="https://play.google.com/store/apps/details?id=com.mipermit.android" target="_blank" rel="noopener">Google Play</a></div>
+    </section>
+    <section class="stop" data-pin="pin-station" style="color:#4a3f2f">
+      <div class="top"><span class="glyph"><svg><use href="#g-train"/></svg></span>
+        <div><div class="eyebrow">By train</div><div class="name">Bath Spa station</div></div></div>
+      <p class="detail">Twenty minutes on foot to the park, or the taxi rank outside.</p>
+      <div class="acts"><a class="act go" href="https://www.google.com/maps/dir/?api=1&destination=Bath+Spa+Railway+Station%2C+Bath+BA1+1SU" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="dia" d="M12 1.5 22.5 12 12 22.5 1.5 12z"/><path class="arr" d="M13.2 7.6 17.4 11.4 13.2 15.2v-2.6H9.6a1 1 0 0 0-1 1V16H6.5v-2.4a3 3 0 0 1 3-3h3.7z"/></svg>Directions</a></div>
+    </section>
+    <section class="stop" data-pin="pin-taxis" style="color:#4a3f2f">
+      <div class="top"><span class="glyph"><svg><use href="#g-cab"/></svg></span>
+        <div><div class="eyebrow">Getting around</div><div class="name">Taxis</div></div></div>
+      <p class="detail">Tap a number to call. Booking ahead for the evening is wise on a Monday.</p>
+      <div class="acts"><a class="act" href="tel:+441225464646">V Cars &middot; 01225 464 646</a><a class="act" href="tel:+441225444444">Abbey Taxis &middot; 01225 444 444</a></div>
+    </section>
+  </div>
+  <div class="dots" id="dots" aria-hidden="true"></div>
+  <div class="credit-line">Map data &copy; OpenStreetMap contributors</div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<script>
+(function(){
+  'use strict';
+  /* Swap the fallback glyphs for the real Lucide icons when the library arrives. */
+  (function(){
+    try{
+      if(!(window.lucide&&lucide.icons))return;
+      var MAP={'g-rings':'Landmark','g-tea':'Coffee','g-cider':'Beer','g-car':'Car','g-train':'TrainFront','g-cab':'CarTaxiFront'};
+      Object.keys(MAP).forEach(function(id){
+        var ic=lucide.icons[MAP[id]]||lucide.icons[MAP[id].charAt(0).toLowerCase()+MAP[id].slice(1)];
+        if(!ic)return;
+        var nodes=Array.isArray(ic)&&ic[0]==='svg'?ic[2]:ic;
+        if(!Array.isArray(nodes)||!Array.isArray(nodes[0]))return;
+        var sym=document.getElementById(id); if(!sym)return;
+        while(sym.firstChild)sym.removeChild(sym.firstChild);
+        nodes.forEach(function(n){
+          var el=document.createElementNS('http://www.w3.org/2000/svg',n[0]),at=n[1]||{};
+          Object.keys(at).forEach(function(k){el.setAttribute(k,at[k])});
+          sym.appendChild(el);
+        });
+      });
+    }catch(e){}
+  })();
+  var CREAM='#efe6d3';
+  function hst(d,a,b){switch(d){
+    case 'tl':return 'linear-gradient(to bottom right,'+a+' 0 50%,'+b+' 50% 100%)';
+    case 'br':return 'linear-gradient(to bottom right,'+b+' 0 50%,'+a+' 50% 100%)';
+    case 'tr':return 'linear-gradient(to bottom left,'+a+' 0 50%,'+b+' 50% 100%)';
+    case 'bl':return 'linear-gradient(to bottom left,'+b+' 0 50%,'+a+' 50% 100%)';}}
+  function grid(c,r){return{display:'grid',gridTemplateColumns:'repeat('+c+',1fr)',gridTemplateRows:'repeat('+r+',1fr)'}}
+  var builders=[
+    function(){return{wrap:grid(2,2),cells:['tr','tl','tr','tl'].map(function(d){return hst(d,'#a34a2c',CREAM)})}},
+    function(){return{wrap:grid(2,2),cells:['tr','br','tl','bl'].map(function(d){return hst(d,'#7a7c47',CREAM)})}},
+    function(){return{wrap:grid(2,2),cells:['br','bl','tr','tl'].map(function(d){return hst(d,'#c99a3f',CREAM)})}},
+    function(){var a='#bf6a43';return{wrap:grid(3,3),cells:[a,CREAM,a,CREAM,a,CREAM,a,CREAM,a]}},
+    function(){var a='#4a3f2f';return{wrap:grid(1,1),cells:['conic-gradient('+a+' 0 45deg,'+CREAM+' 45deg 135deg,'+a+' 135deg 225deg,'+CREAM+' 225deg 315deg,'+a+' 315deg)']}}
+  ];
+  var band=document.getElementById('band');
+  for(var i=0;i<11;i++){
+    var blk=builders[(i+1)%builders.length]();
+    var w=document.createElement('div');w.className='block';
+    Object.assign(w.style,blk.wrap,{width:'34px',height:'34px',animationDelay:(0.3+i*0.07)+'s'});
+    blk.cells.forEach(function(bg){var c=document.createElement('div');c.className='cell';c.style.background=bg;w.appendChild(c)});
+    band.appendChild(w);
+  }
+
+  /* ---- Robin, entirely in map units ---- */
+  var svg=document.querySelector('.map'), VB_W=svg.viewBox.baseVal.width;
+  var robinG=document.getElementById('robinG'), robin=document.getElementById('robin');
+  var RW=+robin.getAttribute('width'), RH=+robin.getAttribute('height');
+  /* Luggage tags: one per pin, tied under the disc. They hang still; the one he lands on lifts, swells, swings, settles. */
+  var NS='http://www.w3.org/2000/svg', TAGS=[];
+  var strLayer=document.createElementNS(NS,'g'); svg.insertBefore(strLayer,robinG);
+  var tagLayer=document.createElementNS(NS,'g'); tagLayer.setAttribute('id','tags'); svg.insertBefore(tagLayer,robinG);
+  var wrap=document.getElementById('mapwrap');
+  function px(){ return VB_W/Math.max(1,wrap.clientWidth); }        // map units per screen pixel
+  function splitLabel(s){
+    if(s.indexOf('|')>=0)return s.split('|');
+    if(s.length<=15)return [s];
+    var w=s.split(' '), best=null;
+    for(var i=1;i<w.length;i++){var a=w.slice(0,i).join(' '), b=w.slice(i).join(' ');
+      var score=Math.abs(a.length-b.length); if(best===null||score<best.score)best={score:score,a:a,b:b};}
+    return [best.a,best.b];
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.pin'),function(pin){
+    if(!pin.dataset.label)return;
+    var g=document.createElementNS(NS,'g'); g.setAttribute('class','tag');
+    var isPost=pin.dataset.post==='1';
+    var str=document.createElementNS(NS,'path'); str.setAttribute('class',isPost?'string post':'string');
+    var body=document.createElementNS(NS,'g');
+    var plate=document.createElementNS(NS,'rect'); plate.setAttribute('class','plate'); plate.setAttribute('rx','3');
+    var hole=document.createElementNS(NS,'circle'); hole.setAttribute('class','hole'); hole.setAttribute('r','2.4');
+    var txt=document.createElementNS(NS,'text'); txt.setAttribute('text-anchor','middle');
+    var lines=splitLabel(pin.dataset.label), LH=16, PADX=11, PADY=9, TOP=5;
+    lines.forEach(function(l,i){var ts=document.createElementNS(NS,'tspan');ts.setAttribute('x','0');ts.setAttribute('y',TOP+PADY+LH*i+12);ts.textContent=l;txt.appendChild(ts);});
+    body.appendChild(plate); if(!isPost)body.appendChild(hole); body.appendChild(txt); g.appendChild(body); tagLayer.appendChild(g); strLayer.appendChild(str);
+    var tw=0; Array.prototype.forEach.call(txt.childNodes,function(ts){tw=Math.max(tw,ts.getComputedTextLength?ts.getComputedTextLength():ts.textContent.length*7.5);});
+    var w=Math.ceil(tw)+PADX*2, h=LH*lines.length+PADY*2;
+    plate.setAttribute('x',-w/2); plate.setAttribute('y',TOP); plate.setAttribute('width',w); plate.setAttribute('height',h);
+    hole.setAttribute('cy',TOP+5);
+    // all of that is in screen pixels; the group is scaled to keep it so, whatever size the map is drawn at
+    TAGS.push({pin:pin,g:g,str:str,body:body,w:w,post:isPost,ax:+pin.dataset.cx,ay:+pin.dataset.cy+19,len:+pin.dataset.len,up:0,kick:-9,seed:Math.random()*7});
+  });
+  function drawTags(now){
+    var t=now/1000, u=Math.min(px(),1.5);   // tags scale with the screen, but never past 1.5x map scale
+    TAGS.forEach(function(T){
+      var here=T.pin.classList.contains('here');
+      T.up+=((here?1:0)-T.up)*0.18;
+      T.g.classList.toggle('up',here);
+      var s=1+0.07*T.up;
+      var idle=Math.sin(t*Math.PI*2/5.2+T.seed)*1.3;
+      var k=t-T.kick, kick=k>=0&&k<2.2?Math.sin(k*Math.PI*2/0.8)*4.5*Math.exp(-k/0.7):0;
+      var a=(idle+kick)*Math.PI/180;
+      // hang straight below the pin; if the plate would run off the map, it slides
+      // sideways and the string leans to it, still tied to the pin
+      var vy=(T.len+8)*u, half=T.w/2*u;
+      var bx=Math.max(6+half,Math.min(VB_W-6-half,T.ax)), by=T.ay+vy;
+      var sway=T.post?0:(idle+kick);
+      bx+=Math.sin(sway*Math.PI/180)*vy;
+      var rad=-sway*Math.PI/180, off=(T.post?4:10)*u*s;
+      T.str.setAttribute('d','M'+T.ax+','+T.ay+' L'+(bx-off*Math.sin(rad)).toFixed(1)+','+(by+off*Math.cos(rad)).toFixed(1));
+      T.body.setAttribute('transform','translate('+bx.toFixed(1)+','+by.toFixed(1)+') rotate('+(-sway).toFixed(2)+') scale('+(u*s).toFixed(4)+')');
+    });
+  }
+  function kickTag(){ var t=performance.now()/1000; TAGS.forEach(function(T){ if(T.pin.classList.contains('here'))T.kick=t; }); }
+  var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var home=document.getElementById('pin-local');
+  var pos={x:+home.dataset.x,y:+home.dataset.y}, facing=1, busy=false, queued=null;
+  var cur={x:pos.x,y:pos.y,sx:1,sy:1}, t0=performance.now();
+
+  function draw(x,y,sx,sy,now){
+    cur={x:x,y:y,sx:sx,sy:sy};
+    var idle=busy?0:Math.sin((now-t0)/1000*Math.PI*2/4.6)*-1.5;   // the sway from the card, in degrees
+    robinG.setAttribute('transform','translate('+x.toFixed(1)+','+y.toFixed(1)+') rotate('+idle.toFixed(2)+') scale('+(facing*sx).toFixed(3)+','+sy.toFixed(3)+')');
+    drawTags(now);
+  }
+  function layTag(text){}
+  function faceRoom(){ facing = pos.x<VB_W/2?1:-1; }   // perched, he faces the middle of the map so the tag has room
+  function ease(t){return t<.5?2*t*t:-1+(4-2*t)*t;}
+  function hop(a,b,dur,peakScale){
+    return new Promise(function(res){
+      var s=null, d=Math.hypot(b.x-a.x,b.y-a.y), peak=Math.max(30,Math.min(90,d*(peakScale||.45)));
+      function frame(ts){
+        if(s===null)s=ts;
+        var t=Math.min(1,(ts-s)/dur), e=ease(t);
+        var x=a.x+(b.x-a.x)*e, y=a.y+(b.y-a.y)*e-Math.sin(Math.PI*t)*peak, sx=1, sy=1;
+        if(t<.12){sy=1-.18*(t/.12);sx=1+.14*(t/.12);}
+        else if(t<.5){var u=(t-.12)/.38;sy=.82+.32*u;sx=1.14-.22*u;}
+        else if(t<.9){sy=1.05;sx=.96;}
+        else{var v=(t-.9)/.1;sy=1.05-.25*v;sx=.96+.2*v;}
+        draw(x,y,sx,sy,ts);
+        if(t<1)requestAnimationFrame(frame);else res();
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+  function settle(){
+    kickTag();
+    return new Promise(function(res){var s=null;
+      function frame(ts){if(s===null)s=ts;var t=Math.min(1,(ts-s)/140);
+        draw(pos.x,pos.y,1.2-.2*t,.8+.2*t,ts);if(t<1)requestAnimationFrame(frame);else res();}
+      requestAnimationFrame(frame);});
+  }
+  function land(text){
+    busy=false;faceRoom();layTag(text);
+    if(queued){var q=queued;queued=null;travel(q.to,q.mode,q.text);}
+  }
+  function travel(to,mode,text){
+    if(to.x===pos.x&&to.y===pos.y){layTag(text);return;}
+    if(busy){queued={to:to,mode:mode,text:text};return;}
+    if(reduce){pos=to;faceRoom();draw(pos.x,pos.y,1,1,performance.now());layTag(text);return;}
+    busy=true;facing=to.x>pos.x?1:-1;
+    var d=Math.hypot(to.x-pos.x,to.y-pos.y), chain, from=pos;
+    if(mode==='jump'){chain=hop(pos,to,Math.min(900,420+d*0.8),.6);}
+    else{
+      chain=Promise.resolve();
+      // irregular hops: two little ones, then a leap, the way a real robin covers ground
+      var n=Math.max(1,Math.min(4,Math.round(d/120)));
+      var ws=[],tot=0,i;
+      for(i=0;i<n;i++){ws.push(0.45+Math.random()*0.7);}
+      if(n>2&&Math.random()<0.7)ws[1+Math.floor(Math.random()*(n-1))]*=2.4;
+      for(i=0;i<n;i++)tot+=ws[i];
+      var acc=0;
+      ws.forEach(function(wgt,j){
+        acc+=wgt;var f=j===n-1?1:acc/tot;
+        var p={x:pos.x+(to.x-pos.x)*f,y:pos.y+(to.y-pos.y)*f};
+        var dur=250+200*(wgt/(tot/n)-0.45), peak=0.35+(wgt>1.2?0.28:Math.random()*0.18);
+        chain=chain.then(function(){return hop(from,p,Math.max(215,Math.min(510,dur)),peak).then(function(){from=p;});});
+      });
+    }
+    chain.then(function(){pos=to;return settle();}).then(function(){land(text);});
+  }
+  // idle loop: keeps the sway and the tag's swing alive while he is perched
+  (function idle(){
+    if(reduce)return;
+    requestAnimationFrame(function tick(ts){ if(!busy)draw(pos.x,pos.y,1,1,ts); requestAnimationFrame(tick); });
+  })();
+
+  /* ---- Deck <-> pins ---- */
+  var deck=document.getElementById('deck'), stops=Array.prototype.slice.call(deck.querySelectorAll('.stop')), dots=document.getElementById('dots');
+  var current=-1;
+  stops.forEach(function(s,i){var b=document.createElement('button');b.setAttribute('aria-label','Stop '+(i+1));b.addEventListener('click',function(){goTo(i,'hops');});dots.appendChild(b);});
+  function pinOf(i){return document.getElementById(stops[i].dataset.pin);}
+  function setActive(i,mode){
+    if(i===current)return;current=i;
+    Array.prototype.forEach.call(dots.children,function(d,j){d.classList.toggle('on',j===i);});
+    document.querySelectorAll('.pin.here').forEach(function(p){p.classList.remove('here');});
+    var pin=pinOf(i);pin.classList.add('here');
+    travel({x:+pin.dataset.x,y:+pin.dataset.y},mode,stops[i].dataset.say);
+  }
+  function scrollToCard(i){
+    var s=stops[i];deck.scrollTo({left:s.offsetLeft-(deck.clientWidth-s.offsetWidth)/2,behavior:reduce?'auto':'smooth'});
+  }
+  function goTo(i,mode){setActive(i,mode);scrollToCard(i);}
+  var raf=null;
+  deck.addEventListener('scroll',function(){
+    if(raf)return;raf=requestAnimationFrame(function(){raf=null;
+      var mid=deck.scrollLeft+deck.clientWidth/2, best=0, bd=1e9;
+      stops.forEach(function(s,i){var c=s.offsetLeft+s.offsetWidth/2, d=Math.abs(c-mid);if(d<bd){bd=d;best=i;}});
+      setActive(best,'hops');
+    });
+  });
+  // click and drag with a mouse; touch already swipes natively
+  (function(){
+    var down=false, sx=0, sl=0, moved=false;
+    deck.addEventListener('pointerdown',function(e){
+      if(e.pointerType!=='mouse'||e.button!==0)return;
+      down=true;moved=false;sx=e.clientX;sl=deck.scrollLeft;deck.classList.add('dragging');deck.setPointerCapture(e.pointerId);
+    });
+    deck.addEventListener('pointermove',function(e){
+      if(!down)return;var dx=e.clientX-sx;if(Math.abs(dx)>4)moved=true;deck.scrollLeft=sl-dx;
+    });
+    function up(e){
+      if(!down)return;down=false;deck.classList.remove('dragging');
+      var mid=deck.scrollLeft+deck.clientWidth/2,best=0,bd=1e9;
+      stops.forEach(function(s,i){var c=s.offsetLeft+s.offsetWidth/2,d=Math.abs(c-mid);if(d<bd){bd=d;best=i;}});
+      goTo(best,'hops');
+    }
+    deck.addEventListener('pointerup',up);deck.addEventListener('pointercancel',up);
+    deck.addEventListener('click',function(e){if(moved){e.preventDefault();e.stopPropagation();moved=false;}},true);
+  })();
+  deck.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'){e.preventDefault();goTo(Math.min(stops.length-1,current+1),'hops');}
+    if(e.key==='ArrowLeft'){e.preventDefault();goTo(Math.max(0,current-1),'hops');}
+  });
+  document.querySelectorAll('.pin').forEach(function(pin){
+    function go(){var i=stops.findIndex(function(s){return s.dataset.pin===pin.id;});if(i>=0)goTo(i,'hops');}
+    pin.addEventListener('click',go);
+    pin.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+  });
+  TAGS.forEach(function(T){
+    T.g.addEventListener('click',function(){var i=stops.findIndex(function(s){return s.dataset.pin===T.pin.id;});if(i>=0)goTo(i,'hops');});
+  });
+
+  /* ---- Arrival ---- */
+  function arrive(){
+    current=0;dots.children[0].classList.add('on');home.classList.add('here');
+    if(reduce){faceRoom();draw(pos.x,pos.y,1,1,performance.now());TAGS.forEach(function(T){T.lift=T.pin.classList.contains('here')?1:0});drawTags(performance.now());return;}
+    busy=true;var start={x:-80,y:-60};facing=1;draw(start.x,start.y,1,1,performance.now());
+    var s=null;
+    function frame(ts){if(s===null)s=ts;var t=Math.min(1,(ts-s)/925),e=1-Math.pow(1-t,3);
+      var x=start.x+(pos.x-start.x)*e, y=start.y+(pos.y-start.y)*e-Math.sin(Math.PI*t)*60;
+      draw(x,y,1,t>.85?1-.2*((t-.85)/.15):1,ts);
+      if(t<1)requestAnimationFrame(frame);else settle().then(function(){land(stops[0].dataset.say);});}
+    requestAnimationFrame(frame);
+  }
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(arrive);else arrive();
+})();
+</script>
+
+</body>
+</html>
