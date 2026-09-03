@@ -13,6 +13,9 @@
        the map's own edges; labels keep their size while the map grows.
        One finger scrolls the page as normal until you are zoomed in,
        then it pans the map.
+  v1.2 (03/09/2026): Less scroll on phones: the title and date row goes
+       (the date and time move onto the temple card), and the deck cards
+       tighten so map, cards and dots fit a phone screen together.
 -->
 <html lang="en-GB">
 <head>
@@ -62,7 +65,7 @@
   .head .when{font-family:'Marcellus',serif;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#9e5a30;text-align:right;line-height:1.5}
 
   /* The map stays put. The robin lives inside it, in map units, so his feet stay on the pin. */
-  .mapwrap{position:relative;margin:6px 8px 0}
+  .mapwrap{position:relative;margin:4px 8px 0}
   .map{display:block;width:100%;height:auto;overflow:visible;touch-action:pan-y}
   .map text{font-family:'Marcellus',serif;fill:var(--bark);letter-spacing:.06em}
   .map .park{fill:#7a7c47}
@@ -101,19 +104,19 @@
 
 
   /* The deck: one card per stop, snaps, never hides the map. */
-  .deck{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 8% 6px;touch-action:pan-x pan-y;cursor:grab;
+  .deck{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding:8px 8% 4px;touch-action:pan-x pan-y;cursor:grab;
     scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
   .deck.dragging{scroll-snap-type:none;scroll-behavior:auto;cursor:grabbing;user-select:none}
   .deck.dragging .stop a{pointer-events:none}
   .deck::-webkit-scrollbar{display:none}
   .stop{flex:0 0 84%;scroll-snap-align:center;background:var(--card);border:1px solid var(--line);
-    padding:16px 18px 16px;min-height:150px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+    padding:12px 16px;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:8px}
   .stop .top{display:flex;align-items:center;gap:12px}
   .stop .glyph{flex:0 0 auto;width:40px;height:40px;border-radius:50%;background:var(--cream);border:2.5px solid currentColor;display:grid;place-items:center}
   .stop .glyph svg{width:24px;height:24px;display:block}
   .stop .eyebrow{font-family:'Marcellus',serif;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#9e5a30}
-  .stop .name{font-weight:600;font-size:21px;color:var(--bark);line-height:1.15;margin-top:1px}
-  .stop .detail{font-size:15.5px;font-style:italic;color:var(--muted);line-height:1.35;margin:0}
+  .stop .name{font-weight:600;font-size:19px;color:var(--bark);line-height:1.15;margin-top:1px}
+  .stop .detail{font-size:14.5px;font-style:italic;color:var(--muted);line-height:1.3;margin:0}
   .stop .acts{display:flex;gap:8px;flex-wrap:wrap}
   .stop .act{display:inline-block;text-decoration:none;font-family:'Marcellus',serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
     color:var(--cream);background:var(--rust);padding:9px 14px;white-space:nowrap}
@@ -124,12 +127,12 @@
   .stop .act.go .dia{fill:#4285f4}
   .stop .act.go .arr{fill:#fff}
   .stop .act:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
-  .dots{display:flex;justify-content:center;gap:7px;padding:4px 0 18px}
+  .dots{display:flex;justify-content:center;gap:7px;padding:3px 0 8px}
   .dots button{width:8px;height:8px;border-radius:50%;border:none;padding:0;background:var(--line);cursor:pointer}
   .dots button.on{background:var(--rust)}
   .dots button:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
 
-  .credit-line{text-align:center;font-family:'Marcellus',serif;font-size:9px;letter-spacing:.08em;color:#8a7256;opacity:.75;padding:0 0 12px}
+  .credit-line{text-align:center;font-family:'Marcellus',serif;font-size:9px;letter-spacing:.08em;color:#8a7256;opacity:.75;padding:0 0 8px}
 
   @media(prefers-reduced-motion:reduce){
     .card,.band .block,.sky{animation:none}
@@ -143,11 +146,6 @@
 
 <main class="card">
   <div class="band" id="band" aria-hidden="true"></div>
-
-  <div class="head">
-    <h1>For our guests</h1>
-    <div class="when">21 September 2026<br>One o&rsquo;clock</div>
-  </div>
 
   <div class="mapwrap" id="mapwrap">
     <svg class="map" viewBox="0 0 720 677" role="img" aria-label="A map of Bath, traced from OpenStreetMap, showing the Temple of Minerva, the car parks, the Bath Cider House and Bath Spa station">
@@ -363,7 +361,7 @@
     <section class="stop" data-pin="pin-temple" style="color:#a34a2c">
       <div class="top"><span class="glyph"><svg><use href="#g-rings"/></svg></span>
         <div><div class="eyebrow">The ceremony</div><div class="name">The Temple of Minerva</div></div></div>
-      <p class="detail">Botanical Gardens, Royal Victoria Park, BA1 2YA. At the western end of the park.</p>
+      <p class="detail">Monday 21 September, one o&rsquo;clock. Botanical Gardens, Royal Victoria Park, BA1 2YA, at the western end of the park.</p>
       <div class="acts"><a class="act go" href="https://www.google.com/maps/dir/?api=1&destination=Temple+of+Minerva%2C+Botanical+Gardens%2C+Royal+Victoria+Park%2C+Bath+BA1+2YA" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="dia" d="M12 1.5 22.5 12 12 22.5 1.5 12z"/><path class="arr" d="M13.2 7.6 17.4 11.4 13.2 15.2v-2.6H9.6a1 1 0 0 0-1 1V16H6.5v-2.4a3 3 0 0 1 3-3h3.7z"/></svg>Directions</a></div>
     </section>
     <section class="stop" data-pin="pin-gardens" style="color:#66693a">
