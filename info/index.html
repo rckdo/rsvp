@@ -30,6 +30,11 @@
        stop you are on. The robin holds a sensible size at any zoom,
        keeps his head at the top of the map, and the card text sets
        heavier so it reads in sunlight.
+  v1.6 (04/09/2026): The camera follows the robin frame by frame, so
+       the glide and the hops are one movement. A big Next button
+       drives the tour (tapping the map still works). At rest the map
+       returns to its natural aspect so nothing is cropped; only the
+       tour uses the tall, close-up frame.
 -->
 <html lang="en-GB">
 <head>
@@ -162,7 +167,6 @@
   .touring .stop .detail{font-size:16px;line-height:1.35}
   .tap-hint{display:none;text-align:center;font-style:italic;font-size:15px;color:var(--muted);
     padding:0 0 10px;animation:hintpulse 1.8s ease-in-out infinite}
-  .touring.fresh .tap-hint{display:block}
   @keyframes hintpulse{0%,100%{opacity:.45}50%{opacity:1}}
   .finale-note{display:none;text-align:center;font-style:italic;font-size:15px;color:var(--bark);padding:0 24px 10px}
   .show-finale .finale-note{display:block}
@@ -170,6 +174,12 @@
   .touring .map .landmarks,.touring .map .tag,.touring .map .pin.taxi{opacity:0;transition:opacity .35s ease}
   .touring .map .tag.up,.touring .map .pin.taxi.here{opacity:1}
   .touring .stop .detail{font-size:17px;color:#6b5a44}
+  .next-btn{display:none;margin:8px auto 6px;font-family:'Marcellus',serif;font-size:14px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--cream);background:var(--rust);border:none;padding:15px 52px;cursor:pointer;
+    box-shadow:0 3px 0 rgba(74,63,47,.3)}
+  .next-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(74,63,47,.3)}
+  .next-btn:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
+  .touring .next-btn{display:block}
   .intro-panel{display:none;padding:24px 26px 20px;text-align:center}
   .introing .intro-panel{display:block}
   .introing .deck{display:none}
@@ -441,6 +451,7 @@
       <div class="acts"><a class="act" href="tel:+441225464646">V Cars &middot; 01225 464 646</a><a class="act" href="tel:+441225444444">Abbey Taxis &middot; 01225 444 444</a></div>
     </section>
   </div>
+  <button class="next-btn" id="next-btn" type="button">Begin</button>
   <div class="dots" id="dots" aria-hidden="true"></div>
   <div class="tap-hint" id="tap-hint">tap to continue &rsaquo;</div>
   <div class="intro-panel" id="intro-panel">
@@ -520,11 +531,12 @@
   function clampVB(){
     vb.w=Math.max(baseW/2,Math.min(baseW,vb.w)); vb.h=vb.w*boxA;
     vb.x=Math.max(0,Math.min(VB_W-vb.w,vb.x));
-    vb.y=Math.max(-60,Math.min(VB_H-vb.h,vb.y));
+    var yLo=Math.min(-60,VB_H-vb.h), yHi=Math.max(0,VB_H-vb.h);
+    vb.y=Math.max(yLo,Math.min(yHi,vb.y));
   }
   function sizeMap(){
     var cw=Math.max(1,wrap.clientWidth);
-    if(window.innerWidth>560){
+    if(window.innerWidth>560||!touring){
       svg.style.height=''; boxA=VB_H/VB_W; baseW=VB_W;
       vb={x:0,y:0,w:VB_W,h:VB_H}; applyVB(); return;
     }
@@ -532,7 +544,8 @@
       +document.getElementById('deck').offsetHeight
       +document.getElementById('dots').offsetHeight
       +(document.querySelector('.credit-line')?document.querySelector('.credit-line').offsetHeight:0)
-      +(document.getElementById('intro-panel')?document.getElementById('intro-panel').offsetHeight:0)+10;
+      +(document.getElementById('intro-panel')?document.getElementById('intro-panel').offsetHeight:0)
+      +(document.getElementById('next-btn')?document.getElementById('next-btn').offsetHeight:0)+10;
     var avail=Math.max(cw*0.92,Math.min(cw*1.6,window.innerHeight-others));
     svg.style.height=avail+'px';
     boxA=avail/cw;
@@ -649,8 +662,19 @@
   var pos={x:+home.dataset.x,y:+home.dataset.y}, facing=1, busy=false, queued=null;
   var cur={x:pos.x,y:pos.y,sx:1,sy:1}, t0=performance.now();
 
+  function followCam(x,y){
+    var cw=introMode?baseW:baseW*0.42;
+    vb.w+=(cw-vb.w)*0.07; vb.h=vb.w*boxA;
+    var mx=introMode?VB_W/2:x, my=introMode?VB_H/2:y-24;
+    var tx=Math.max(0,Math.min(VB_W-vb.w,mx-vb.w/2));
+    var yLo=Math.min(-60,VB_H-vb.h), yHi=Math.max(0,VB_H-vb.h);
+    var ty=Math.max(yLo,Math.min(yHi,my-vb.h*0.45));
+    vb.x+=(tx-vb.x)*0.09; vb.y+=(ty-vb.y)*0.09;
+    applyVB();
+  }
   function draw(x,y,sx,sy,now){
     cur={x:x,y:y,sx:sx,sy:sy};
+    if(touring)followCam(x,y);
     var idle=busy?0:Math.sin((now-t0)/1000*Math.PI*2/4.6)*-1.5;   // the sway from the card, in degrees
     var kk=Math.min(1,130*px()/RW);
     robinG.setAttribute('transform','translate('+x.toFixed(1)+','+y.toFixed(1)+') rotate('+idle.toFixed(2)+') scale('+(facing*sx*kk).toFixed(3)+','+(sy*kk).toFixed(3)+')');
@@ -728,7 +752,8 @@
     Array.prototype.forEach.call(dots.children,function(d,j){d.classList.toggle('on',j===i);});
     document.querySelectorAll('.pin.here').forEach(function(p){p.classList.remove('here');});
     var pin=pinOf(i);pin.classList.add('here');
-    panTo(+pin.dataset.cx,+pin.dataset.cy, touring?baseW*0.42:undefined);
+    if(!touring)panTo(+pin.dataset.cx,+pin.dataset.cy);
+    refreshNext&&refreshNext();
     travel({x:+pin.dataset.x,y:+pin.dataset.y},mode,stops[i].dataset.say);
   }
   function scrollToCard(i){
@@ -776,26 +801,28 @@
   });
 
   /* ---- The day: a tap-through tour on first visit ---- */
-  var touring=false, SEEN_KEY='lr-info-tour-v1';
+  var touring=false, introMode=false, SEEN_KEY='lr-info-tour-v1';
   function seen(){ try{return !!localStorage.getItem(SEEN_KEY);}catch(e){return false;} }
   function markSeen(){ try{localStorage.setItem(SEEN_KEY,'1');}catch(e){} }
   var cardEl=document.querySelector('main.card');
+  var nextBtn=document.getElementById('next-btn');
+  function refreshNext(){
+    nextBtn.textContent=introMode?'Begin':(current>=stops.length-1?'Finish':'Next \u203a');
+  }
   function startTour(){
-    touring=true;
+    touring=true; introMode=true;
     cardEl.classList.add('touring','introing','fresh');
     cardEl.classList.remove('show-finale');
-    sizeMap();
-    panTo(VB_W/2,VB_H/2,baseW);
+    sizeMap(); refreshNext();
   }
   function dismissIntro(){
+    introMode=false;
     cardEl.classList.remove('introing');
-    sizeMap();
+    sizeMap(); refreshNext();
     if(current!==0)goTo(0,'hops'); else scrollToCard(0);
-    var pin=pinOf(0);
-    panTo(+pin.dataset.cx,+pin.dataset.cy,baseW*0.42);
   }
   function exitTour(){
-    touring=false; markSeen();
+    touring=false; introMode=false; markSeen();
     cardEl.classList.remove('touring','introing','fresh');
     sizeMap();
     cardEl.classList.add('show-finale');
@@ -806,9 +833,10 @@
   }
   function nextBeat(){
     cardEl.classList.remove('fresh');
-    if(current<stops.length-1)goTo(current+1,'hops'); else exitTour();
+    if(current<stops.length-1){goTo(current+1,'hops');refreshNext();} else exitTour();
   }
   document.getElementById('day-pill').addEventListener('click',function(e){e.stopPropagation();startTour();});
+  nextBtn.addEventListener('click',function(e){e.stopPropagation();if(introMode)dismissIntro();else nextBeat();});
   document.getElementById('skip-btn').addEventListener('click',function(e){e.stopPropagation();exitTour();});
   document.addEventListener('click',function(e){
     if(!touring)return;
@@ -825,7 +853,7 @@
   /* ---- Arrival ---- */
   function arrive(){
     sizeMap();
-    if(!seen()){touring=true;cardEl.classList.add('touring','introing','fresh');sizeMap();}
+    if(!seen()){touring=true;introMode=true;cardEl.classList.add('touring','introing','fresh');sizeMap();refreshNext();}
     if(!touring)panTo(+home.dataset.cx,+home.dataset.cy);
     current=0;dots.children[0].classList.add('on');home.classList.add('here');
     if(reduce){faceRoom();draw(pos.x,pos.y,1,1,performance.now());TAGS.forEach(function(T){T.lift=T.pin.classList.contains('here')?1:0});drawTags(performance.now());return;}
