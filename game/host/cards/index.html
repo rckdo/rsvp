@@ -196,7 +196,7 @@ function drawCard(n, code) {
   drawBlock(ctx, shape, colour, W / 2 - 90, 590, 180);
   // QR on a patch with the card's dashed strip
   var qr = qrcode(0, 'Q'); qr.addData(BASE + code); qr.make();
-  var mc = qr.getModuleCount(), qs = 720, px = Math.floor((qs - 80) / mc), qw = px * mc, qx = (W - qw) / 2, qy = 960;
+  var mc = qr.getModuleCount(), qs = 720, px = Math.floor((qs - 80) / mc), qw = px * mc, qx = Math.floor((W - qw) / 2), qy = 960;
   ctx.save(); ctx.shadowColor = 'rgba(74,63,47,.22)'; ctx.shadowBlur = 36; ctx.shadowOffsetY = 14;
   ctx.fillStyle = CARD; ctx.fillRect(qx - 44, qy - 44, qw + 88, qw + 88); ctx.restore();
   ctx.fillStyle = BARK;
