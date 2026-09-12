@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v12.2 (12/09/2026): Tie-breaker hint line under the question on the gate.
   v12.1 (12/09/2026): Picker tiles ochre, chosen tile olive.
   v12.0 (12/09/2026): Bespoke date picker (month tiles, day tiles, impossible days greyed) on the
           gate and row 21. Patch strip divides into the width. Spin screen line removed.
@@ -319,6 +320,7 @@
   /* Tie-breaker */
   .tb{padding:24px 18px 18px}
   .tb .tb-q{font-family:var(--display);font-size:19px;color:var(--bark);margin:0}
+  .tb .tb-hint{font-style:italic;color:var(--mutedbrown);font-size:17px;margin:6px 0 0}
   .tb .tb-k{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 6px}
   .dp{margin-top:14px}
   .dp .months{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
@@ -468,6 +470,7 @@
       <p class="lede">Closest answer settles any tie at the pub.</p>
       <div class="patch gold tb">
         <p class="tb-q" id="introQ"></p>
+        <p class="tb-hint" id="introHint"></p>
         <div class="dp" id="introDP" data-day="" data-month=""></div>
       </div>
       <button class="btn wide" id="introGo" disabled>Start the hunt</button>
@@ -820,6 +823,7 @@ function showIntro() {
   $('boot').hidden = true; $('intro').hidden = false;
   var pill = $('aliasPill'); $('aliasName').textContent = prettyAlias(alias); pill.hidden = false; pill.classList.add('arrive');
   $('introQ').textContent = content.tiebreak.question;
+  $('introHint').textContent = content.tiebreak.hint || '';
   renderDP($('introDP'));
   $('introGo').addEventListener('click', function () {
     var d = parseInt($('introDP').dataset.day, 10), m = parseInt($('introDP').dataset.month, 10);
