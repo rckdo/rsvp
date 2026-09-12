@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v15.0 (12/09/2026): Two-step, host-driven reveal. config.stage holds a card on every screen: first
+          the sentences with each guest's own card in the gap, then the answers with stickers, the
+          truth where wrong, and photos. It stays until the host moves on. The timed flash is gone.
   v14.1 (12/09/2026): Countdown as a strip: Closes in, large tabular time, a draining bar; rust in the
           last two minutes. My answers heading reads The hunt has closed when locked.
   v14.0 (12/09/2026): A brass pin appears on a placed card once Firebase has stored it; a short
@@ -456,11 +459,17 @@
   section.patch{padding-top:24px}
 
   /* Full-screen reveal flash */
-  #ack{position:fixed;inset:0;z-index:50;background:var(--cream);display:flex;flex-direction:column;justify-content:center;padding:28px 24px;overflow:hidden;
+  #ack{position:fixed;inset:0;z-index:50;background:var(--cream);display:flex;flex-direction:column;justify-content:flex-start;padding:24px 20px 40px;overflow:auto;-webkit-overflow-scrolling:touch;
     transform:translateY(100%);transition:transform .32s var(--ease-out)}
   #ack.show{transform:none}
-  #ack .k{font-family:var(--display);font-size:22px;color:var(--bark);text-align:center;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:12px}
+  #ack .k{font-family:var(--display);font-weight:600;font-size:26px;color:var(--bark);text-align:center;margin:8px 0 18px;display:flex;align-items:center;justify-content:center;gap:12px}
   #ack .k .qb{width:36px;height:36px;box-shadow:0 3px 8px rgba(74,63,47,.18)}
+  #ack .stage-stmt{padding:24px 18px 18px}
+  #ack .stage-stmt .stmt-text{font-size:22px}
+  #ack .truth{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--olive-deep);margin:12px 0 0}
+  #ack .truth.missed{color:var(--mutedbrown)}
+  #ack .waiting{font-style:italic;color:var(--mutedbrown);text-align:center;margin-top:16px}
+  #ack .stage-stmt .photo{margin-top:14px}
   .ackp{padding:24px 20px;color:var(--cream);text-align:center;margin:0 auto;width:100%;max-width:400px;box-shadow:0 14px 30px rgba(59,56,47,.2)}
   .ackp + .ackp{margin-top:14px}
   .ackp.right{background:var(--olive)}
@@ -924,6 +933,7 @@ function recordFound() {
   var up = {}; up['found/' + qk] = { code: code, at: TS }; up.lastChange = TS;
   db.ref(ROOT + '/players/' + alias).update(up).catch(function (e) { console.warn('found', e && e.code); });
 }
+var lastStage = '';
 function onConfig() {
   var keys = revealedKeys();
   if (seenRevealed === null) { seenRevealed = {}; keys.forEach(function (k) { seenRevealed[k] = true; }); loadAnswers(keys, null); }
@@ -935,15 +945,46 @@ function onConfig() {
   }
   tickClock();
   renderAll();
+  renderStage();
+}
+/* The host's two-step reveal: config.stage = { card: 'q4', step: 'question' | 'answer' }.
+   The stage holds the whole screen until the host moves on. */
+function renderStage() {
+  var st = config.stage, el = $('ack');
+  var key = st && st.card ? st.card + '/' + st.step : '';
+  if (!st || !st.card || !question(st.card)) {
+    if (lastStage) { lastStage = ''; el.classList.remove('show'); if (revealedKeys().length) showTab('results'); }
+    return;
+  }
+  var k = st.card, answerStep = st.step === 'answer', ready = !answerStep || !!answers[k];
+  var html = '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + 'Card ' + qnum(k) + '</div>';
+  ['human', 'dog'].forEach(function (side) {
+    var q = question(k)[side], mine = pick(k, side);
+    html += '<div class="patch stmt stage-stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + sentenceHtml(k, side) + '</p></div>';
+    if (answerStep && ready) {
+      var truth = answers[k][side];
+      if (!mine) html += '<p class="truth missed">Not answered. It was ' + NAMES[truth] + '</p>';
+      else if (mine !== truth) html += '<p class="truth">It was ' + NAMES[truth] + '</p>';
+      html += photoHtml(k, side);
+    }
+    html += '</div>';
+  });
+  if (answerStep && !ready) html += '<p class="waiting">One moment.</p>';
+  el.innerHTML = html;
+  if (key !== lastStage) {
+    lastStage = key;
+    if (!el.classList.contains('show')) { void el.offsetWidth; el.classList.add('show'); }
+    if (answerStep) { try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {} }
+    el.scrollTop = 0;
+  }
 }
 function loadAnswers(keys, fresh) {
   var want = keys.filter(function (k) { return !answers[k]; });
   if (keys.length === TOTAL_CODES && !answers.tiebreak) want.push('tiebreak');
   Promise.all(want.map(function (k) { return db.ref(ROOT + '/answers/' + k).once('value').then(function (s) { if (s.val()) answers[k] = s.val(); }); }))
     .then(function () {
-      renderAll();
-      if (fresh && fresh.length === 1) queueAck(fresh[0]);
-      else if (fresh && fresh.length > 1) { showTab('results'); }
+      renderAll(); renderStage();
+      if (fresh && fresh.length && !(config.stage && config.stage.card)) showTab('results');
     }).catch(function (e) { console.warn('answers', e && e.code); });
 }
 
@@ -1292,31 +1333,7 @@ function tickScore(from, to) {
   })(t0);
 }
 
-/* ---- The reveal flash ---- */
-function queueAck(k) { ackQueue.push(k); runAck(); }
-function runAck() {
-  if (ackBusy || !ackQueue.length) return;
-  ackBusy = true;
-  var k = ackQueue.shift(), a = answers[k];
-  if (!a) { ackBusy = false; runAck(); return; }
-  var panels = ['human', 'dog'].map(function (side) {
-    var truth = a[side], cur = pick(k, side);
-    var cls = !cur ? 'missed' : (cur === truth ? 'right' : 'wrong');
-    var v = cls === 'right' ? 'Right' : (cls === 'wrong' ? 'Wrong. It was ' + NAMES[truth] : 'Not answered. It was ' + NAMES[truth]);
-    return '<div class="ackp ' + cls + '"><div class="v">' + esc(v) + '</div><div class="s">' + fmt(question(k)[side].third.replace('{name}', NAMES[truth])) + '</div>' + photoHtml(k, side) + '</div>';
-  }).join('');
-  var el = $('ack');
-  el.innerHTML = '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + 'Card ' + qnum(k) + '</div>' + panels;
-  void el.offsetWidth;
-  el.classList.add('show');
-  try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {}
-  var hasPhoto = !!(a.humanImg || a.dogImg);
-  setTimeout(function () {
-    el.classList.remove('show');
-    showTab('results');
-    setTimeout(function () { ackBusy = false; runAck(); }, 380);
-  }, hasPhoto ? 3600 : 2200);
-}
+/* The old two-second flash is replaced by the host-driven stage above. */
 </script>
 </body>
 </html>
