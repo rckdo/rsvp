@@ -17,31 +17,23 @@
     },
     "game": {
       "codes": {
-        ".write": "auth != null && root.child('game/host/REPLACE_WITH_HOST_KEY').val() === auth.uid",
+        ".read": "auth != null",
+        ".write": "auth != null",
         "$code": {
-          ".read": "auth != null",
           ".validate": "newData.isString() && newData.val().matches(/^q([1-9]|10)$/)"
-        },
-        ".read": "auth != null && root.child('game/host/REPLACE_WITH_HOST_KEY').val() === auth.uid"
+        }
       },
       "answers": {
-        "$q": {
-          ".read": "auth != null && (root.child('game/host/REPLACE_WITH_HOST_KEY').val() === auth.uid || root.child('game/config/revealed').child($q === 'tiebreak' ? 'q10' : $q).val() === true)"
-        },
-        ".write": "auth != null && root.child('game/host/REPLACE_WITH_HOST_KEY').val() === auth.uid"
+        ".read": "auth != null",
+        ".write": "auth != null"
       },
       "config": {
         ".read": "auth != null",
-        ".write": "auth != null && root.child('game/host/REPLACE_WITH_HOST_KEY').val() === auth.uid"
-      },
-      "host": {
-        "$key": {
-          ".write": "auth != null && $key === 'REPLACE_WITH_HOST_KEY' && newData.val() === auth.uid"
-        }
+        ".write": "auth != null"
       },
       "players": {
         ".read": "auth != null",
-        ".write": "auth != null && root.child('game/host/REPLACE_WITH_HOST_KEY').val() === auth.uid && !newData.exists()",
+        ".write": "auth != null && !newData.exists()",
         "$slug": {
           ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
           ".validate": "$slug.matches(/^[a-z]+(-[a-z]+)+$/) && newData.hasChildren(['uid','claimedAt'])",
