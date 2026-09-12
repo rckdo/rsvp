@@ -1,5 +1,5 @@
 {
-  "version": "1.7",
+  "version": "1.8",
   "reels": {
     "items": [
       "Sausage",
@@ -60,8 +60,8 @@
     {
       "q": 2,
       "human": {
-        "first": "I played a decent game of chess against a grandmaster (but still lost).",
-        "third": "{name} played a decent game of chess against a grandmaster (but still lost).",
+        "first": "I was described as \"playing an excellent game\" by a grandmaster (but still lost).",
+        "third": "{name} was described as \"playing an excellent game\" by a grandmaster (but still lost).",
         "icon": "crown.svg"
       },
       "dog": {
