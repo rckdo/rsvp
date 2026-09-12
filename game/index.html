@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v17.2 (12/09/2026): Lining numerals site-wide (Playfair and Cormorant default to old-style figures,
+          which is why 2017 sat unevenly on its placard). Gate sizing tightened under 700px so it
+          fits an iPhone SE with the real web fonts.
   v17.1 (12/09/2026): Accessibility pass for older eyes: muted brown darkened to 5:1 on cream, gold label
           text darkened, every label size raised a point (nothing under 12px), name cards and gaps
           112 x 42, date tiles 36px tall on taller phones, body copy on My answers 20px, keyboard
@@ -136,6 +139,9 @@
     --ease-out:cubic-bezier(.22,1,.36,1);
   }
   *{box-sizing:border-box}
+  /* Playfair and Cormorant default to old-style figures (3, 5, 7, 9 hang below the line). Lining
+     numerals everywhere: the 2017 placard sits level and scores read plainly. */
+  body{font-variant-numeric:lining-nums}
   :focus-visible{outline:3px solid var(--rust);outline-offset:3px}
   .namecard:focus-visible{outline-offset:2px}
   html,body{margin:0}
@@ -405,7 +411,8 @@
   .intro-wrap .tb-q{font-size:18px;line-height:1.3}
   .intro-wrap .btn{min-height:44px;position:relative;z-index:3}
   .intro-wrap .tb-note{font-style:italic;color:var(--mutedbrown);font-size:17px;margin:-2px 0 10px}
-  @media (max-height:700px){.intro-wrap .dp{--th:27px}.intro-wrap .patch{padding:12px 12px 6px}.intro-wrap .tb-note{margin-bottom:8px}}
+  @media (max-height:700px){.intro-wrap .dp{--th:27px}.intro-wrap .patch{padding:10px 12px 4px}.intro-wrap .tb-note{margin:-4px 0 6px;font-size:15px}
+    .intro-wrap h1{font-size:20px;margin:0}.intro-wrap .tb-q{font-size:17px}.intro-wrap .dp .deck{gap:5px;margin-bottom:5px}.intro-wrap .date-row{margin-bottom:6px}}
   .intro-wrap .dp .deck{margin-bottom:6px}
   .intro-wrap .date-row{margin-bottom:10px}
   #intro ~ .robin, .card:has(#intro:not([hidden])) .robin{width:74px;right:-6px;bottom:-8px}
