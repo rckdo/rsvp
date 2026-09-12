@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v7.0 (12/09/2026): The tie-breaker is a gate. After the name is locked (or on any later landing
+          without an answer) one screen asks the date before the hunt opens. Skipped once the game
+          is locked. Still editable as row 21 on My answers. Removed from the code tab.
   v6.0 (12/09/2026): Alias is the bare two-word phrase, no article. Results' per-question block is
           now Answers: each sentence with the correct name card in its gap, the split bar and counts,
           and a short You said line.
@@ -269,6 +272,10 @@
   @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.04)}100%{transform:scale(1)}}
   .after-lock{font-style:italic;color:var(--mutedbrown);margin:10px 0 0}
 
+  #intro{padding:26px 24px 30px;justify-content:center}
+  .intro-wrap{text-align:center}
+  .intro-wrap .patch{text-align:left;margin:22px 0 18px}
+  .intro-wrap .tb-q{font-size:21px}
   /* Tie-breaker */
   .tb{padding:24px 18px 18px}
   .tb .tb-q{font-family:var(--display);font-size:19px;color:var(--bark);margin:0}
@@ -406,6 +413,20 @@
       <button class="btn ghost wide" id="btnSpin" disabled>Spin again · 2 left</button>
     </div>
     <div class="taken" id="taken" aria-live="polite"></div>
+  </section>
+
+  <!-- Before the hunt: the tie-breaker, answered once -->
+  <section id="intro" class="screen" hidden>
+    <div class="intro-wrap">
+      <h1>One question first</h1>
+      <p class="lede">Closest answer settles any tie at the pub.</p>
+      <div class="patch gold tb">
+        <p class="tb-q" id="introQ"></p>
+        <div class="pickers"><select class="tb-day" id="introDay" aria-label="Day"></select><select class="tb-month" id="introMonth" aria-label="Month"></select></div>
+      </div>
+      <button class="btn wide" id="introGo" disabled>Start the hunt</button>
+      <p class="deck-hint">You can change it later on My answers</p>
+    </div>
   </section>
 
   <!-- The game -->
@@ -611,7 +632,7 @@ function startFirebase() {
     return resolveCode();
   }).then(function () {
     try { alias = localStorage.getItem(ALIAS_KEY); } catch (e) { alias = null; }
-    if (alias) enterGame(); else showSpin();
+    if (alias) afterAlias(); else showSpin();
   }).catch(function (e) {
     $('bootMsg').textContent = 'Could not connect. Check your signal and try again.'; console.error(e);
   });
@@ -722,11 +743,48 @@ function lockIn() {
     alias = slug;
     try { localStorage.setItem(ALIAS_KEY, alias); } catch (e) {}
     $('spin').classList.add('lockin');
-    setTimeout(enterGame, REDUCED ? 0 : 380);
+    setTimeout(afterAlias, REDUCED ? 0 : 380);
   }).catch(function (e) {
     console.error(e);
     $('taken').textContent = 'That didn’t save. Check your signal and try again.';
     $('btnLock').disabled = false;
+  });
+}
+
+/* =====================================================================
+   The gate: one look at the player, then either the tie-breaker or the game
+   ===================================================================== */
+function afterAlias() {
+  $('boot').hidden = true; $('spin').hidden = true;
+  $('bootMsg').textContent = 'One moment.'; $('boot').hidden = false;
+  Promise.all([
+    db.ref(ROOT + '/players/' + alias + '/tiebreak').once('value'),
+    db.ref(ROOT + '/config/lockAt').once('value')
+  ]).then(function (r) {
+    var tb = r[0].val(), lockAt = r[1].val();
+    var isLocked = lockAt && now() >= lockAt;
+    if (tb || isLocked) enterGame(); else showIntro();
+  }).catch(function () { enterGame(); });
+}
+function showIntro() {
+  $('boot').hidden = true; $('intro').hidden = false;
+  var pill = $('aliasPill'); pill.textContent = prettyAlias(alias); pill.hidden = false; pill.classList.add('arrive');
+  $('introQ').textContent = content.tiebreak.question;
+  var dayOpts = '<option value="">Day</option>'; for (var d = 1; d <= 31; d++) dayOpts += '<option value="' + d + '">' + d + '</option>';
+  var monOpts = '<option value="">Month</option>'; MONTHS.forEach(function (m, i) { monOpts += '<option value="' + (i + 1) + '">' + m + '</option>'; });
+  $('introDay').innerHTML = dayOpts; $('introMonth').innerHTML = monOpts;
+  var check = function () { $('introGo').disabled = !($('introDay').value && $('introMonth').value); };
+  $('introDay').addEventListener('change', check); $('introMonth').addEventListener('change', check);
+  $('introGo').addEventListener('click', function () {
+    var d = parseInt($('introDay').value, 10), m = parseInt($('introMonth').value, 10);
+    if (!d || !m) return;
+    $('introGo').disabled = true;
+    db.ref(ROOT + '/players/' + alias).update({ tiebreak: { day: d, month: m, at: TS }, lastChange: TS })
+      .then(function () { $('intro').hidden = true; enterGame(); })
+      .catch(function (e) {
+        if (e && e.code === 'PERMISSION_DENIED') { $('intro').hidden = true; enterGame(); }
+        else { toast('That didn\u2019t save. Check your signal.'); $('introGo').disabled = false; }
+      });
   });
 }
 
@@ -890,7 +948,7 @@ document.addEventListener('pointerup', function (ev) {
 });
 document.addEventListener('pointercancel', function (ev) { if (drag && ev.pointerId === drag.id) endDrag(false); });
 document.addEventListener('change', function (ev) {
-  if (!ev.target.matches('.tb select')) return;
+  if (!ev.target.matches('#p-code .tb select, #p-mine .tb select')) return;
   var box = ev.target.closest('.tb');
   var d = parseInt(box.querySelector('.tb-day').value, 10), m = parseInt(box.querySelector('.tb-month').value, 10);
   if (d && m) saveTiebreak(d, m);
@@ -954,9 +1012,6 @@ function renderCode() {
     html += stmtHtml(qk, 'human');
     if (answeredCount(me) === 0) html += '<p class="deck-hint">Drag or tap a name into the gap</p>';
     html += stmtHtml(qk, 'dog');
-    if (!(me && me.tiebreak)) {
-      html += '<div class="patch gold tb"><p class="tb-k">Tie-breaker</p><p class="tb-q">' + esc(content.tiebreak.question) + '</p>' + tiebreakHtml(false) + '</div>';
-    }
   }
   p.innerHTML = html;
 }
