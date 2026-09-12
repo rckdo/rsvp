@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v16.2 (12/09/2026): Exclusive phases: open, closed, revealing. Reveal only once the hunt is closed;
+          release and the clock's edits only while open; Unlock only before anything is revealed.
   v16.1 (12/09/2026): Back steps the reveal in reverse.
   v16.0 (12/09/2026): Two-step reveal. The Reveal button cycles Show card N, Reveal answers, then the
           next card, and Finish after the tenth. Clear screens drops every phone back to Results.
@@ -486,6 +488,12 @@ $('bReset').addEventListener('click', function () {
 });
 
 /* ---- Rendering ---- */
+/* Three exclusive phases: open (guests can answer), closed (hunt over, nothing revealed), revealing. */
+function phase() {
+  var lockedNow = !!config.lockAt && config.lockAt - now() <= 0;
+  var revealing = revealedKeys().length > 0 || !!(config.stage && config.stage.card);
+  return revealing ? 'revealing' : (lockedNow ? 'closed' : 'open');
+}
 function renderAll() { renderClock(); renderRelease(); renderReveal(); renderBoard(); }
 function renderClock() {
   var el = $('clockVal'), running = !!config.lockAt, rem = running ? config.lockAt - now() : 0;
@@ -493,16 +501,17 @@ function renderClock() {
   if (!running) { el.textContent = '\u2014'; el.className = 'val'; }
   else if (lockedNow) { el.textContent = 'Closed'; el.className = 'val hot'; }
   else { var s = Math.ceil(rem / 1000); el.textContent = Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); el.className = 'val' + (rem < 120000 ? ' hot' : ''); }
+  var ph = phase();
   b.dataset.mode = lockedNow ? 'unlock' : 'start';
-  b.textContent = lockedNow ? 'Unlock' : 'Start 15 min';
-  b.classList.toggle('warn', lockedNow);
-  b.disabled = running && !lockedNow;
-  $('bPlus').disabled = !running; $('bCancel').disabled = !running || lockedNow; $('bLockNow').disabled = lockedNow;
+  b.textContent = lockedNow ? (ph === 'revealing' ? 'Closed' : 'Unlock') : 'Start 15 min';
+  b.classList.toggle('warn', lockedNow && ph !== 'revealing');
+  b.disabled = (running && !lockedNow) || ph === 'revealing';
+  $('bPlus').disabled = !running || lockedNow; $('bCancel').disabled = !running || lockedNow; $('bLockNow').disabled = lockedNow;
 }
 function renderRelease() {
-  var r = !!config.releasedAt;
+  var r = !!config.releasedAt, open = phase() === 'open';
   $('releaseVal').textContent = r ? 'Open' : 'Closed';
-  $('bRelease').disabled = r; $('bUnrelease').disabled = !r;
+  $('bRelease').disabled = r || !open; $('bUnrelease').disabled = !r || !open;
 }
 function splitOf(k, side) {
   var a = answers[k], truth = a ? a[side] : null;
@@ -537,10 +546,10 @@ function renderReveal() {
   slugs.forEach(function (s) { var p = players[s]; found += p.found ? Object.keys(p.found).length : 0; keys.forEach(function (k) { if (p.answers && p.answers[k]) { if (p.answers[k].human) ans++; if (p.answers[k].dog) ans++; } }); });
   $('revealVal').innerHTML = n + '<small>of ' + TOTAL + '</small>';
   $('feedState').textContent = slugs.length + ' players \u00b7 ' + found + ' found \u00b7 ' + ans + ' answered';
-  var si = stageInfo(), lab = { show: 'Show card ' + (si.card ? si.card.slice(1) : ''), answer: 'Reveal answers', finish: 'Finish', done: 'All revealed' }[si.mode];
-  $('bNext').disabled = si.mode === 'done'; $('bNext').textContent = lab;
-  $('bAll').disabled = n >= TOTAL; $('bHide').disabled = n === 0 && !(config.stage && config.stage.card); $('bScreen').disabled = !(config.stage && config.stage.card);
-  $('bBack').disabled = !(config.stage && config.stage.card) && n === 0;
+  var si = stageInfo(), ph = phase(), lab = { show: 'Show card ' + (si.card ? si.card.slice(1) : ''), answer: 'Reveal answers', finish: 'Finish', done: 'All revealed' }[si.mode];
+  $('bNext').disabled = si.mode === 'done' || ph === 'open'; $('bNext').textContent = ph === 'open' ? 'Close the hunt first' : lab;
+  $('bAll').disabled = n >= TOTAL || ph === 'open'; $('bHide').disabled = ph !== 'revealing'; $('bScreen').disabled = !(config.stage && config.stage.card);
+  $('bBack').disabled = ph !== 'revealing';
   $('resetSection').hidden = n > 0;
   var h = '';
   var staged = config.stage && config.stage.card;
