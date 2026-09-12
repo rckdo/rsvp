@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v15.5 (12/09/2026): Remaining explanatory lines removed from the card tab and home view.
   v15.4 (12/09/2026): Hint line under the first card removed.
   v15.3 (12/09/2026): 'It was' shows the true name as an olive card, on the stage and on My answers.
           Results' Answers block runs in card order.
@@ -1198,14 +1199,13 @@ function codeHead(title, n) {
 function renderCode() {
   var p = $('p-code'), html = '';
   if (codeUnknown) {
-    html = codeHead('Not one of ours') + '<p class="note">Try the scan again, or find another.</p>';
+    html = codeHead('Not one of ours');
   } else if (!qk) {
-    html = codeHead('Scan a card') + '<p class="note">Ten are hidden around the venue. Each one opens here.</p>';
+    html = codeHead('Scan a card');
   } else if (locked) {
     html = codeHead('Card ' + qnum(qk), qnum(qk)) + '<p class="note">The hunt has closed.</p>';
   } else {
     html = codeHead('Card ' + qnum(qk), qnum(qk));
-    if (config.releasedAt) html += '<p class="note">Everything\u2019s open. Answer what you can.</p>';
     html += stmtHtml(qk, 'human');
     html += stmtHtml(qk, 'dog');
   }
