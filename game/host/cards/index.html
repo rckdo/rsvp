@@ -189,9 +189,15 @@ function drawCard(n, code) {
   ctx.fillStyle = OCHRE; ctx.fillRect(0, 0, W, 150);
   var bs = 104, gap = 14, bx = (W - (7 * bs + 6 * gap)) / 2;
   BAND.forEach(function (b, i) { drawBlock(ctx, b[0], b[1], bx + i * (bs + gap), 23, bs); });
-  // the number, large and alone on clean paper, in the card's colour
-  ctx.fillStyle = colour; ctx.font = '600 560px "Playfair Display", Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.fillText(String(n), W / 2, 700);
+  // the number, large and alone on clean paper, in the card's colour.
+  // Playfair's figures are old-style (3, 4, 5, 7, 9 hang below the baseline), so the glyph is
+  // measured and centred in the space between the band and the row, never placed by baseline.
+  ctx.fillStyle = colour; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  var label = String(n), size = 560, m;
+  ctx.font = '600 ' + size + 'px "Playfair Display", Georgia, serif'; m = ctx.measureText(label);
+  var gh = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+  if (gh > 520) { size = Math.floor(size * 520 / gh); ctx.font = '600 ' + size + 'px "Playfair Display", Georgia, serif'; m = ctx.measureText(label); gh = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent; }
+  ctx.fillText(label, W / 2, 470 - gh / 2 + m.actualBoundingBoxAscent);
   // one quiet row beneath: icon, the card's block on its patch, icon
   ctx.save(); ctx.shadowColor = 'rgba(74,63,47,.22)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 8;
   ctx.fillStyle = CARD; ctx.fillRect(W / 2 - 85, 800, 170, 170); ctx.restore();
