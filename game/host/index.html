@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v16.0 (12/09/2026): Two-step reveal. The Reveal button cycles Show card N, Reveal answers, then the
+          next card, and Finish after the tenth. Clear screens drops every phone back to Results.
   v15.1 (12/09/2026): Clock tile reads Closed once the time is up and its main button becomes Unlock.
   v15.0 (12/09/2026): Redesigned. Run and Setup tabs. Three equal control tiles (Clock, Cards, Reveal)
           with one figure and one main button each. Below, the feed and a single table on a two-column
@@ -211,7 +213,7 @@
           <div class="val" id="revealVal">0<small>of 10</small></div>
           <div class="acts">
             <button class="btn" id="bNext">Reveal next</button>
-            <div class="minor"><button id="bAll">Reveal all</button><button id="bHide">Hide</button></div>
+            <div class="minor"><button id="bScreen">Clear screens</button><button id="bAll">Reveal all</button><button id="bHide">Hide</button></div>
           </div>
         </div>
       </div>
@@ -430,15 +432,28 @@ $('bCancel').addEventListener('click', function () { cfg().update({ lockAt: null
 $('bLockNow').addEventListener('click', function () { if (confirm('Lock the game now? Nobody can answer after this.')) cfg().update({ lockAt: now() - 1000 }).catch(fail); });
 $('bRelease').addEventListener('click', function () { cfg().update({ releasedAt: firebase.database.ServerValue.TIMESTAMP }).catch(fail); });
 $('bUnrelease').addEventListener('click', function () { cfg().update({ releasedAt: null }).catch(fail); });
+/* Reveal, in three beats per card: show the sentences, reveal the answers, move on. */
+function stageInfo() {
+  var st = config.stage || {}, n = revealedKeys().length;
+  if (st.card && st.step === 'question') return { mode: 'answer', card: st.card };
+  var next = n + 1;
+  if (st.card && st.step === 'answer') { return next > TOTAL ? { mode: 'finish' } : { mode: 'show', card: 'q' + next }; }
+  return next > TOTAL ? { mode: 'done' } : { mode: 'show', card: 'q' + next };
+}
 $('bNext').addEventListener('click', function () {
-  var n = revealedKeys().length; if (n >= TOTAL) return;
-  var up = {}; up['revealed/q' + (n + 1)] = true; cfg().update(up).catch(fail);
+  var si = stageInfo(), up = {};
+  if (si.mode === 'show') { up.stage = { card: si.card, step: 'question' }; }
+  else if (si.mode === 'answer') { up['revealed/' + si.card] = true; up['stage/step'] = 'answer'; }
+  else if (si.mode === 'finish') { up.stage = null; }
+  else return;
+  cfg().update(up).catch(fail);
 });
 $('bAll').addEventListener('click', function () {
-  if (!confirm('Reveal all ten cards at once?')) return;
-  var up = {}; keys.forEach(function (k) { up['revealed/' + k] = true; }); cfg().update(up).catch(fail);
+  if (!confirm('Reveal all ten cards at once? Phones go straight to Results.')) return;
+  var up = { stage: null }; keys.forEach(function (k) { up['revealed/' + k] = true; }); cfg().update(up).catch(fail);
 });
-$('bHide').addEventListener('click', function () { if (confirm('Hide all results? Phones go back to the placeholder.')) cfg().update({ revealed: null }).catch(fail); });
+$('bHide').addEventListener('click', function () { if (confirm('Hide all results? Phones go back to the placeholder.')) cfg().update({ revealed: null, stage: null }).catch(fail); });
+$('bScreen').addEventListener('click', function () { cfg().update({ stage: null }).catch(fail); });
 $('bSeed').addEventListener('click', function () {
   $('seedErr').textContent = '';
   var obj;
@@ -511,12 +526,14 @@ function renderReveal() {
   slugs.forEach(function (s) { var p = players[s]; found += p.found ? Object.keys(p.found).length : 0; keys.forEach(function (k) { if (p.answers && p.answers[k]) { if (p.answers[k].human) ans++; if (p.answers[k].dog) ans++; } }); });
   $('revealVal').innerHTML = n + '<small>of ' + TOTAL + '</small>';
   $('feedState').textContent = slugs.length + ' players \u00b7 ' + found + ' found \u00b7 ' + ans + ' answered';
-  $('bNext').disabled = n >= TOTAL; $('bNext').textContent = n >= TOTAL ? 'All revealed' : 'Reveal card ' + (n + 1);
-  $('bAll').disabled = n >= TOTAL; $('bHide').disabled = n === 0;
+  var si = stageInfo(), lab = { show: 'Show card ' + (si.card ? si.card.slice(1) : ''), answer: 'Reveal answers', finish: 'Finish', done: 'All revealed' }[si.mode];
+  $('bNext').disabled = si.mode === 'done'; $('bNext').textContent = lab;
+  $('bAll').disabled = n >= TOTAL; $('bHide').disabled = n === 0 && !(config.stage && config.stage.card); $('bScreen').disabled = !(config.stage && config.stage.card);
   $('resetSection').hidden = n > 0;
   var h = '';
-  if (n < TOTAL) { var nk = 'q' + (n + 1); h += '<div class="reveal-card next"><h3>' + CODE_STYLE[n] + 'Next up: card ' + (n + 1) + '<small>not yet revealed</small></h3>' + stHtml(nk, 'human', false) + stHtml(nk, 'dog', false) + '</div>'; }
-  rk.slice().reverse().forEach(function (k) { h += '<div class="reveal-card"><h3>' + CODE_STYLE[parseInt(k.slice(1), 10) - 1] + 'Card ' + k.slice(1) + '<small>revealed</small></h3>' + stHtml(k, 'human', true) + stHtml(k, 'dog', true) + '</div>'; });
+  var staged = config.stage && config.stage.card;
+  if (n < TOTAL) { var nk = 'q' + (n + 1), onScreen = staged === nk && config.stage.step === 'question'; h += '<div class="reveal-card' + (onScreen ? '' : ' next') + '"><h3>' + CODE_STYLE[n] + (onScreen ? 'On screen: card ' : 'Next up: card ') + (n + 1) + '<small>' + (onScreen ? 'sentences showing' : 'not yet shown') + '</small></h3>' + stHtml(nk, 'human', false) + stHtml(nk, 'dog', false) + '</div>'; }
+  rk.slice().reverse().forEach(function (k) { var onScreen = staged === k; h += '<div class="reveal-card"><h3>' + CODE_STYLE[parseInt(k.slice(1), 10) - 1] + 'Card ' + k.slice(1) + '<small>' + (onScreen ? 'on screen, answers showing' : 'revealed') + '</small></h3>' + stHtml(k, 'human', true) + stHtml(k, 'dog', true) + '</div>'; });
   $('revealCards').innerHTML = h;
 }
 function tbDistance(p) {
