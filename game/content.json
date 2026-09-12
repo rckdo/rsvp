@@ -1,5 +1,5 @@
 {
-  "version": "1.16",
+  "version": "1.17",
   "reels": {
     "items": [
       "Sausage",
@@ -7,14 +7,14 @@
       "Pizza",
       "Meatball",
       "Crumpet",
-      "Tennis Ball",
+      "Sprout",
       "Gravy",
-      "Cider",
+      "Wellie",
       "Pickle",
       "Custard",
       "Slipper",
       "Biscuit",
-      "Cake",
+      "Chip",
       "Puddle",
       "Sock",
       "Kettle"
@@ -23,19 +23,19 @@
       "Bandit",
       "Hoarder",
       "Goblin",
-      "Sniffer",
+      "Thief",
       "Botherer",
       "Wrangler",
       "Inspector",
-      "Menace",
+      "Pilferer",
       "Smuggler",
       "Dodger",
       "Whisperer",
       "Baron",
       "Snaffler",
-      "Connoisseur",
-      "Custodian",
-      "Fiend"
+      "Rascal",
+      "Poacher",
+      "Nibbler"
     ]
   },
   "iconBase": "/game/icons/",
