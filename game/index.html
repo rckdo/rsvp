@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v16.1 (12/09/2026): A host clue, if set, replaces Not found yet on an unfound card's row.
   v16.0 (12/09/2026): Unfound cards are one row each with a larger block. Reset stamps a game number;
           phones from the previous game forget their name and return to the reels.
   v15.6 (12/09/2026): Smaller pin on the small date cards so the number stays clear.
@@ -1247,7 +1248,8 @@ function renderMine() {
   allKeys().forEach(function (k) {
     if (!isFound(k)) {
       var nn = qnum(k);
-      html += '<li class="row hidden" style="' + window.codeVars(nn - 1) + '"><span class="n">' + nn + '</span>' + window.codeBlock(nn - 1, 30) + '<div class="body"><p>Not found yet</p></div></li>';
+      var clue = config.clues && config.clues[k];
+      html += '<li class="row hidden" style="' + window.codeVars(nn - 1) + '"><span class="n">' + nn + '</span>' + window.codeBlock(nn - 1, 30) + '<div class="body"><p>' + (clue ? esc(clue) : 'Not found yet') + '</p></div></li>';
       return;
     }
     ['human', 'dog'].forEach(function (side) {

@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v17.4 (12/09/2026): Clues panel on Setup: one line per card, shown on phones in place of Not found yet.
   v17.3 (12/09/2026): Reset stamps a new game number so phones start over.
   v17.2 (12/09/2026): Reset always available on Setup (typed RESET plus confirm).
   v17.1 (12/09/2026): Stale-tab guard.
@@ -167,6 +168,10 @@
   input[type=text]{font-family:inherit;font-size:15px;min-height:42px;padding:8px 12px;border:1.5px solid var(--line-strong);border-radius:8px;background:#fff;width:100%}
   textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:8px;background:#fff;width:100%;resize:vertical;margin-bottom:var(--s1)}
   .row2{display:grid;grid-template-columns:1fr auto;gap:var(--s1)}
+  .clues{display:grid;gap:var(--s1)}
+  .clue{display:grid;grid-template-columns:22px 22px 1fr;gap:var(--s1);align-items:center}
+  .clue .num{font-size:12px;color:var(--sage);text-align:right;font-variant-numeric:tabular-nums}
+  .clue input[type=text]{min-height:38px;font-size:14px}
   .row2 button.btn{width:auto}
   ol.urls{margin:0 0 var(--s2);padding-left:22px;font-size:13px;word-break:break-all;line-height:1.7}
   a.btn{display:inline-flex;align-items:center;justify-content:center;font-family:inherit;font-size:14px;font-weight:700;min-height:42px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--forest);background:var(--forest);color:#fff;text-decoration:none;width:100%}
@@ -288,6 +293,11 @@
           <p class="state" id="cardsState"></p>
           <ol class="urls" id="cardsList"></ol>
           <a class="btn" href="cards/">Open the card sheet</a>
+        </section>
+        <section class="panel">
+          <h2>Clues</h2>
+          <p class="state">Shown on the phones in place of "Not found yet" for that card. Saves as you type.</p>
+          <div class="clues" id="clues"></div>
         </section>
         <section class="panel">
           <h2>Host key</h2>
@@ -543,7 +553,7 @@ $('bSeed').addEventListener('click', function () {
 $('resetInput').addEventListener('input', function () { $('bReset').disabled = $('resetInput').value.trim() !== 'RESET'; });
 $('bReset').addEventListener('click', function () {
   if (!confirm('Wipe every player and all settings? This cannot be undone.')) return;
-  cfg().set({ epoch: Date.now() }).then(function () { return db.ref(ROOT + '/players').remove(); }).then(function () { $('resetInput').value = ''; $('bReset').disabled = true; }).catch(fail);
+  cfg().set({ epoch: Date.now(), clues: config.clues || null }).then(function () { return db.ref(ROOT + '/players').remove(); }).then(function () { $('resetInput').value = ''; $('bReset').disabled = true; }).catch(fail);
 });
 
 /* ---- Rendering ---- */
@@ -553,7 +563,21 @@ function phase() {
   var revealing = revealedKeys().length > 0 || !!(config.stage && config.stage.card);
   return revealing ? 'revealing' : (lockedNow ? 'closed' : 'open');
 }
-function renderAll() { renderClock(); renderRelease(); renderReveal(); renderBoard(); renderPresent(); }
+function renderAll() { renderClock(); renderRelease(); renderReveal(); renderBoard(); renderPresent(); renderClues(); }
+var cluesBuilt = false;
+function renderClues() {
+  var box = $('clues'); if (!box) return;
+  if (!cluesBuilt) {
+    cluesBuilt = true;
+    box.innerHTML = keys.map(function (k, i) { return '<div class="clue"><span class="num">' + (i + 1) + '</span>' + CODE_STYLE[i] + '<input type="text" data-k="' + k + '" placeholder="Not found yet" autocomplete="off"></div>'; }).join('');
+    box.addEventListener('change', function (ev) {
+      var inp = ev.target.closest('input[data-k]'); if (!inp) return;
+      var up = {}; up['clues/' + inp.dataset.k] = inp.value.trim() || null; cfg().update(up).catch(fail);
+    });
+  }
+  var c = config.clues || {};
+  box.querySelectorAll('input[data-k]').forEach(function (inp) { if (document.activeElement !== inp) inp.value = c[inp.dataset.k] || ''; });
+}
 function renderClock() {
   var el = $('clockVal'), running = !!config.lockAt, rem = running ? config.lockAt - now() : 0;
   var lockedNow = running && rem <= 0, b = $('bStart');
