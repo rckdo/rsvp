@@ -8,27 +8,29 @@ Guests pick who said each. Answers are revealed at the pub from the host page.
 |---|---|
 | `index.html` | Guest page. Alias reels, This code / My answers / Results tabs. |
 | `content.json` | Reels, statements, icon URLs. Contains no answers. |
-| `host/index.html` | Host page for the pub. Behind the couple's passcode, plus a host key. |
-| `firebase-rules.json` | Full Realtime Database rules for the project (tracker and RSVP rules included). `REPLACE_WITH_HOST_KEY` must be swapped for the real key before pasting. |
+| `host/index.html` | Host page for the pub. Behind Richard's passcode. |
+| `firebase-rules.json` | Full Realtime Database rules for the project (tracker and RSVP rules included). Paste as is. |
 
 Nothing secret lives in this repository. GitHub Pages serves every committed file,
-so the answer key, the ten codes and the host key are seeded straight into Firebase
-and handed over separately.
+so the answer key and the ten codes are written straight into Firebase from the host
+page's Seed box and handed over separately.
 
 ## Firebase layout (all under `/game`)
 
 ```
-/game/codes/{code}            "q1" … "q10"   (readable one code at a time, never listed)
-/game/answers/q1 … q10        { human: "R"|"L", dog: "E"|"T" }   readable once that code is revealed
-/game/answers/tiebreak        { day, month }                      readable once code 10 is revealed
-/game/config                  { lockAt, releasedAt, revealed: { q1: true, … } }
-/game/host/{HOST_KEY}         uid of the phone currently acting as host
+/game/codes/{code}            "q1" … "q10"
+/game/answers/q1 … q10        { human: "R"|"L", dog: "E"|"T" }
+/game/answers/tiebreak        { day, month }
+/game/config                  { lockAt, releasedAt, revealed: { q1: true, … }, stage, epoch, clues, statements }
 /game/players/{alias}         { uid, claimedAt, lastChange, found/{q}, answers/{q}, tiebreak }
 ```
 
 Rules enforce: one anonymous sign-in per phone owns its alias; a code can only be
 marked found with a valid code; answers only for found codes (or after release-all);
-nothing after the lock time; config and reset only from the phone holding the host key.
+nothing after the lock time. The host writes (codes, answers, config, reset) are open
+to any signed-in phone. The host page sits behind the passcode splash and is the only
+thing that makes them. Anyone querying Firebase directly could read the answers early;
+that is an accepted risk for a wedding.
 
 ## Seeding and reset
 

@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v18.0 (12/09/2026): Host key removed. The passcode splash is the only gate. Firebase rules let any
+          signed-in phone write the host nodes; this page, behind EGGS, is the only thing that does.
   v17.6 (12/09/2026): Run tab is the clock and the cards only, two large tiles and the table. Everything
           reveal-related (count, Reveal all, Hide, Clear screens, feed) now lives on Present.
           Statements panel builds as soon as content.json arrives.
@@ -241,13 +243,6 @@
     </nav>
   </header>
 
-  <section id="keySection" class="panel" hidden style="margin-bottom:var(--s3)">
-    <h2>Host key</h2>
-    <div class="row2"><input type="text" id="keyInput" placeholder="Paste the host key, or the whole host link" autocomplete="off"><button class="btn" id="keyGo">Use key</button></div>
-    <div class="err" id="keyErr"></div>
-    <p class="state" id="keyDiag" style="margin:var(--s1) 0 0"></p>
-  </section>
-
   <div id="dash" hidden>
     <div class="view" id="view-run">
       <div class="tiles">
@@ -322,11 +317,6 @@
           <h2>Clues</h2>
           <p class="state">Shown on the phones in place of "Not found yet" for that card. Saves as you type.</p>
           <div class="clues" id="clues"></div>
-        </section>
-        <section class="panel">
-          <h2>Host key</h2>
-          <p class="state">Held on this phone. Paste a new one to move hosting to another phone.</p>
-          <div class="row2"><input type="text" id="keyInput2" placeholder="Host key or host link" autocomplete="off"><button class="btn" id="keyGo2">Use</button></div>
         </section>
         <section class="panel danger" id="resetSection">
           <h2>Reset</h2>
@@ -412,7 +402,6 @@ var FIREBASE_CONFIG = {
 var ROOT = 'game', TOTAL = 10, TB_YEAR = 2017;
 var NAMES = { R: 'Richard', L: 'Lorraine', E: 'Eric', T: 'Tango' };
 var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-var HOSTKEY_STORE = 'rl-game-hostkey';
 var $ = function (id) { return document.getElementById(id); };
 var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 var fmt = function (s) { return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>'); };
@@ -420,7 +409,7 @@ var pretty = function (slug) { var p = slug.split('-'), r = p.pop(); return (p.j
 var keys = []; for (var i = 1; i <= TOTAL; i++) keys.push('q' + i);
 
 /* ---- State (declared before the gate, which may start the page immediately) ---- */
-var db, auth, uid, hostKey = null, offset = 0, content = null;
+var db, auth, uid, offset = 0, content = null;
 var config = {}, players = {}, answers = {};
 
 document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () {
@@ -453,47 +442,14 @@ dotsEl.addEventListener('click', function () { pin.focus(); });
   if (ok) { splash.classList.add('hidden'); bootHost(); } else pin.focus();
 })();
 
-/* ---- Firebase and the host key ---- */
-function storageDiag() {
-  var lines = [];
-  try { localStorage.setItem('rl-probe', '1'); lines.push(localStorage.getItem('rl-probe') === '1' ? 'Storage: works' : 'Storage: write did not stick'); localStorage.removeItem('rl-probe'); }
-  catch (e) { lines.push('Storage: blocked (' + (e && e.name ? e.name : e) + ')'); }
-  var k = null; try { k = localStorage.getItem(HOSTKEY_STORE); } catch (e) {}
-  lines.push(k ? 'Stored key: ' + k.slice(0, 6) + '\u2026' : 'Stored key: none');
-  var u = null; try { u = localStorage.getItem(UNLOCK_KEY) + '/' + localStorage.getItem('rl-tracker-who'); } catch (e) {}
-  lines.push('Unlock flag: ' + u);
-  lines.push('Page: ' + location.origin + location.pathname);
-  $('keyDiag').textContent = lines.join(' \u00b7 ');
-}
+/* ---- Firebase. The passcode splash is the only gate; there is no host key. ---- */
 function bootHost() {
-  storageDiag();
-  var m = location.search.match(/[?&]key=([^&]+)/);
-  if (m) { hostKey = decodeURIComponent(m[1]); try { localStorage.setItem(HOSTKEY_STORE, hostKey); } catch (e) {} history.replaceState(null, '', location.pathname); }
-  else { try { hostKey = localStorage.getItem(HOSTKEY_STORE); } catch (e) {} }
+  if (location.search) history.replaceState(null, '', location.pathname);
   firebase.initializeApp(FIREBASE_CONFIG);
   db = firebase.database(); auth = firebase.auth();
   db.ref('.info/serverTimeOffset').on('value', function (s) { offset = s.val() || 0; });
   fetch('../content.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (c) { content = c; renderReveal(); renderStatements(); });
-  auth.signInAnonymously().then(function (cred) { uid = cred.user.uid; if (hostKey) claim(); else $('keySection').hidden = false; });
-}
-$('keyGo2').addEventListener('click', function () { $('keyInput').value = $('keyInput2').value; $('keyGo').click(); });
-$('keyGo').addEventListener('click', function () {
-  var k = $('keyInput').value.trim(); if (!k) return;
-  var m = k.match(/[?&]key=([^&\s]+)/); if (m) k = decodeURIComponent(m[1]);
-  hostKey = k; try { localStorage.setItem(HOSTKEY_STORE, k); } catch (e) {}
-  claim();
-});
-function claim() {
-  $('keyErr').textContent = '';
-  db.ref(ROOT + '/host/' + hostKey).set(uid).then(function () {
-    try { localStorage.setItem(HOSTKEY_STORE, hostKey); } catch (e) {}
-    $('keySection').hidden = true; $('dash').hidden = false;
-    subscribe();
-  }).catch(function (e) {
-    try { localStorage.removeItem(HOSTKEY_STORE); } catch (x) {}
-    $('keySection').hidden = false;
-    $('keyErr').textContent = 'Firebase refused the host key (' + (e && e.code ? e.code : e) + '). Key used: ' + String(hostKey).slice(0, 6) + '… as user ' + (uid ? uid.slice(0, 6) : 'none') + '.';
-  });
+  auth.signInAnonymously().then(function (cred) { uid = cred.user.uid; $('dash').hidden = false; subscribe(); }).catch(fail);
 }
 var codesKnown = null;
 function renderCards() {
