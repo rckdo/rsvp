@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v14.2 (12/09/2026): Storage diagnostic line under the key box; key stored again on every successful claim.
   v14.1 (12/09/2026): Key failure message shows Firebase's reason.
   v14.0 (12/09/2026): Card URLs are links. Key box accepts the whole host link. Note about in-app browsers.
   v13.0 (12/09/2026): Cards section: the ten URLs (from Firebase, or the copy kept when the seed was
@@ -138,6 +139,7 @@
     <div class="keybox"><input type="text" id="keyInput" placeholder="Paste the host key, or the whole host link" autocomplete="off"><button id="keyGo">Use key</button></div>
     <p class="state" style="margin-top:10px">Asked every time? You're in an app's built-in browser, which forgets. Open this page in Chrome or Safari instead.</p>
     <div class="err" id="keyErr"></div>
+    <p class="state" id="keyDiag" style="margin-top:8px"></p>
   </section>
 
   <div id="dash" hidden>
@@ -306,7 +308,19 @@ dotsEl.addEventListener('click', function () { pin.focus(); });
 /* ---- Firebase and the host key ---- */
 var db, auth, uid, hostKey = null, offset = 0, content = null;
 var config = {}, players = {}, answers = {};
+function storageDiag() {
+  var lines = [];
+  try { localStorage.setItem('rl-probe', '1'); lines.push(localStorage.getItem('rl-probe') === '1' ? 'Storage: works' : 'Storage: write did not stick'); localStorage.removeItem('rl-probe'); }
+  catch (e) { lines.push('Storage: blocked (' + (e && e.name ? e.name : e) + ')'); }
+  var k = null; try { k = localStorage.getItem(HOSTKEY_STORE); } catch (e) {}
+  lines.push(k ? 'Stored key: ' + k.slice(0, 6) + '\u2026' : 'Stored key: none');
+  var u = null; try { u = localStorage.getItem(UNLOCK_KEY) + '/' + localStorage.getItem('rl-tracker-who'); } catch (e) {}
+  lines.push('Unlock flag: ' + u);
+  lines.push('Page: ' + location.origin + location.pathname);
+  $('keyDiag').textContent = lines.join(' \u00b7 ');
+}
 function bootHost() {
+  storageDiag();
   var m = location.search.match(/[?&]key=([^&]+)/);
   if (m) { hostKey = decodeURIComponent(m[1]); try { localStorage.setItem(HOSTKEY_STORE, hostKey); } catch (e) {} history.replaceState(null, '', location.pathname); }
   else { try { hostKey = localStorage.getItem(HOSTKEY_STORE); } catch (e) {} }
@@ -325,6 +339,7 @@ $('keyGo').addEventListener('click', function () {
 function claim() {
   $('keyErr').textContent = '';
   db.ref(ROOT + '/host/' + hostKey).set(uid).then(function () {
+    try { localStorage.setItem(HOSTKEY_STORE, hostKey); } catch (e) {}
     $('keySection').hidden = true; $('dash').hidden = false;
     subscribe();
   }).catch(function (e) {
