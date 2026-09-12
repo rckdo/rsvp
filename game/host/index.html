@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v17.0 (12/09/2026): Present tab: a strip of the ten cards, an On screen panel mirroring the phones,
+          a Next panel previewing the next press, and Back and Next pinned to the bottom.
   v16.2 (12/09/2026): Exclusive phases: open, closed, revealing. Reveal only once the hunt is closed;
           release and the clock's edits only while open; Unlock only before anything is revealed.
   v16.1 (12/09/2026): Back steps the reveal in reverse.
@@ -134,6 +136,27 @@
   td.score{font-weight:700;color:var(--forest)}
   .muted{color:var(--sage)}
 
+  /* Present */
+  .strip{display:flex;gap:6px;align-items:center;justify-content:space-between;margin-bottom:var(--s2)}
+  .strip .stp{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--sage);font-variant-numeric:tabular-nums}
+  .strip .stp .qb{width:28px;height:28px;flex:0 0 28px;opacity:.28;box-shadow:none}
+  .strip .stp.done .qb{opacity:1}
+  .strip .stp.now .qb{opacity:1;outline:3px solid var(--forest);outline-offset:2px}
+  .strip .stp.now{color:var(--forest);font-weight:700}
+  .pgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:var(--s2);align-items:start;margin-bottom:96px}
+  .panel.now{border-color:var(--forest);border-width:2px}
+  .panel.nxt{opacity:.8}
+  .ptitle{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:30px;line-height:1.1;color:var(--forest);display:flex;align-items:center;gap:10px;margin:0 0 var(--s1)}
+  .ptitle .qb{width:28px;height:28px;flex:0 0 28px}
+  .ptitle small{font-family:'Karla',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sage);margin-left:auto}
+  .pempty{color:var(--sage);font-size:15px;margin:0}
+  .now .st .txt{font-size:18px}
+  .pctl{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:1fr 2fr;gap:var(--s1);padding:var(--s1) var(--s2) calc(var(--s2) + env(safe-area-inset-bottom));background:rgba(238,241,234,.96);border-top:1px solid var(--line)}
+  .pctl .btn{min-height:56px;font-size:16px}
+  .pctl .btn.warn{background:var(--rust);border-color:var(--rust)}
+  body:not(.presenting) .pctl{display:none}
+  @media (max-width:720px){ .pgrid{grid-template-columns:1fr} .strip .stp .qb{width:22px;height:22px;flex-basis:22px} .strip{gap:3px} }
+
   /* Setup */
   .setup{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2);align-items:start}
   .panel p.state{color:var(--sage);font-size:14px;margin:0 0 var(--s2)}
@@ -151,6 +174,8 @@
   button.btn{white-space:nowrap}
   .tile .minor{flex-wrap:wrap;gap:4px 12px}
   @media (max-width:720px){
+    header{flex-direction:column;align-items:stretch;gap:var(--s1);padding-top:var(--s2)}
+    .tabs{width:100%} .tab{flex:1;text-align:center}
     .tiles{gap:var(--s1)}
     .tile{padding:10px;min-height:156px}
     .tile .val{font-size:28px;min-height:28px}
@@ -181,6 +206,7 @@
     <h1>Find the cards</h1>
     <nav class="tabs" role="tablist">
       <button class="tab" role="tab" data-view="run" aria-selected="true">Run</button>
+      <button class="tab" role="tab" data-view="present" aria-selected="false">Present</button>
       <button class="tab" role="tab" data-view="setup" aria-selected="false">Setup</button>
     </nav>
   </header>
@@ -230,6 +256,18 @@
           <h2>Table <small id="tableState"></small></h2>
           <table><thead><tr><th></th><th>Alias</th><th class="n">Found</th><th class="n">Ans</th><th class="n">Score</th><th class="n">Tie</th></tr></thead><tbody id="board"></tbody></table>
         </section>
+      </div>
+    </div>
+
+    <div class="view" id="view-present" hidden>
+      <div class="strip" id="pStrip"></div>
+      <div class="pgrid">
+        <section class="panel now"><h2>On screen <small id="pNowLab"></small></h2><div id="pNow"></div></section>
+        <section class="panel nxt"><h2>Next <small id="pNextLab"></small></h2><div id="pNext"></div></section>
+      </div>
+      <div class="pctl">
+        <button class="btn ghost" id="pBack">Back</button>
+        <button class="btn" id="pNextBtn">Next</button>
       </div>
     </div>
 
@@ -333,7 +371,8 @@ var config = {}, players = {}, answers = {};
 
 document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () {
   document.querySelectorAll('.tab').forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
-  $('view-run').hidden = b.dataset.view !== 'run'; $('view-setup').hidden = b.dataset.view !== 'setup';
+  $('view-run').hidden = b.dataset.view !== 'run'; $('view-setup').hidden = b.dataset.view !== 'setup'; $('view-present').hidden = b.dataset.view !== 'present';
+  document.body.classList.toggle('presenting', b.dataset.view === 'present');
 }); });
 
 /* ---- Gate: Richard's passcode ---- */
@@ -494,7 +533,7 @@ function phase() {
   var revealing = revealedKeys().length > 0 || !!(config.stage && config.stage.card);
   return revealing ? 'revealing' : (lockedNow ? 'closed' : 'open');
 }
-function renderAll() { renderClock(); renderRelease(); renderReveal(); renderBoard(); }
+function renderAll() { renderClock(); renderRelease(); renderReveal(); renderBoard(); renderPresent(); }
 function renderClock() {
   var el = $('clockVal'), running = !!config.lockAt, rem = running ? config.lockAt - now() : 0;
   var lockedNow = running && rem <= 0, b = $('bStart');
@@ -557,6 +596,43 @@ function renderReveal() {
   rk.slice().reverse().forEach(function (k) { var onScreen = staged === k; h += '<div class="reveal-card"><h3>' + CODE_STYLE[parseInt(k.slice(1), 10) - 1] + 'Card ' + k.slice(1) + '<small>' + (onScreen ? 'on screen, answers showing' : 'revealed') + '</small></h3>' + stHtml(k, 'human', true) + stHtml(k, 'dog', true) + '</div>'; });
   $('revealCards').innerHTML = h;
 }
+/* Presenter view: what is on the phones now, what the next press does, and the strip of ten. */
+function cardBlock(k, showSplit, withNotes) {
+  var n = parseInt(k.slice(1), 10);
+  return stHtml(k, 'human', showSplit) + stHtml(k, 'dog', showSplit);
+}
+function renderPresent() {
+  if (!content || !$('pStrip')) return;
+  var ph = phase(), st = config.stage || {}, rk = revealedKeys(), n = rk.length, si = stageInfo();
+  var cur = st.card ? parseInt(st.card.slice(1), 10) : 0;
+  $('pStrip').innerHTML = keys.map(function (k, i) {
+    var num = i + 1, cls = 'stp' + (config.revealed && config.revealed[k] ? ' done' : '') + (cur === num ? ' now' : '');
+    return '<div class="' + cls + '">' + CODE_STYLE[i] + '<span>' + num + '</span></div>';
+  }).join('');
+  var nowH, nowLab, nextH, nextLab, nextBtn = 'Next', nextCls = 'btn';
+  if (ph === 'open') {
+    nowLab = 'hunt still open'; nowH = '<p class="pempty">Phones are still answering. Close the hunt to start the reveal.</p>';
+    nextLab = ''; nextH = ''; nextBtn = 'Lock now'; nextCls = 'btn warn';
+  } else if (st.card) {
+    var k = st.card, answerStep = st.step === 'answer';
+    nowLab = answerStep ? 'answers showing' : 'sentences showing';
+    nowH = '<div class="ptitle">' + CODE_STYLE[cur - 1] + 'Card ' + cur + '<small>' + (answerStep ? 'answers' : 'question') + '</small></div>' + cardBlock(k, answerStep);
+    if (si.mode === 'answer') { nextLab = 'the answers for card ' + cur; nextH = '<div class="ptitle">' + CODE_STYLE[cur - 1] + 'Card ' + cur + '<small>answers</small></div>' + cardBlock(k, true); nextBtn = 'Reveal answers'; }
+    else if (si.mode === 'show') { var nn = parseInt(si.card.slice(1), 10); nextLab = 'card ' + nn; nextH = '<div class="ptitle">' + CODE_STYLE[nn - 1] + 'Card ' + nn + '<small>question</small></div>' + cardBlock(si.card, false); nextBtn = 'Show card ' + nn; }
+    else { nextLab = 'results'; nextH = '<p class="pempty">Every phone drops to Results and its rank.</p>'; nextBtn = 'Finish'; }
+  } else {
+    nowLab = n === 0 ? 'nothing yet' : (n >= TOTAL ? 'results' : 'results so far');
+    nowH = '<p class="pempty">' + (n === 0 ? 'Phones show the closed hunt. Nothing revealed.' : 'Phones show Results with ' + n + ' of ' + TOTAL + ' revealed.') + '</p>';
+    if (si.mode === 'show') { var n2 = parseInt(si.card.slice(1), 10); nextLab = 'card ' + n2; nextH = '<div class="ptitle">' + CODE_STYLE[n2 - 1] + 'Card ' + n2 + '<small>question</small></div>' + cardBlock(si.card, false); nextBtn = 'Show card ' + n2; }
+    else { nextLab = ''; nextH = '<p class="pempty">All ten revealed.</p>'; nextBtn = 'All revealed'; }
+  }
+  $('pNowLab').textContent = nowLab; $('pNow').innerHTML = nowH;
+  $('pNextLab').textContent = nextLab; $('pNext').innerHTML = nextH;
+  var nb = $('pNextBtn'); nb.textContent = nextBtn; nb.className = nextCls; nb.disabled = (ph !== 'open' && si.mode === 'done');
+  $('pBack').disabled = ph !== 'revealing';
+}
+$('pNextBtn').addEventListener('click', function () { if (phase() === 'open') $('bLockNow').click(); else $('bNext').click(); });
+$('pBack').addEventListener('click', function () { $('bBack').click(); });
 function tbDistance(p) {
   if (!p.tiebreak || !answers.tiebreak) return null;
   return Math.abs(Math.round((Date.UTC(TB_YEAR, answers.tiebreak.month - 1, answers.tiebreak.day) - Date.UTC(TB_YEAR, p.tiebreak.month - 1, p.tiebreak.day)) / 86400000));
