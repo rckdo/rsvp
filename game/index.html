@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v13.1 (12/09/2026): Gate text trimmed to heading, question and picker. Date tiles and placed date
+          cards the same size on a six-wide grid. Dragged cards no longer scale up.
   v13.0 (12/09/2026): The date works like the names: 2017 is a fixed card, day and month are gaps, the
           tiles below are cards to tap or drag in. Hint line and Saved line removed.
   v12.2 (12/09/2026): Tie-breaker hint line under the question on the gate.
@@ -303,7 +305,7 @@
   @keyframes back{from{transform:translateY(-16px) scale(1.06);opacity:.4}}
   .deck .namecard.dragging{opacity:.25}
   .deck-hint{font-family:var(--label);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);text-align:center;margin:10px 0 0}
-  .dragcard{position:fixed;z-index:80;pointer-events:none;margin:0;transform:rotate(-4deg) scale(1.08);box-shadow:0 14px 26px rgba(74,63,47,.32)}
+  .dragcard{position:fixed;z-index:80;pointer-events:none;margin:0;transform:rotate(-4deg);box-shadow:0 14px 26px rgba(74,63,47,.32)}
   .row .deck{justify-content:flex-start;margin-top:12px}
   .choice{display:flex;gap:12px;margin-top:16px}
   .choice .btn{flex:1;padding:10px 6px}
@@ -324,15 +326,15 @@
   .tb .tb-q{font-family:var(--display);font-size:19px;color:var(--bark);margin:0}
   .tb .tb-k{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 6px}
   .dp{margin-top:14px;--c:var(--gold);--cd:#8a6a2a}
-  .date-row{display:flex;gap:10px;align-items:center;justify-content:center;margin:0 0 16px}
-  .gap.sm,.namecard.sm{width:92px;height:40px}
-  .namecard.sm{font-size:12px}
-  .namecard.fixed{background:var(--ochre);color:var(--bark);box-shadow:0 2px 0 #b39c6b;cursor:default}
+  .date-row{display:flex;gap:6px;align-items:center;margin:0 0 16px}
+  .gap.sm{width:calc((100% - 30px) / 6);height:40px;margin:0}
+  .gap.sm .namecard{position:absolute;left:-1px;top:-2px;width:100%;height:100%}
+  .namecard.sm{font-size:12px;letter-spacing:.06em;height:40px}
+  .namecard.fixed{width:auto;padding:0 16px;background:var(--ochre);color:var(--bark);box-shadow:0 2px 0 #b39c6b;cursor:default;margin-left:4px}
   .dp .deck{display:grid;gap:6px;margin:0 0 10px;justify-content:stretch}
-  .dp .deck.months{grid-template-columns:repeat(6,1fr)}
-  .dp .deck.days{grid-template-columns:repeat(7,1fr)}
+  .dp .deck.months,.dp .deck.days{grid-template-columns:repeat(6,1fr)}
   .slot.sm{width:auto;height:40px;border-color:#b39c6b}
-  .slot.sm .namecard{position:absolute;inset:0;width:100%;height:100%;font-size:12px;letter-spacing:.06em}
+  .slot.sm .namecard{position:absolute;inset:0;width:100%;height:100%}
   .slot.sm:before{font-size:11px;letter-spacing:.06em}
   .slot.sm.off{opacity:.25;border-style:dotted}
   .slot.sm.off:before{opacity:.5}
@@ -474,13 +476,11 @@
   <section id="intro" class="screen" hidden>
     <div class="intro-wrap">
       <h1>One question first</h1>
-      <p class="lede">Closest answer settles any tie at the pub.</p>
       <div class="patch gold tb">
         <p class="tb-q" id="introQ"></p>
         <div class="dp" id="introDP" data-day="" data-month=""></div>
       </div>
       <button class="btn wide" id="introGo" disabled>Start the hunt</button>
-      <p class="deck-hint">You can change it later on My answers</p>
     </div>
   </section>
 
@@ -979,7 +979,7 @@ document.addEventListener('pointermove', function (ev) {
   if (!drag || ev.pointerId !== drag.id) return;
   var dx = ev.clientX - drag.x0, dy = ev.clientY - drag.y0;
   if (Math.hypot(dx, dy) > 6) drag.moved = true;
-  drag.ghost.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(-4deg) scale(1.08)';
+  drag.ghost.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(-4deg)';
   if (drag.gap) drag.gap.classList.toggle('hot', overGap(drag.gap, ev.clientX, ev.clientY));
 });
 function endDrag(place) {
