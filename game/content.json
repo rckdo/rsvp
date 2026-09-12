@@ -1,5 +1,5 @@
 {
-  "version": "1.15",
+  "version": "1.16",
   "reels": {
     "items": [
       "Sausage",
@@ -41,7 +41,6 @@
   "iconBase": "/game/icons/",
   "tiebreak": {
     "question": "Until today, what date was Richard and Lorraine’s anniversary?",
-    "hint": "It started in 2017. Day and month will do.",
     "third": "Richard and Lorraine’s anniversary, until today"
   },
   "questions": [
