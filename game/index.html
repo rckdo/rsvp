@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v15.2 (12/09/2026): Stale-tab guard: reloads itself when a newer version is live and the tab comes
+          back to the front.
   v15.1 (12/09/2026): Scrollbar space reserved on desktop so the card never shifts sideways.
   v15.0 (12/09/2026): Two-step, host-driven reveal. config.stage holds a card on every screen: first
           the sentences with each guest's own card in the gap, then the answers with stickers, the
@@ -570,6 +572,23 @@
 /* =====================================================================
    Config
    ===================================================================== */
+/* Stale-tab guard: a page left open across a deploy reloads itself when it next comes to the front.
+   The ETag of this very page is the version stamp; state lives in Firebase so nothing is lost. */
+(function () {
+  var stamp = null, last = 0;
+  function check() {
+    if (Date.now() - last < 30000) return; last = Date.now();
+    fetch(location.pathname, { method: 'HEAD', cache: 'no-store' }).then(function (r) {
+      var e = r.headers.get('etag') || r.headers.get('last-modified'); if (!e) return;
+      if (stamp === null) { stamp = e; return; }
+      if (e !== stamp && !window.__busy) location.reload();
+    }).catch(function () {});
+  }
+  check();
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
+  window.addEventListener('focus', check);
+})();
+
 var FIREBASE_CONFIG = {
   apiKey: 'AIzaSyBI-BFXh8BzvsaDw3Mm0Mxi7UmqyU1Y_g8',
   authDomain: 'rl-wedding-fe94a.firebaseapp.com',
@@ -1071,6 +1090,7 @@ document.addEventListener('pointerdown', function (ev) {
   document.body.appendChild(ghost);
   var gap = host ? host.querySelector('.gap[data-side="' + card.dataset.side + '"]') : null;
   drag = { card: card, ghost: ghost, gap: gap, host: host, x0: ev.clientX, y0: ev.clientY, moved: false, id: ev.pointerId, rect: r };
+  window.__busy = true;
   card.classList.add('dragging');
   try { card.setPointerCapture(ev.pointerId); } catch (e) {}
 });
@@ -1082,7 +1102,7 @@ document.addEventListener('pointermove', function (ev) {
   if (drag.gap) drag.gap.classList.toggle('hot', overGap(drag.gap, ev.clientX, ev.clientY));
 });
 function endDrag(place) {
-  var d = drag; drag = null;
+  var d = drag; drag = null; window.__busy = false;
   if (d.gap) d.gap.classList.remove('hot');
   var ok = place && d.gap && document.contains(d.gap);
   d.ghost.style.transition = 'transform .2s cubic-bezier(.22,1,.36,1), opacity .2s ease';

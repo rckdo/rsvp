@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v17.1 (12/09/2026): Stale-tab guard.
   v17.0 (12/09/2026): Present tab: a strip of the ten cards, an On screen panel mirroring the phones,
           a Next panel previewing the next press, and Back and Next pinned to the bottom.
   v16.2 (12/09/2026): Exclusive phases: open, closed, revealing. Reveal only once the hunt is closed;
@@ -345,6 +346,23 @@ var HOST_NOTES = {
   q9: { human: '', dog: '' },
   q10: { human: '', dog: '' }
 };
+
+/* Stale-tab guard: a page left open across a deploy reloads itself when it next comes to the front.
+   The ETag of this very page is the version stamp; state lives in Firebase so nothing is lost. */
+(function () {
+  var stamp = null, last = 0;
+  function check() {
+    if (Date.now() - last < 30000) return; last = Date.now();
+    fetch(location.pathname, { method: 'HEAD', cache: 'no-store' }).then(function (r) {
+      var e = r.headers.get('etag') || r.headers.get('last-modified'); if (!e) return;
+      if (stamp === null) { stamp = e; return; }
+      if (e !== stamp && !window.__busy) location.reload();
+    }).catch(function () {});
+  }
+  check();
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
+  window.addEventListener('focus', check);
+})();
 
 var FIREBASE_CONFIG = {
   apiKey: 'AIzaSyBI-BFXh8BzvsaDw3Mm0Mxi7UmqyU1Y_g8',
