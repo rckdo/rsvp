@@ -4,6 +4,10 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v4.0 (12/09/2026): One quilt block and colour per code, unique across the ten, carried through the
+          heading, patch strips, icons, buttons, found meter, rows, results and the reveal flash.
+          Two separate tombolas side by side: the item drum rolls down, the role drum rolls up, on
+          different clocks.
   v3.0 (12/09/2026): Physicality pass. Every statement, answered row, tie-breaker and results block
           is a raised patch with a quilt strip along its top and a real shadow; unfound rows sit
           flat behind them. Buttons have a solid face and a darker bottom edge that presses down
@@ -108,7 +112,8 @@
 
   .band{background:var(--ochre);display:flex;justify-content:center;align-items:center;gap:6px;padding:11px 0;overflow:hidden;flex:0 0 auto}
   .band .block{flex:0 0 auto;animation:bloom .6s ease both}
-  .band .block .cell{width:100%;height:100%}
+  .qb,.block,.pb{display:grid}
+  .qb .cell,.block .cell,.pb .cell{width:100%;height:100%;display:block}
   @keyframes bloom{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
 
   /* Header: a luggage-tag alias, the clock beneath */
@@ -135,26 +140,28 @@
   h1,h2,h3{font-family:var(--display);color:var(--bark);margin:0;font-weight:600}
   h1{font-size:30px;letter-spacing:.06em;line-height:1.15}
   .lede{font-style:italic;color:var(--mutedbrown);font-size:19px;margin:6px 0 22px}
+  .tombolas{display:flex;gap:12px;justify-content:center;margin:0 auto;max-width:360px}
   .tombola{
-    position:relative;margin:0 auto;max-width:280px;
-    background:var(--ochre);padding:12px;
+    position:relative;flex:1;min-width:0;
+    background:var(--ochre);padding:10px;
     box-shadow:0 10px 24px rgba(74,63,47,.16);
   }
+  .tombola .lab{font-family:var(--label);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--bark);text-align:center;margin:0 0 8px}
   .tombola .window{background:#f7f0e0;position:relative;box-shadow:inset 0 3px 10px rgba(74,63,47,.16)}
   .reel-wrap{position:relative}
   .reel-wrap:before,.reel-wrap:after{
-    content:'';position:absolute;top:50%;width:0;height:0;margin-top:-7px;z-index:2;
-    border-top:7px solid transparent;border-bottom:7px solid transparent;
+    content:'';position:absolute;top:50%;width:0;height:0;margin-top:-6px;z-index:2;
+    border-top:6px solid transparent;border-bottom:6px solid transparent;
   }
-  .reel-wrap:before{left:0;border-left:9px solid var(--rust)}
-  .reel-wrap:after{right:0;border-right:9px solid var(--rust)}
-  .reel-wrap + .reel-wrap{border-top:1px solid var(--line)}
+  .reel-wrap:before{left:0;border-left:8px solid var(--rust)}
+  .reel-wrap:after{right:0;border-right:8px solid var(--rust)}
   .reel{height:156px;overflow:hidden;position:relative;
     -webkit-mask-image:linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
     mask-image:linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
   }
   .reel .strip{will-change:transform}
-  .reel .word{height:52px;line-height:52px;font-family:var(--display);font-size:26px;color:var(--bark);white-space:nowrap}
+  .reel .word{height:52px;line-height:52px;font-family:var(--display);font-size:21px;color:var(--bark);white-space:nowrap;padding:0 10px;overflow:hidden;text-overflow:clip}
+  @media (max-width:360px){.reel .word{font-size:18px}}
   .reel.spinning .strip{filter:blur(.6px)}
   .reel .word.hit{color:var(--rust)}
   .reel-hint{font-family:var(--label);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rust);margin:18px 0 4px;min-height:18px}
@@ -197,7 +204,8 @@
   /* Panel heading: Playfair with a big ochre numeral behind */
   .ph{position:relative;margin:0 0 18px;min-height:44px;display:flex;align-items:flex-end;gap:12px}
   .ph h2{font-size:26px;letter-spacing:.03em;line-height:1.1;position:relative}
-  .ph .num{position:absolute;right:-4px;top:-26px;font-family:var(--display);font-weight:600;font-size:100px;line-height:1;color:var(--ochre);pointer-events:none;user-select:none;z-index:0}
+  .ph .num{position:absolute;right:-4px;top:-26px;font-family:var(--display);font-weight:600;font-size:100px;line-height:1;color:var(--c,var(--ochre));opacity:.22;pointer-events:none;user-select:none;z-index:0}
+  .ph .qb{width:40px;height:40px;flex:0 0 40px;margin-bottom:2px;position:relative;z-index:1;box-shadow:0 3px 8px rgba(74,63,47,.18)}
   .ph h2,.ph small{position:relative;z-index:1}
   .ph small{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);padding-bottom:5px}
   .note{font-style:italic;color:var(--mutedbrown);margin:0 0 16px;font-size:19px}
@@ -212,11 +220,8 @@
   .patch:before{content:'';position:absolute;left:0;right:0;top:0;height:7px;
     background:repeating-linear-gradient(90deg, var(--c) 0 9px, var(--cream) 9px 18px)}
   .patch.gold{--c:var(--gold);--cd:#8a6a2a}
-  /* Statement: coloured icon beside the words, two names beneath.
-     Richard and Lorraine wear rust; Eric and Tango wear olive. */
+  /* Statement: the code's icon colour beside the words, two names beneath. */
   .stmt{padding:24px 18px 18px}
-  .stmt.human{--c:var(--rust);--cd:var(--rust-deep)}
-  .stmt.dog{--c:var(--olive);--cd:var(--olive-deep)}
   .stmt-row{display:flex;gap:14px;align-items:flex-start}
   .stmt-row.dog{flex-direction:row-reverse}
   .icon{flex:0 0 52px;width:52px;height:52px;color:var(--c);display:flex;align-items:center;justify-content:center}
@@ -229,8 +234,8 @@
   .choice .btn{flex:1;padding:10px 6px}
   .choice .btn.pick{background:var(--cream);color:var(--cd);box-shadow:0 4px 0 var(--ochre-deep), 0 8px 16px rgba(74,63,47,.12)}
   .choice .btn.pick:active{box-shadow:0 1px 0 var(--ochre-deep), 0 2px 4px rgba(74,63,47,.1)}
-  .choice .btn.pick.on{background:var(--c);color:var(--cream);box-shadow:0 4px 0 var(--cd), 0 8px 16px rgba(74,63,47,.2);animation:pop .22s ease-out}
-  .choice .btn.pick.on:active{box-shadow:0 1px 0 var(--cd), 0 2px 4px rgba(74,63,47,.12)}
+  .choice .btn.pick.on{background:var(--cd);color:var(--cream);box-shadow:0 4px 0 color-mix(in srgb, var(--cd), #000 32%), 0 8px 16px rgba(74,63,47,.2);animation:pop .22s ease-out}
+  .choice .btn.pick.on:active{box-shadow:0 1px 0 color-mix(in srgb, var(--cd), #000 32%), 0 2px 4px rgba(74,63,47,.12)}
   .choice .btn.pick:disabled{opacity:.55}
   @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.04)}100%{transform:scale(1)}}
   .after-lock{font-style:italic;color:var(--mutedbrown);margin:10px 0 0}
@@ -254,8 +259,6 @@
   .row.hidden{padding:8px 14px;margin:0;box-shadow:none;background:transparent}
   .row.hidden:before{display:none}
   .row.hidden + .row.hidden{border-top:1px solid var(--line)}
-  .row.human{--c:var(--rust);--cd:var(--rust-deep)}
-  .row.dog{--c:var(--olive);--cd:var(--olive-deep)}
   .row .n{flex:0 0 28px;font-family:var(--label);font-size:12px;color:var(--mutedbrown);padding-top:6px}
   .row .ic{flex:0 0 26px;width:26px;height:26px;color:var(--c);padding-top:2px}
   .row .ic svg{width:24px;height:24px;stroke-width:1.6}
@@ -269,6 +272,7 @@
   .row .choice .btn{min-height:44px;font-size:12px}
   .row .edit{background:none;border:0;padding:6px 0 0;color:var(--mutedbrown);font-family:var(--label);font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;min-height:32px}
   .row .edit:disabled{opacity:.4;cursor:default}
+  .row .qb{flex:0 0 22px;width:22px;height:22px;margin-top:4px}
   .row.right .who{color:var(--olive-deep)}
   .row.wrong .who{color:var(--rust);text-decoration:line-through;text-decoration-thickness:1px}
   .row .verdict{font-family:var(--label);font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
@@ -297,6 +301,8 @@
   .board .pts{font-family:var(--display);font-size:22px;color:var(--bark)}
   .split{padding:12px 0;border-top:1px solid var(--line)}
   .split:first-of-type{border-top:0}
+  .split-code{display:flex;align-items:center;gap:8px;font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--cd);margin:16px 0 4px}
+  .split-code .qb{width:22px;height:22px}
   .split p{margin:0;font-size:18px}
   .split .bar{display:flex;height:10px;margin:8px 0 4px;background:var(--ochre);overflow:hidden}
   .split .bar i{display:block;height:100%;background:var(--olive);transition:width .6s var(--ease-out)}
@@ -309,7 +315,8 @@
   #ack{position:fixed;inset:0;z-index:50;background:var(--cream);display:flex;flex-direction:column;justify-content:center;padding:28px 24px;
     transform:translateY(100%);transition:transform .32s var(--ease-out)}
   #ack.show{transform:none}
-  #ack .k{font-family:var(--display);font-size:22px;color:var(--bark);text-align:center;margin-bottom:18px}
+  #ack .k{font-family:var(--display);font-size:22px;color:var(--bark);text-align:center;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:12px}
+  #ack .k .qb{width:36px;height:36px;box-shadow:0 3px 8px rgba(74,63,47,.18)}
   .ackp{padding:24px 20px;color:var(--cream);text-align:center;margin:0 auto;width:100%;max-width:400px;box-shadow:0 14px 30px rgba(59,56,47,.2)}
   .ackp + .ackp{margin-top:14px}
   .ackp.right{background:var(--olive)}
@@ -358,11 +365,9 @@
   <section id="spin" class="screen" hidden>
     <h1>First, a name</h1>
     <p class="lede">No real names tonight. The reels decide.</p>
-    <div class="tombola" role="group" aria-label="Name reels">
-      <div class="window">
-        <div class="reel-wrap"><div class="reel" id="reelItem"><div class="strip"></div></div></div>
-        <div class="reel-wrap"><div class="reel" id="reelRole"><div class="strip"></div></div></div>
-      </div>
+    <div class="tombolas" role="group" aria-label="Name reels">
+      <div class="tombola"><p class="lab">Item</p><div class="window"><div class="reel-wrap"><div class="reel" id="reelItem"><div class="strip"></div></div></div></div></div>
+      <div class="tombola"><p class="lab">Role</p><div class="window"><div class="reel-wrap"><div class="reel" id="reelRole"><div class="strip"></div></div></div></div></div>
     </div>
     <div class="reel-hint" id="reelHint"></div>
     <div class="spin-actions">
@@ -457,8 +462,11 @@ function toast(msg) {
 }
 
 /* =====================================================================
-   Quilt band (the invite's builder, five blocks)
+   Quilt engine. The band is the invite's, block for block. Each code
+   gets its own block shape and colour, unique across the ten, and wears
+   it everywhere: heading, patch strip, icons, buttons, meter, results.
    ===================================================================== */
+var CODE_STYLE = [];
 (function () {
   var CREAM = '#efe6d3';
   function hst(dir, a, b) {
@@ -470,30 +478,38 @@ function toast(msg) {
     }
   }
   var g = function (c, r) { return { display: 'grid', gridTemplateColumns: 'repeat(' + c + ',1fr)', gridTemplateRows: 'repeat(' + r + ',1fr)' }; };
-  var builders = [
-    function () { return { wrap: g(2, 2), cells: ['tr', 'tl', 'tr', 'tl'].map(function (d) { return hst(d, '#a34a2c', CREAM); }) }; },
-    function () { return { wrap: g(2, 2), cells: ['tr', 'br', 'tl', 'bl'].map(function (d) { return hst(d, '#7a7c47', CREAM); }) }; },
-    function () { return { wrap: g(2, 2), cells: ['br', 'bl', 'tr', 'tl'].map(function (d) { return hst(d, '#c99a3f', CREAM); }) }; },
-    function () { return { wrap: g(3, 3), cells: ['#bf6a43', CREAM, '#bf6a43', CREAM, '#bf6a43', CREAM, '#bf6a43', CREAM, '#bf6a43'] }; },
-    function () { return { wrap: g(1, 1), cells: ['conic-gradient(#4a3f2f 0 45deg,' + CREAM + ' 45deg 135deg,#4a3f2f 135deg 225deg,' + CREAM + ' 225deg 315deg,#4a3f2f 315deg)'] }; }
-  ];
-  var band = $('band');
-  for (var i = 0; i < 7; i++) {
-    var blk = builders[(i + 1) % builders.length]();
-    var wrap = document.createElement('div');
-    wrap.className = 'block';
-    Object.assign(wrap.style, blk.wrap, { width: '44px', height: '44px', animationDelay: (0.35 + i * 0.09) + 's' });
-    blk.cells.forEach(function (bg) { var c = document.createElement('div'); c.className = 'cell'; c.style.background = bg; wrap.appendChild(c); });
-    band.appendChild(wrap);
-  }
-  // expose a block builder for the progress row on My answers
-  window.quiltBlock = function (i, px, cls) {
-    var b = builders[i % builders.length](), w = document.createElement('div');
-    w.className = cls || 'pb';
-    Object.assign(w.style, b.wrap, px ? { width: px + 'px', height: px + 'px' } : {});
-    b.cells.forEach(function (bg) { var c = document.createElement('div'); c.className = 'cell'; c.style.background = bg; w.appendChild(c); });
-    return w.outerHTML;
+  var SHAPES = {
+    geese:     function (a) { return { wrap: g(2, 2), cells: ['tr', 'tl', 'tr', 'tl'].map(function (d) { return hst(d, a, CREAM); }) }; },
+    pinwheel:  function (a) { return { wrap: g(2, 2), cells: ['tr', 'br', 'tl', 'bl'].map(function (d) { return hst(d, a, CREAM); }) }; },
+    dishes:    function (a) { return { wrap: g(2, 2), cells: ['br', 'bl', 'tr', 'tl'].map(function (d) { return hst(d, a, CREAM); }) }; },
+    nine:      function (a) { return { wrap: g(3, 3), cells: [a, CREAM, a, CREAM, a, CREAM, a, CREAM, a] }; },
+    hourglass: function (a) { return { wrap: g(1, 1), cells: ['conic-gradient(' + a + ' 0 45deg,' + CREAM + ' 45deg 135deg,' + a + ' 135deg 225deg,' + CREAM + ' 225deg 315deg,' + a + ' 315deg)'] }; }
   };
+  var COLOURS = {
+    rust:       { c: '#a34a2c', d: '#7e3820' },
+    olive:      { c: '#7a7c47', d: '#5e6035' },
+    gold:       { c: '#c99a3f', d: '#8a6a2a' },
+    terracotta: { c: '#bf6a43', d: '#8f4a2c' },
+    bark:       { c: '#4a3f2f', d: '#2e2719' }
+  };
+  // ten unique pairings, in code order
+  var PAIRS = [['geese', 'rust'], ['pinwheel', 'olive'], ['dishes', 'gold'], ['nine', 'terracotta'], ['hourglass', 'bark'],
+               ['pinwheel', 'rust'], ['dishes', 'olive'], ['geese', 'gold'], ['hourglass', 'terracotta'], ['nine', 'bark']];
+  PAIRS.forEach(function (pr) { CODE_STYLE.push({ shape: pr[0], c: COLOURS[pr[1]].c, d: COLOURS[pr[1]].d }); });
+
+  function blockHtml(shape, colour, px, cls) {
+    var b = SHAPES[shape](colour), style = 'display:' + b.wrap.display + ';grid-template-columns:' + b.wrap.gridTemplateColumns + ';grid-template-rows:' + b.wrap.gridTemplateRows + (px ? ';width:' + px + 'px;height:' + px + 'px' : '');
+    return '<span class="' + (cls || 'qb') + '" style="' + style + '" aria-hidden="true">' + b.cells.map(function (bg) { return '<span class="cell" style="background:' + bg + '"></span>'; }).join('') + '</span>';
+  }
+  window.codeBlock = function (i, px, cls) { var st = CODE_STYLE[i]; return blockHtml(st.shape, st.c, px, cls); };
+  window.codeVars = function (i) { var st = CODE_STYLE[i]; return '--c:' + st.c + ';--cd:' + st.d; };
+
+  // the band: the invite's sequence, block for block
+  var BAND = [['pinwheel', '#7a7c47'], ['dishes', '#c99a3f'], ['nine', '#bf6a43'], ['hourglass', '#4a3f2f'], ['geese', '#a34a2c'], ['pinwheel', '#7a7c47'], ['dishes', '#c99a3f']];
+  var band = $('band');
+  band.innerHTML = BAND.map(function (b, i) { return blockHtml(b[0], b[1], 44, 'block'); }).join('');
+  Array.prototype.forEach.call(band.children, function (blk, i) { blk.style.animationDelay = (0.35 + i * 0.09) + 's'; });
+
   // dust motes drifting up through the light, as on the invite
   if (!REDUCED) {
     var motes = $('motes');
@@ -583,14 +599,14 @@ function resolveCode() {
 /* =====================================================================
    The tombola
    ===================================================================== */
-var LINE = 52, REPEAT = 5;
+var LINE = 52, REPEAT = 7;
 var reels = {};
 function buildReel(id, words) {
   var el = $(id), strip = el.querySelector('.strip');
   var html = '';
   for (var r = 0; r < REPEAT; r++) words.forEach(function (w) { html += '<div class="word">' + esc(w) + '</div>'; });
   strip.innerHTML = html;
-  var st = { el: el, strip: strip, words: words, pos: words.length, anim: null };
+  var st = { el: el, strip: strip, words: words, pos: words.length * 3, anim: null };
   strip.style.transform = 'translateY(' + (-(st.pos - 1) * LINE) + 'px)';
   reels[id] = st;
   return st;
@@ -599,14 +615,15 @@ function markHit(st) {
   var all = st.strip.children;
   for (var i = 0; i < all.length; i++) all[i].classList.toggle('hit', i === st.pos);
 }
-function spinReel(st, target, duration, delay) {
+function spinReel(st, target, duration, delay, dir) {
   var n = st.words.length;
   return new Promise(function (done) {
     for (var i = 0; i < st.strip.children.length; i++) st.strip.children[i].classList.remove('hit');
-    // keep the strip index bounded: same visible word, earlier copy
-    var base = (st.pos % n) + n;
-    var delta = ((target - base) % n + n) % n;
-    var to = base + 2 * n + delta;
+    // keep the strip index bounded: same visible word, middle copy, so either direction has room
+    var base = (st.pos % n) + 3 * n;
+    var to;
+    if (dir < 0) { to = base - 2 * n - (((base - target) % n) + n) % n; }
+    else { to = base + 2 * n + (((target - base) % n) + n) % n; }
     var y = function (p) { return 'translateY(' + (-(p - 1) * LINE) + 'px)'; };
     st.strip.style.transform = y(base);
     st.pos = to;
@@ -615,7 +632,7 @@ function spinReel(st, target, duration, delay) {
     setTimeout(function () {
       var a = st.strip.animate([
         { transform: y(base), easing: 'cubic-bezier(.12,.62,.22,1)' },
-        { transform: y(to + 0.32), offset: 0.84, easing: 'cubic-bezier(.3,0,.5,1)' },
+        { transform: y(to + 0.32 * (dir < 0 ? -1 : 1)), offset: 0.84, easing: 'cubic-bezier(.3,0,.5,1)' },
         { transform: y(to) }
       ], { duration: duration, fill: 'forwards' });
       a.onfinish = function () {
@@ -639,8 +656,8 @@ function spin(free) {
   $('reelHint').textContent = 'Spinning…';
   if (!free) $('taken').textContent = '';
   Promise.all([
-    spinReel(reels.reelItem, ti, 1500, 0),
-    spinReel(reels.reelRole, tr, 1900, 220)
+    spinReel(reels.reelItem, ti, 1500, 0, 1),
+    spinReel(reels.reelRole, tr, 2150, 140, -1)
   ]).then(function () {
     spinning = false;
     $('reelHint').textContent = prettyAlias(slugOf(current.item, current.role));
@@ -821,7 +838,7 @@ function choiceHtml(k, side, disabled) {
 }
 function stmtHtml(k, side) {
   var q = question(k)[side];
-  return '<div class="patch stmt ' + side + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + esc(q.first) + '</p></div>' +
+  return '<div class="patch stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + esc(q.first) + '</p></div>' +
     (locked ? '<p class="after-lock">' + (pick(k, side) ? 'You said ' + NAMES[pick(k, side)] + '.' : 'Not answered.') + '</p>' : choiceHtml(k, side, false)) + '</div>';
 }
 var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -837,7 +854,8 @@ function tiebreakHtml(compact) {
 }
 
 function codeHead(title, n) {
-  return '<div class="ph">' + (n ? '<span class="num" aria-hidden="true">' + n + '</span>' : '') + '<h2>' + title + '</h2>' + (n ? '<small>of ' + TOTAL_CODES + '</small>' : '') + '</div>';
+  if (!n) return '<div class="ph"><h2>' + title + '</h2></div>';
+  return '<div class="ph" style="' + window.codeVars(n - 1) + '"><span class="num" aria-hidden="true">' + n + '</span>' + window.codeBlock(n - 1, 40) + '<h2>' + title + '</h2><small>of ' + TOTAL_CODES + '</small></div>';
 }
 function renderCode() {
   var p = $('p-code'), html = '';
@@ -868,7 +886,7 @@ function renderMine() {
   var pending = 0;
   allKeys().forEach(function (k) { if (isFound(k)) { if (!pick(k, 'human')) pending++; if (!pick(k, 'dog')) pending++; } });
   var html = '<div class="progress" aria-label="' + found + ' of ' + TOTAL_CODES + ' codes found">';
-  allKeys().forEach(function (k, i) { html += window.quiltBlock(i, 0, 'pb' + (isFound(k) ? ' on' : '')); });
+  allKeys().forEach(function (k, i) { html += window.codeBlock(i, 0, 'pb' + (isFound(k) ? ' on' : '')); });
   html += '</div>';
   html += '<div class="ph"><h2>' + head + '</h2></div>';
   if (pending && !locked) html += '<p class="nudge">' + pending + ' still to answer.</p>';
@@ -880,7 +898,7 @@ function renderMine() {
       var q = question(k)[side], n = qnum(k);
       var label = n + (side === 'human' ? 'a' : 'b');
       if (!isFound(k)) {
-        html += '<li class="row hidden ' + side + '"><span class="n">' + label + '</span><span class="ic">' + iconFallback() + '</span><div class="body"><p>Not found yet</p></div></li>';
+        html += '<li class="row hidden ' + side + '" style="' + window.codeVars(n - 1) + '"><span class="n">' + label + '</span>' + window.codeBlock(n - 1, 22) + '<div class="body"><p>Not found yet</p></div></li>';
         return;
       }
       var cur = pick(k, side);
@@ -891,7 +909,7 @@ function renderMine() {
         else if (cur === truth) { cls += ' right'; verdict = 'Right'; }
         else { cls += ' wrong'; verdict = 'Wrong. It was ' + NAMES[truth] + '.'; }
       }
-      html += '<li class="' + cls + '"><span class="n">' + label + '</span><span class="ic">' + icon(q.icon) + '</span><div class="body">';
+      html += '<li class="' + cls + '" style="' + window.codeVars(n - 1) + '"><span class="n">' + label + '</span><span class="ic">' + icon(q.icon) + '</span><div class="body">';
       if (cur) {
         html += '<p>' + statementText(k, side, cur) + '</p>';
         if (verdict) html += '<div class="verdict">' + esc(verdict) + '</div>';
@@ -976,6 +994,7 @@ function renderResults() {
   html += '<section class="patch"><p class="sec-k">The room</p>';
   var total = Object.keys(players).length;
   keys.slice().reverse().forEach(function (k) {
+    html += '<div class="split-code" style="' + window.codeVars(qnum(k) - 1) + '">' + window.codeBlock(qnum(k) - 1, 22) + 'Code ' + qnum(k) + '</div>';
     ['human', 'dog'].forEach(function (side) {
       var truth = answers[k][side];
       var opts = side === 'human' ? ['R', 'L'] : ['E', 'T'];
@@ -1021,7 +1040,7 @@ function runAck() {
     return '<div class="ackp ' + cls + '"><div class="v">' + esc(v) + '</div><div class="s">' + esc(question(k)[side].third.replace('{name}', NAMES[truth])) + '</div></div>';
   }).join('');
   var el = $('ack');
-  el.innerHTML = '<div class="k">Code ' + qnum(k) + '</div>' + panels;
+  el.innerHTML = '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + 'Code ' + qnum(k) + '</div>' + panels;
   void el.offsetWidth;
   el.classList.add('show');
   try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {}

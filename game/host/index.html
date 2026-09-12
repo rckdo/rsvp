@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v4.0 (12/09/2026): Each code's quilt block shown on its reveal card, matching the guest page.
   v1.0 (12/09/2026): First build from spec v55. Sits behind the couple's passcode splash
           (Richard's code only). The Firebase host key is taken from ?key= once, kept on
           the device, and never appears in the page source. Controls: 15-minute countdown
@@ -71,7 +72,9 @@
 
   .reveal-card{border-top:1px solid var(--line);padding:14px 0 4px;margin-top:14px}
   .reveal-card.next{border-top:1px dashed var(--line-strong)}
-  .reveal-card h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:20px;margin:0 0 8px;color:var(--forest)}
+  .reveal-card h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:20px;margin:0 0 8px;color:var(--forest);display:flex;align-items:center;gap:10px}
+  .qb{display:grid;width:26px;height:26px;flex:0 0 26px;box-shadow:0 2px 5px rgba(0,0,0,.15)}
+  .qb .cell{display:block;width:100%;height:100%}
   .reveal-card h3 small{font-family:'Karla',sans-serif;font-size:12px;color:var(--sage);font-weight:500;margin-left:8px}
   .st{padding:10px 0}
   .st + .st{border-top:1px dashed var(--line)}
@@ -187,6 +190,33 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script>
+/* Each code's quilt block and colour, matching the guest page. */
+var CODE_STYLE = (function () {
+  var CREAM = '#efe6d3';
+  function hst(dir, a) {
+    switch (dir) {
+      case 'tl': return 'linear-gradient(to bottom right,' + a + ' 0 50%,' + CREAM + ' 50% 100%)';
+      case 'br': return 'linear-gradient(to bottom right,' + CREAM + ' 0 50%,' + a + ' 50% 100%)';
+      case 'tr': return 'linear-gradient(to bottom left,' + a + ' 0 50%,' + CREAM + ' 50% 100%)';
+      case 'bl': return 'linear-gradient(to bottom left,' + CREAM + ' 0 50%,' + a + ' 50% 100%)';
+    }
+  }
+  var SHAPES = {
+    geese: function (a) { return [2, ['tr', 'tl', 'tr', 'tl'].map(function (d) { return hst(d, a); })]; },
+    pinwheel: function (a) { return [2, ['tr', 'br', 'tl', 'bl'].map(function (d) { return hst(d, a); })]; },
+    dishes: function (a) { return [2, ['br', 'bl', 'tr', 'tl'].map(function (d) { return hst(d, a); })]; },
+    nine: function (a) { return [3, [a, CREAM, a, CREAM, a, CREAM, a, CREAM, a]]; },
+    hourglass: function (a) { return [1, ['conic-gradient(' + a + ' 0 45deg,' + CREAM + ' 45deg 135deg,' + a + ' 135deg 225deg,' + CREAM + ' 225deg 315deg,' + a + ' 315deg)']]; }
+  };
+  var C = { rust: '#a34a2c', olive: '#7a7c47', gold: '#c99a3f', terracotta: '#bf6a43', bark: '#4a3f2f' };
+  var PAIRS = [['geese', 'rust'], ['pinwheel', 'olive'], ['dishes', 'gold'], ['nine', 'terracotta'], ['hourglass', 'bark'],
+               ['pinwheel', 'rust'], ['dishes', 'olive'], ['geese', 'gold'], ['hourglass', 'terracotta'], ['nine', 'bark']];
+  return PAIRS.map(function (p) {
+    var sh = SHAPES[p[0]](C[p[1]]);
+    return '<span class="qb" style="grid-template-columns:repeat(' + sh[0] + ',1fr);grid-template-rows:repeat(' + sh[0] + ',1fr)">' + sh[1].map(function (bg) { return '<span class="cell" style="background:' + bg + '"></span>'; }).join('') + '</span>';
+  });
+})();
+
 /* Private host notes: the anecdote cue for each statement. Never in Firebase. */
 var HOST_NOTES = {
   q1: { human: '', dog: '' },
@@ -359,8 +389,8 @@ function renderReveal() {
   $('bAll').disabled = n >= TOTAL; $('bHide').disabled = n === 0;
   $('resetSection').hidden = n > 0;
   var h = '';
-  if (n < TOTAL) { var nk = 'q' + (n + 1); h += '<div class="reveal-card next"><h3>Next up: code ' + (n + 1) + '<small>not yet revealed</small></h3>' + stHtml(nk, 'human', false) + stHtml(nk, 'dog', false) + '</div>'; }
-  rk.slice().reverse().forEach(function (k) { h += '<div class="reveal-card"><h3>Code ' + k.slice(1) + '<small>revealed</small></h3>' + stHtml(k, 'human', true) + stHtml(k, 'dog', true) + '</div>'; });
+  if (n < TOTAL) { var nk = 'q' + (n + 1); h += '<div class="reveal-card next"><h3>' + CODE_STYLE[n] + 'Next up: code ' + (n + 1) + '<small>not yet revealed</small></h3>' + stHtml(nk, 'human', false) + stHtml(nk, 'dog', false) + '</div>'; }
+  rk.slice().reverse().forEach(function (k) { h += '<div class="reveal-card"><h3>' + CODE_STYLE[parseInt(k.slice(1), 10) - 1] + 'Code ' + k.slice(1) + '<small>revealed</small></h3>' + stHtml(k, 'human', true) + stHtml(k, 'dog', true) + '</div>'; });
   $('revealCards').innerHTML = h;
 }
 function tbDistance(p) {
