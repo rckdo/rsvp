@@ -4,6 +4,10 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v5.0 (12/09/2026): Names are cards. Each sentence carries a gap; the two names sit below as same-size
+          cards, and a guest drags one to the gap (or taps it) and it snaps in, slightly askew. The
+          other card stays on the table, so swapping is dragging it in. Same on My answers. Third-person
+          sentences with the gap now used on the code page too.
   v4.0 (12/09/2026): One quilt block and colour per code, unique across the ten, carried through the
           heading, patch strips, icons, buttons, found meter, rows, results and the reveal flash.
           Two separate tombolas side by side: the item drum rolls down, the role drum rolls up, on
@@ -229,7 +233,29 @@
   .stmt-row.human .icon{transform:rotate(-8deg)}
   .stmt-row.dog .icon{transform:rotate(8deg)}
   .icon .fb{width:36px;height:36px}
-  .stmt-text{flex:1;font-size:22px;line-height:1.3;color:var(--ink);margin:0}
+  .stmt-text{flex:1;font-size:22px;line-height:1.55;color:var(--ink);margin:0}
+  /* The gap in the sentence, and the name cards. All cards one size, on purpose. */
+  .gap{display:inline-block;vertical-align:middle;width:108px;height:38px;margin:0 6px 4px 0;position:relative;
+    border:1.5px dashed var(--c);opacity:.9;transition:transform .15s ease,background .15s ease}
+  .gap.filled{border-color:transparent}
+  .gap.hot{background:color-mix(in srgb, var(--c), transparent 82%);transform:scale(1.06)}
+  .namecard{display:inline-flex;align-items:center;justify-content:center;width:108px;height:38px;
+    background:#fbf6ea;color:var(--cd);font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    box-shadow:0 2px 0 var(--ochre-deep), 0 6px 12px rgba(74,63,47,.18);border:1px solid rgba(74,63,47,.12);
+    touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+  .gap .namecard{position:absolute;left:-2px;top:-3px;transform:rotate(-3deg);cursor:default}
+  .gap .namecard.just{animation:drop .3s var(--ease-out)}
+  @keyframes drop{from{transform:rotate(-3deg) scale(1.2);opacity:.5}to{transform:rotate(-3deg) scale(1);opacity:1}}
+  .gap.right .namecard{border-color:var(--olive);color:var(--olive-deep)}
+  .gap.wrong .namecard{color:var(--rust);text-decoration:line-through;text-decoration-thickness:1.5px}
+  .gap.missed{border-style:solid;border-color:var(--mutedbrown);opacity:.5}
+  .deck{display:flex;gap:16px;justify-content:center;margin-top:18px;min-height:44px}
+  .deck .namecard:nth-child(odd){transform:rotate(-2deg)}
+  .deck .namecard:nth-child(even){transform:rotate(2deg)}
+  .deck .namecard.dragging{opacity:.25}
+  .deck-hint{font-family:var(--label);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);text-align:center;margin:10px 0 0}
+  .dragcard{position:fixed;z-index:80;pointer-events:none;margin:0;transform:rotate(-4deg) scale(1.08);box-shadow:0 14px 26px rgba(74,63,47,.32)}
+  .row .deck{justify-content:flex-start;margin-top:12px}
   .choice{display:flex;gap:12px;margin-top:16px}
   .choice .btn{flex:1;padding:10px 6px}
   .choice .btn.pick{background:var(--cream);color:var(--cd);box-shadow:0 4px 0 var(--ochre-deep), 0 8px 16px rgba(74,63,47,.12)}
@@ -266,7 +292,7 @@
   .row .body{flex:1;min-width:0}
   .row.hidden .body{color:var(--mutedbrown);font-style:italic}
   .row.hidden .ic{opacity:.3}
-  .row .body p{margin:0;font-size:19px;line-height:1.35}
+  .row .body p{margin:0;font-size:19px;line-height:1.6}
   .row .body .who{font-family:var(--label);font-size:15px;letter-spacing:.06em;color:var(--cd)}
   .row .choice{margin-top:12px}
   .row .choice .btn{min-height:44px;font-size:12px}
@@ -799,24 +825,65 @@ function saveTiebreak(day, month) {
     else toast('That didn’t save. Check your signal.');
   });
 }
-document.addEventListener('click', function (ev) {
-  var b = ev.target.closest('[data-pick]');
-  if (b) {
-    var k = b.dataset.q, side = b.dataset.side, val = b.dataset.pick;
-    if (b.classList.contains('on')) return;
-    // fill instantly, then commit
-    var group = b.parentNode.querySelectorAll('.pick');
-    group.forEach(function (x) { x.classList.toggle('on', x === b); });
-    saveAnswer(k, side, val);
-    return;
-  }
-  var e = ev.target.closest('[data-flip]');
-  if (e) {
-    var k2 = e.dataset.q, side2 = e.dataset.side, cur = pick(k2, side2);
-    var flip = side2 === 'human' ? (cur === 'R' ? 'L' : 'R') : (cur === 'E' ? 'T' : 'E');
-    saveAnswer(k2, side2, flip);
-  }
+/* Name cards: drag one to the gap and it snaps in; a tap places it too. */
+var drag = null;
+function placeCard(k, side, val) {
+  if (locked) { toast('Too late. Answers at the pub.'); return; }
+  me = me || {}; me.answers = me.answers || {}; me.answers[k] = me.answers[k] || {};
+  me.answers[k][side] = val; justPlaced = k + side;
+  renderAll();
+  setTimeout(function () { justPlaced = null; }, 400);
+  saveAnswer(k, side, val);
+}
+function overGap(gap, x, y) {
+  if (!gap || !document.contains(gap)) return false;
+  var g = gap.getBoundingClientRect(), pad = 28;
+  return x > g.left - pad && x < g.right + pad && y > g.top - pad && y < g.bottom + pad;
+}
+document.addEventListener('pointerdown', function (ev) {
+  var card = ev.target.closest('.deck .namecard');
+  if (!card || locked || drag) return;
+  ev.preventDefault();
+  var r = card.getBoundingClientRect();
+  var ghost = card.cloneNode(true);
+  ghost.className = 'namecard dragcard';
+  var host = card.closest('.patch, .row');
+  ghost.style.cssText = (host ? host.getAttribute('style') + ';' : '') + 'left:' + r.left + 'px;top:' + r.top + 'px;width:' + r.width + 'px;height:' + r.height + 'px';
+  document.body.appendChild(ghost);
+  var gap = host ? host.querySelector('.gap[data-side="' + card.dataset.side + '"]') : null;
+  drag = { card: card, ghost: ghost, gap: gap, x0: ev.clientX, y0: ev.clientY, moved: false, id: ev.pointerId, rect: r };
+  card.classList.add('dragging');
+  try { card.setPointerCapture(ev.pointerId); } catch (e) {}
 });
+document.addEventListener('pointermove', function (ev) {
+  if (!drag || ev.pointerId !== drag.id) return;
+  var dx = ev.clientX - drag.x0, dy = ev.clientY - drag.y0;
+  if (Math.hypot(dx, dy) > 6) drag.moved = true;
+  drag.ghost.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(-4deg) scale(1.08)';
+  if (drag.gap) drag.gap.classList.toggle('hot', overGap(drag.gap, ev.clientX, ev.clientY));
+});
+function endDrag(place) {
+  var d = drag; drag = null;
+  if (d.gap) d.gap.classList.remove('hot');
+  var ok = place && d.gap && document.contains(d.gap);
+  d.ghost.style.transition = 'transform .2s cubic-bezier(.22,1,.36,1), opacity .2s ease';
+  if (ok) {
+    var g = d.gap.getBoundingClientRect();
+    d.ghost.style.transform = 'translate(' + (g.left - d.rect.left - 2) + 'px,' + (g.top - d.rect.top - 3) + 'px) rotate(-3deg)';
+  } else {
+    d.ghost.style.transform = 'translate(0,0) rotate(0)';
+  }
+  setTimeout(function () {
+    d.ghost.remove();
+    d.card.classList.remove('dragging');
+    if (ok) placeCard(d.card.dataset.q, d.card.dataset.side, d.card.dataset.pick);
+  }, 200);
+}
+document.addEventListener('pointerup', function (ev) {
+  if (!drag || ev.pointerId !== drag.id) return;
+  endDrag(overGap(drag.gap, ev.clientX, ev.clientY) || !drag.moved);
+});
+document.addEventListener('pointercancel', function (ev) { if (drag && ev.pointerId === drag.id) endDrag(false); });
 document.addEventListener('change', function (ev) {
   if (!ev.target.matches('.tb select')) return;
   var box = ev.target.closest('.tb');
@@ -829,17 +896,28 @@ document.addEventListener('change', function (ev) {
    ===================================================================== */
 function renderAll() { if (!content || !$('app') || $('app').hidden) return; renderCode(); renderMine(); renderResults(); }
 
-function choiceHtml(k, side, disabled) {
-  var cur = pick(k, side);
-  var opts = side === 'human' ? ['R', 'L'] : ['E', 'T'];
-  return '<div class="choice">' + opts.map(function (o) {
-    return '<button class="btn pick' + (cur === o ? ' on' : '') + '" data-pick="' + o + '" data-q="' + k + '" data-side="' + side + '"' + (disabled ? ' disabled' : '') + '>' + NAMES[o] + '</button>';
+var justPlaced = null;
+function gapHtml(k, side) {
+  var cur = pick(k, side), cls = 'gap';
+  var revealed = config.revealed && config.revealed[k] && answers[k];
+  if (cur) cls += ' filled';
+  if (revealed) { var truth = answers[k][side]; cls += !cur ? ' missed' : (cur === truth ? ' right' : ' wrong'); }
+  var inner = cur ? '<span class="namecard' + (justPlaced === k + side ? ' just' : '') + '">' + NAMES[cur] + '</span>' : '';
+  return '<span class="' + cls + '" data-q="' + k + '" data-side="' + side + '">' + inner + '</span>';
+}
+function sentenceHtml(k, side) {
+  return esc(question(k)[side].third).replace('{name}', gapHtml(k, side));
+}
+function deckHtml(k, side) {
+  if (locked) return '';
+  var cur = pick(k, side), opts = side === 'human' ? ['R', 'L'] : ['E', 'T'];
+  return '<div class="deck">' + opts.filter(function (o) { return o !== cur; }).map(function (o) {
+    return '<span class="namecard" data-q="' + k + '" data-side="' + side + '" data-pick="' + o + '">' + NAMES[o] + '</span>';
   }).join('') + '</div>';
 }
 function stmtHtml(k, side) {
   var q = question(k)[side];
-  return '<div class="patch stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + esc(q.first) + '</p></div>' +
-    (locked ? '<p class="after-lock">' + (pick(k, side) ? 'You said ' + NAMES[pick(k, side)] + '.' : 'Not answered.') + '</p>' : choiceHtml(k, side, false)) + '</div>';
+  return '<div class="patch stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + sentenceHtml(k, side) + '</p></div>' + deckHtml(k, side) + '</div>';
 }
 var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 function tiebreakHtml(compact) {
@@ -868,7 +946,9 @@ function renderCode() {
   } else {
     html = codeHead('Code ' + qnum(qk), qnum(qk));
     if (config.releasedAt) html += '<p class="note">Everything\u2019s open. Answer what you can.</p>';
-    html += stmtHtml(qk, 'human') + stmtHtml(qk, 'dog');
+    html += stmtHtml(qk, 'human');
+    if (answeredCount(me) === 0) html += '<p class="deck-hint">Drag or tap a name into the gap</p>';
+    html += stmtHtml(qk, 'dog');
     if (!(me && me.tiebreak)) {
       html += '<div class="patch gold tb"><p class="tb-k">Tie-breaker</p><p class="tb-q">' + esc(content.tiebreak.question) + '</p>' + tiebreakHtml(false) + '</div>';
     }
@@ -910,16 +990,10 @@ function renderMine() {
         else { cls += ' wrong'; verdict = 'Wrong. It was ' + NAMES[truth] + '.'; }
       }
       html += '<li class="' + cls + '" style="' + window.codeVars(n - 1) + '"><span class="n">' + label + '</span><span class="ic">' + icon(q.icon) + '</span><div class="body">';
-      if (cur) {
-        html += '<p>' + statementText(k, side, cur) + '</p>';
-        if (verdict) html += '<div class="verdict">' + esc(verdict) + '</div>';
-        else html += '<button class="edit" data-flip="1" data-q="' + k + '" data-side="' + side + '"' + (locked ? ' disabled' : '') + '>Swap to ' + NAMES[side === 'human' ? (cur === 'R' ? 'L' : 'R') : (cur === 'E' ? 'T' : 'E')] + '</button>';
-      } else {
-        html += '<p>' + esc(q.first) + '</p>';
-        if (verdict) html += '<div class="verdict">' + esc(verdict) + '</div>';
-        else if (locked) html += '<div class="verdict">Not answered</div>';
-        else html += choiceHtml(k, side, false);
-      }
+      html += '<p>' + sentenceHtml(k, side) + '</p>';
+      if (verdict) html += '<div class="verdict">' + esc(verdict) + '</div>';
+      else if (locked && !cur) html += '<div class="verdict">Not answered</div>';
+      else html += deckHtml(k, side);
       html += '</div></li>';
     });
   });
