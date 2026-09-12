@@ -420,7 +420,7 @@ function renderBoard() {
   var rk = revealedKeys().filter(function (k) { return answers[k]; }), all = keys.filter(function (k) { return answers[k]; });
   var useAll = rk.length === 0;
   var table = standings(useAll ? all : rk);
-  $('boardState').textContent = useAll ? 'Private preview: scored against the full answer key. Phones see nothing yet.' : 'Scored on the ' + rk.length + ' card' + (rk.length === 1 ? '' : 's') + ' revealed so far. Ties broken by the tie-breaker (closest to 21 September 2017).';
+  $('boardState').textContent = useAll ? 'Private preview: scored against the full answer key. Phones see nothing yet.' : 'Scored on the ' + rk.length + ' card' + (rk.length === 1 ? '' : 's') + ' revealed so far. Ties broken by the tie-breaker (closest to 21 August 2017).';
   $('board').innerHTML = table.map(function (r) {
     return '<tr><td>' + r.pos + '</td><td>' + esc(pretty(r.slug)) + '</td><td class="num">' + r.score + '</td><td class="num">' + (r.tb === Infinity ? '<span class="muted">none</span>' : r.tb + ' day' + (r.tb === 1 ? '' : 's')) + '</td></tr>';
   }).join('') || '<tr><td colspan="4" class="muted">No players yet.</td></tr>';
