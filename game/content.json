@@ -1,5 +1,5 @@
 {
-  "version": "1.12",
+  "version": "1.13",
   "reels": {
     "items": [
       "Sausage",
@@ -67,7 +67,7 @@
       "dog": {
         "first": "I once had a vet appointment card that said I was \"very well behaved\".",
         "third": "{name} was described as \"very well behaved\" on a vet appointment card.",
-        "icon": "clipboard-check.svg"
+        "icon": "stethoscope.svg"
       }
     },
     {
@@ -80,7 +80,7 @@
       "dog": {
         "first": "I used to be called Stitch.",
         "third": "{name} used to be called Stitch.",
-        "icon": "tag.svg"
+        "icon": "paw-print.svg"
       }
     },
     {
@@ -119,7 +119,7 @@
       "dog": {
         "first": "I swallowed the lid off a yoghurt pot and threw it back up ten days later.",
         "third": "{name} swallowed the lid off a yoghurt pot and threw it back up ten days later.",
-        "icon": "recycle.svg"
+        "icon": "milk.svg"
       }
     },
     {
@@ -158,7 +158,7 @@
       "dog": {
         "first": "The vet says I could do with putting on a bit of weight.",
         "third": "The vet says {name} could do with putting on a bit of weight.",
-        "icon": "weight.svg"
+        "icon": "bone.svg"
       }
     },
     {
@@ -166,12 +166,12 @@
       "human": {
         "first": "I can read this without blinking: `=IFERROR(INDEX(Leases[Rent],MATCH(1,(Leases[Building]=$B$2)*(Leases[Quarter]=C$1),0)),XLOOKUP($B$2,Buildings[Name],Buildings[Floor Area],0)*$D$1)`",
         "third": "{name} can read this without blinking: `=IFERROR(INDEX(Leases[Rent],MATCH(1,(Leases[Building]=$B$2)*(Leases[Quarter]=C$1),0)),XLOOKUP($B$2,Buildings[Name],Buildings[Floor Area],0)*$D$1)`",
-        "icon": "sigma.svg"
+        "icon": "table.svg"
       },
       "dog": {
         "first": "I once got a cuddle from Nitro off Gladiators.",
         "third": "{name} once got a cuddle from Nitro off Gladiators.",
-        "icon": "biceps-flexed.svg"
+        "icon": "dumbbell.svg"
       }
     }
   ]
