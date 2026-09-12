@@ -4,6 +4,16 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v17.1 (12/09/2026): Accessibility pass for older eyes: muted brown darkened to 5:1 on cream, gold label
+          text darkened, every label size raised a point (nothing under 12px), name cards and gaps
+          112 x 42, date tiles 36px tall on taller phones, body copy on My answers 20px, keyboard
+          focus rings, and name cards placeable with Enter or Space as well as tap or drag.
+  v17.0 (12/09/2026): Reset now checks the game number before the tie-breaker, so a reset phone goes
+          straight back to the reels. Name generator sits at the top with four respins and a
+          You are... moment after Lock it in. Gate reads Before we begin, with the closest-wins note.
+          Results tab stays tappable while locked, with a padlock and a one-line panel.
+          2017 placard numerals centred by line-height so the web font cannot drop them.
+  v16.3 (12/09/2026): Statement wording can be overridden from the host page (config.statements).
   v16.2 (12/09/2026): Results tab locked until the first card is revealed.
   v16.1 (12/09/2026): A host clue, if set, replaces Not found yet on an unfound card's row.
   v16.0 (12/09/2026): Unfound cards are one row each with a larger block. Reset stamps a game number;
@@ -114,7 +124,7 @@
     --rust-deep:#7e3820;
     --bark:#4a3f2f;
     --ink:#3b382f;
-    --mutedbrown:#8a7256;
+    --mutedbrown:#6e5a40;
     --olive:#7a7c47;
     --olive-deep:#5e6035;
     --gold:#c99a3f;
@@ -126,6 +136,8 @@
     --ease-out:cubic-bezier(.22,1,.36,1);
   }
   *{box-sizing:border-box}
+  :focus-visible{outline:3px solid var(--rust);outline-offset:3px}
+  .namecard:focus-visible{outline-offset:2px}
   html,body{margin:0}
   html{scrollbar-gutter:stable;overflow-x:hidden}
   body{
@@ -179,6 +191,7 @@
   /* Header: a luggage-tag alias, the clock beneath */
   .top{padding:20px 22px 0;text-align:center;min-height:60px}
   .card:has(#intro:not([hidden])) .top{padding-top:12px;min-height:50px}
+  .card:has(#spin:not([hidden])) .top{padding-top:0;min-height:0}
   .card:has(#intro:not([hidden])) .band{padding:7px 0}
   .card:has(#intro:not([hidden])) .band .block{width:36px!important;height:36px!important}
   .alias{
@@ -193,7 +206,7 @@
   .alias.arrive{animation:alias-in .5s var(--ease-out) both}
   @keyframes alias-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
   .clock{margin:10px 0 0;min-height:24px;text-align:left}
-  .clock .cd{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown)}
+  .clock .cd{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown)}
   .clock .cd b{font-family:var(--display);font-weight:600;font-size:28px;line-height:1;color:var(--bark);font-variant-numeric:tabular-nums;letter-spacing:.02em}
   .clock .bar{height:6px;background:var(--ochre);margin-top:6px}
   .clock .bar i{display:block;height:100%;background:var(--olive);transition:width 1s linear,background .4s ease}
@@ -205,7 +218,8 @@
   .screen[hidden]{display:none}
 
   /* ---- Spin screen ---- */
-  #spin{padding:22px 24px 30px;justify-content:center;text-align:center}
+  #spin{padding:10px 24px 30px;justify-content:flex-start;text-align:center}
+  #spin h1{margin:16px 0 14px}
   h1,h2,h3{font-family:var(--display);color:var(--bark);margin:0;font-weight:600}
   h1{font-size:30px;letter-spacing:.06em;line-height:1.15}
   .lede{font-style:italic;color:var(--mutedbrown);font-size:19px;margin:6px 0 22px}
@@ -215,7 +229,7 @@
     background:var(--ochre);padding:10px;
     box-shadow:0 10px 24px rgba(74,63,47,.16);
   }
-  .tombola .lab{font-family:var(--label);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--bark);text-align:center;margin:0 0 8px}
+  .tombola .lab{font-family:var(--label);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--bark);text-align:center;margin:0 0 8px}
   .tombola .window{background:#f7f0e0;position:relative;box-shadow:inset 0 3px 10px rgba(74,63,47,.16)}
   .reel-wrap{position:relative}
   .reel-wrap:before,.reel-wrap:after{
@@ -233,16 +247,28 @@
   @media (max-width:360px){.reel .word{font-size:18px}}
   .reel.spinning .strip{filter:blur(.6px)}
   .reel .word.hit{color:var(--rust)}
-  .reel-hint{font-family:var(--label);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rust);margin:18px 0 4px;min-height:18px}
+  .reel-hint{font-family:var(--label);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--rust);margin:18px 0 4px;min-height:18px}
   .spin-actions{display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:18px}
   .taken{font-style:italic;color:var(--rust);min-height:24px;margin-top:12px}
   #spin.lockin .tombola,#spin.lockin .spin-actions,#spin.lockin .lede,#spin.lockin h1,#spin.lockin .reel-hint{animation:lift .4s var(--ease-out) both}
   @keyframes lift{to{opacity:0;transform:translateY(-36px)}}
+  /* The name lands: label breathes in, then the badge stamps down and settles askew. */
+  #hello{padding:40px 24px;justify-content:center;align-items:center;text-align:center}
+  .hello-k{font-family:var(--label);font-size:14px;letter-spacing:.24em;text-transform:uppercase;color:var(--rust);margin:0 0 22px;opacity:0}
+  .hello-card{display:inline-flex;align-items:center;gap:14px;background:#f7f0e0;padding:14px 26px 14px 16px;position:relative;opacity:0;
+    box-shadow:0 5px 0 var(--ochre-deep), 0 14px 28px rgba(74,63,47,.22);transform:rotate(-2deg)}
+  .hello-card:after{content:'';position:absolute;inset:6px;border:1px dashed var(--ochre-deep);pointer-events:none}
+  .hello-card .rosette{width:46px;height:57px;flex:0 0 46px;filter:drop-shadow(0 2px 2px rgba(74,63,47,.25))}
+  .hello-card .nm{font-family:var(--display);font-weight:600;font-size:28px;color:var(--bark);line-height:1.1}
+  #hello.go .hello-k{animation:hello-k .5s var(--ease-out) .1s both}
+  #hello.go .hello-card{animation:stamp .55s cubic-bezier(.2,1.2,.4,1) .75s both}
+  @keyframes hello-k{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes stamp{from{opacity:0;transform:scale(2.4) rotate(-10deg)}60%{opacity:1;transform:scale(.96) rotate(-1deg)}to{opacity:1;transform:scale(1) rotate(-2deg)}}
 
   /* Buttons: the invite's rust button, its ochre sibling */
   .btn{
     -webkit-appearance:none;appearance:none;border:0;background:var(--rust);color:var(--cream);
-    font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    font-family:var(--label);font-size:14px;letter-spacing:.14em;text-transform:uppercase;
     min-height:48px;padding:10px 24px;cursor:pointer;position:relative;
     transition:background .15s ease,color .15s ease,transform .08s ease,box-shadow .08s ease,opacity .15s ease;
     box-shadow:0 4px 0 var(--rust-deep), 0 8px 16px rgba(74,63,47,.18);
@@ -257,11 +283,19 @@
   .tabs{display:flex;margin:16px 22px 0;background:var(--ochre);padding:4px;gap:4px}
   .tab{
     flex:1;background:transparent;border:0;
-    font-family:var(--label);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--bark);
-    min-height:44px;padding:10px 2px;cursor:pointer;position:relative;transition:background .15s ease,color .15s ease;
+    font-family:var(--label);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--bark);
+    min-height:46px;padding:10px 2px;cursor:pointer;position:relative;transition:background .15s ease,color .15s ease;
   }
   .tab[aria-selected="true"]{background:var(--cream);color:var(--rust);box-shadow:0 1px 3px rgba(74,63,47,.12)}
-  .tab.off{opacity:.38;pointer-events:none}
+  .tab.off{color:rgba(74,63,47,.7)}
+  .tab .lock{display:none;width:9px;height:7px;background:currentColor;border-radius:1px;position:relative;margin-left:6px;vertical-align:0}
+  .tab .lock:before{content:'';position:absolute;left:1.5px;top:-5px;width:3px;height:5px;border:1.5px solid currentColor;border-bottom:0;border-radius:3px 3px 0 0}
+  .tab.off .lock{display:inline-block}
+  .locked{text-align:center;padding:36px 12px}
+  .locked .lock{display:block;width:40px;height:30px;margin:0 auto 18px;background:var(--ochre-deep);border-radius:4px;position:relative}
+  .locked .lock:before{content:'';position:absolute;left:8px;top:-22px;width:16px;height:24px;border:5px solid var(--ochre-deep);border-bottom:0;border-radius:14px 14px 0 0}
+  .locked .lock:after{content:'';position:absolute;left:17px;top:10px;width:6px;height:11px;border-radius:3px;background:var(--cream)}
+  .locked p{font-style:italic;color:var(--mutedbrown);font-size:18px;margin:0}
   .tab .badge{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--rust)}
   .panels{view-transition-name:panels;flex:1;padding:28px 22px 120px;position:relative}
   .panel[hidden]{display:none}
@@ -277,7 +311,7 @@
   .ph .num{position:absolute;right:-4px;top:-26px;font-family:var(--display);font-weight:600;font-size:100px;line-height:1;color:var(--c,var(--ochre));opacity:.22;pointer-events:none;user-select:none;z-index:0}
   .ph .qb{width:40px;height:40px;flex:0 0 40px;margin-bottom:2px;position:relative;z-index:1;box-shadow:0 3px 8px rgba(74,63,47,.18)}
   .ph h2,.ph small{position:relative;z-index:1}
-  .ph small{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);padding-bottom:5px}
+  .ph small{font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);padding-bottom:5px}
   .note{font-style:italic;color:var(--mutedbrown);margin:0 0 16px;font-size:19px}
 
   /* The patch: every question, answer and result sits on one of these.
@@ -303,12 +337,12 @@
   code{display:block;margin:8px 0 2px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.6em;line-height:1.5;background:var(--cream);padding:8px 10px;color:var(--bark);word-break:break-all;overflow-wrap:anywhere;text-align:left;font-style:normal}
   .ackp code{background:rgba(255,255,255,.15);color:inherit}
   /* The gap in the sentence, and the name cards. All cards one size, on purpose. */
-  .gap{display:inline-block;vertical-align:middle;width:108px;height:38px;margin:0 6px 4px 0;position:relative;
+  .gap{display:inline-block;vertical-align:middle;width:112px;height:42px;margin:0 6px 4px 0;position:relative;
     border:1.5px dashed var(--c);opacity:.9;transition:transform .15s ease,background .15s ease}
   .gap.filled{border-color:transparent}
   .gap.hot{background:color-mix(in srgb, var(--c), transparent 82%);transform:scale(1.06)}
-  .namecard{display:inline-flex;align-items:center;justify-content:center;width:108px;height:38px;
-    background:#fbf6ea;color:var(--cd);font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  .namecard{display:inline-flex;align-items:center;justify-content:center;width:112px;height:42px;
+    background:#fbf6ea;color:var(--cd);font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
     box-shadow:0 2px 0 var(--ochre-deep), 0 6px 12px rgba(74,63,47,.18);border:1px solid rgba(74,63,47,.12);
     touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
   .gap .namecard{position:absolute;left:-2px;top:-3px;transform:rotate(-3deg);cursor:default}
@@ -324,11 +358,11 @@
   .namecard.wrong{background:#f6e2da;border-color:var(--rust);color:var(--rust)}
   .namecard.right:after,.namecard.wrong:after{content:'';position:absolute;right:-9px;top:-9px;width:20px;height:20px;border-radius:50%;
     box-shadow:0 1px 3px rgba(74,63,47,.35);background-size:11px 11px;background-position:center;background-repeat:no-repeat}
-  .namecard.mini{width:80px;height:28px;font-size:10px;letter-spacing:.12em;vertical-align:middle;margin-left:8px;transform:rotate(-2deg)}
+  .namecard.mini{width:84px;height:30px;font-size:11px;letter-spacing:.12em;vertical-align:middle;margin-left:8px;transform:rotate(-2deg)}
   .namecard.mini:after{width:16px;height:16px;right:-7px;top:-7px;background-size:9px 9px}
-  .said{font-style:italic;font-size:17px;color:var(--mutedbrown);margin:8px 0 2px}
+  .said{font-style:italic;font-size:18px;color:var(--mutedbrown);margin:8px 0 2px}
   .namecard.mini.truth{background:#edf0de;color:var(--olive-deep);border-color:var(--olive);box-shadow:0 2px 0 var(--olive-deep);margin-left:6px;transform:rotate(-2deg)}
-  .itwas{font-style:italic;font-size:17px;color:var(--mutedbrown);margin:12px 0 0;display:flex;align-items:center}
+  .itwas{font-style:italic;font-size:18px;color:var(--mutedbrown);margin:12px 0 0;display:flex;align-items:center}
   .photo{display:block;max-width:100%;height:auto;margin:12px auto 6px;padding:6px 6px 14px;background:#fbf6ea;
     box-shadow:0 2px 0 var(--ochre-deep), 0 10px 20px rgba(74,63,47,.2);transform:rotate(-1.5deg)}
   .split .photo{max-width:82%}
@@ -342,8 +376,8 @@
   .mark.right{background-color:var(--olive);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5l2.6 2.6L10 3.5' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
   .mark.wrong{background-color:var(--rust);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 3l6 6M9 3l-6 6' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E")}
   .deck{display:flex;gap:18px;justify-content:center;margin-top:18px}
-  .slot{width:108px;height:38px;position:relative;border:1.5px dashed var(--ochre-deep);display:inline-flex;align-items:center;justify-content:center;opacity:.9}
-  .slot:before{content:attr(data-name);font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);opacity:0;transition:opacity .2s ease}
+  .slot{width:112px;height:42px;position:relative;border:1.5px dashed var(--ochre-deep);display:inline-flex;align-items:center;justify-content:center;opacity:.9}
+  .slot:before{content:attr(data-name);font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);opacity:0;transition:opacity .2s ease}
   .slot.empty:before{opacity:.38}
   .slot .namecard{position:absolute;left:-2px;top:-3px}
   .slot:nth-child(odd) .namecard{transform:rotate(-2deg)}
@@ -351,7 +385,7 @@
   .slot .namecard.back{animation:back .32s var(--ease-out)}
   @keyframes back{from{transform:translateY(-16px) scale(1.06);opacity:.4}}
   .deck .namecard.dragging{opacity:.25}
-  .deck-hint{font-family:var(--label);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);text-align:center;margin:10px 0 0}
+  .deck-hint{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);text-align:center;margin:10px 0 0}
   .dragcard{position:fixed;z-index:80;pointer-events:none;margin:0;transform:rotate(-4deg);box-shadow:0 14px 26px rgba(74,63,47,.32)}
   .row .deck{justify-content:flex-start;margin-top:12px}
   .choice{display:flex;gap:12px;margin-top:16px}
@@ -370,24 +404,27 @@
   .intro-wrap .patch{text-align:left;margin:8px 0 10px;padding:16px 12px 8px}
   .intro-wrap .tb-q{font-size:18px;line-height:1.3}
   .intro-wrap .btn{min-height:44px;position:relative;z-index:3}
+  .intro-wrap .tb-note{font-style:italic;color:var(--mutedbrown);font-size:17px;margin:-2px 0 10px}
+  @media (max-height:700px){.intro-wrap .dp{--th:27px}.intro-wrap .patch{padding:12px 12px 6px}.intro-wrap .tb-note{margin-bottom:8px}}
   .intro-wrap .dp .deck{margin-bottom:6px}
   .intro-wrap .date-row{margin-bottom:10px}
   #intro ~ .robin, .card:has(#intro:not([hidden])) .robin{width:74px;right:-6px;bottom:-8px}
   /* Tie-breaker */
   .tb{padding:24px 18px 18px}
   .tb .tb-q{font-family:var(--display);font-size:19px;color:var(--bark);margin:0}
-  .tb .tb-k{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 6px}
-  .dp{margin-top:10px;--c:var(--gold);--cd:#8a6a2a;--th:30px}
+  .tb .tb-k{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#7a5e28;margin:0 0 6px}
+  .dp{margin-top:10px;--c:var(--gold);--cd:#8a6a2a;--th:36px}
+  @media (max-height:800px){.dp{--th:30px}}
   .date-row{display:flex;gap:8px;align-items:center;margin:0 0 12px}
   .gap.sm{height:var(--th);margin:0}
   .gap.sm[data-side="month"]{width:calc((100% - 24px) / 4)}
   .gap.sm[data-side="day"]{width:calc((100% - 42px) / 8)}
   .gap.sm .namecard{position:absolute;left:-1px;top:-2px;width:100%;height:100%}
-  .namecard.sm{font-size:12px;letter-spacing:.06em;height:var(--th)}
+  .namecard.sm{font-size:13px;letter-spacing:.06em;height:var(--th)}
   /* 2017: a placard, screwed on. Bevelled bark plate, two slotted screws, numerals pressed in. */
   .namecard.fixed{width:auto;padding:0 30px;margin:-2px 0 0 4px;cursor:default;position:relative;
     background:linear-gradient(180deg,#5b4d3a,#43392a 55%,#3a3023);border:1px solid #2e2719;
-    font-family:var(--display);font-weight:600;font-size:19px;color:#b8892f;letter-spacing:.12em;text-transform:none;
+    font-family:var(--display);font-weight:600;font-size:19px;line-height:1;color:#b8892f;letter-spacing:.12em;text-transform:none;height:var(--th);box-sizing:border-box;
     text-shadow:0 -1px 0 rgba(0,0,0,.7), 0 1px 0 rgba(255,235,190,.35);
     box-shadow:inset 0 1px 0 rgba(255,240,210,.22), inset 0 -1px 0 rgba(0,0,0,.45), 0 2px 0 #2e2719, 0 6px 12px rgba(74,63,47,.28)}
   .namecard.fixed:before,.namecard.fixed:after{content:'';position:absolute;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;
@@ -403,7 +440,7 @@
   .dp .deck.days{grid-template-columns:repeat(8,1fr)}
   .slot.sm{width:auto;height:var(--th);border-color:#b39c6b}
   .slot.sm .namecard{position:absolute;inset:0;width:100%;height:100%}
-  .slot.sm:before{font-size:11px;letter-spacing:.06em}
+  .slot.sm:before{font-size:12px;letter-spacing:.06em}
   .slot.sm.off{opacity:.25;border-style:dotted}
   .slot.sm.off:before{opacity:.5}
   .dp .slot:nth-child(odd) .namecard,.dp .slot:nth-child(even) .namecard{transform:none}
@@ -422,23 +459,23 @@
   .row.hidden .qb{flex:0 0 30px;width:30px;height:30px;margin:0}
   .row.hidden:before{display:none}
   .row.hidden + .row.hidden{border-top:1px solid var(--line)}
-  .row .n{flex:0 0 28px;font-family:var(--label);font-size:12px;color:var(--mutedbrown);padding-top:6px}
+  .row .n{flex:0 0 28px;font-family:var(--label);font-size:13px;color:var(--mutedbrown);padding-top:6px}
   .row .ic{flex:0 0 26px;width:26px;height:26px;color:var(--c);padding-top:2px}
   .row .ic svg{width:24px;height:24px;stroke-width:1.6}
   .row .ic .fb{width:20px;height:20px}
   .row .body{flex:1;min-width:0}
   .row.hidden .body{color:var(--mutedbrown);font-style:italic}
   .row.hidden .ic{opacity:.3}
-  .row .body p{margin:0;font-size:19px;line-height:1.6}
+  .row .body p{margin:0;font-size:20px;line-height:1.6}
   .row .body .who{font-family:var(--label);font-size:15px;letter-spacing:.06em;color:var(--cd)}
   .row .choice{margin-top:12px}
-  .row .choice .btn{min-height:44px;font-size:12px}
-  .row .edit{background:none;border:0;padding:6px 0 0;color:var(--mutedbrown);font-family:var(--label);font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;min-height:32px}
+  .row .choice .btn{min-height:44px;font-size:13px}
+  .row .edit{background:none;border:0;padding:6px 0 0;color:var(--mutedbrown);font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;min-height:32px}
   .row .edit:disabled{opacity:.4;cursor:default}
   .row .qb{flex:0 0 22px;width:22px;height:22px;margin-top:4px}
   .row.right .who{color:var(--olive-deep)}
   .row.wrong .who{color:var(--rust);text-decoration:line-through;text-decoration-thickness:1px}
-  .row .verdict{font-family:var(--label);font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
+  .row .verdict{font-family:var(--label);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
   .row.right .verdict{color:var(--olive-deep)}
   .row.wrong .verdict{color:var(--rust)}
   .row.missed .verdict{color:var(--mutedbrown)}
@@ -450,12 +487,12 @@
   .rank-card .rank{font-family:var(--display);font-size:64px;line-height:1;color:var(--rust)}
   .rank-card .of{font-style:italic;color:var(--mutedbrown);font-size:19px;margin-top:4px}
   .rank-card .tbres{margin-top:10px;font-size:18px}
-  .sec-k{font-family:var(--label);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mutedbrown);margin:0 0 8px;display:flex;align-items:center;gap:10px}
+  .sec-k{font-family:var(--label);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--mutedbrown);margin:0 0 8px;display:flex;align-items:center;gap:10px}
   .sec-k:after{content:'';flex:1;height:1px;background:var(--line)}
   .board{list-style:none;margin:0;padding:0}
   .board li{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
   .board li:first-child{border-top:0}
-  .board .pos{flex:0 0 30px;height:30px;display:grid;place-items:center;font-family:var(--label);font-size:12px;color:var(--bark);background:var(--ochre)}
+  .board .pos{flex:0 0 30px;height:30px;display:grid;place-items:center;font-family:var(--label);font-size:13px;color:var(--bark);background:var(--ochre)}
   .board li.p1 .pos{background:var(--gold);color:var(--cream)}
   .board li.p2 .pos{background:var(--olive);color:var(--cream)}
   .board li.p3 .pos{background:var(--terracotta);color:var(--cream)}
@@ -464,15 +501,15 @@
   .board .pts{font-family:var(--display);font-size:22px;color:var(--bark)}
   .split{padding:12px 0;border-top:1px solid var(--line)}
   .split:first-of-type{border-top:0}
-  .split-code{display:flex;align-items:center;gap:8px;font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--cd);margin:16px 0 4px}
+  .split-code{display:flex;align-items:center;gap:8px;font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--cd);margin:16px 0 4px}
   .split-code .qb{width:22px;height:22px}
   .split p{margin:0;font-size:18px;line-height:1.6}
-  .split .you{font-family:var(--label);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+  .split .you{font-family:var(--label);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
   .split .you.right{color:var(--olive-deep)} .split .you.wrong{color:var(--rust)} .split .you.missed{color:var(--mutedbrown)}
   .split .bar{display:flex;height:10px;margin:8px 0 4px;background:var(--ochre);overflow:hidden}
   .split .bar i{display:block;height:100%;background:var(--olive);transition:width .6s var(--ease-out)}
   .split .bar i.wrong{background:var(--rust)}
-  .split .lab{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 10px;font-family:var(--label);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mutedbrown)}
+  .split .lab{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 10px;font-family:var(--label);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mutedbrown)}
   .split .lab span{white-space:nowrap}
   .split .lab .ok{color:var(--olive-deep)}
   section.patch{padding-top:24px}
@@ -534,7 +571,7 @@
 
   <!-- Name reels -->
   <section id="spin" class="screen" hidden>
-    <h1>First, a name</h1>
+    <h1>Name generator</h1>
     <div class="tombolas" role="group" aria-label="Name reels">
       <div class="tombola"><p class="lab">Item</p><div class="window"><div class="reel-wrap"><div class="reel" id="reelItem"><div class="strip"></div></div></div></div></div>
       <div class="tombola"><p class="lab">Role</p><div class="window"><div class="reel-wrap"><div class="reel" id="reelRole"><div class="strip"></div></div></div></div></div>
@@ -542,19 +579,28 @@
     <div class="reel-hint" id="reelHint"></div>
     <div class="spin-actions">
       <button class="btn wide" id="btnLock" disabled>Lock it in</button>
-      <button class="btn ghost wide" id="btnSpin" disabled>Spin again · 2 left</button>
+      <button class="btn ghost wide" id="btnSpin" disabled>Spin again · 4 left</button>
     </div>
     <div class="taken" id="taken" aria-live="polite"></div>
+  </section>
+
+  <!-- The name lands -->
+  <section id="hello" class="screen" hidden>
+    <div class="hello-wrap">
+      <p class="hello-k">You are…</p>
+      <div class="hello-card"><span class="nm" id="helloName"></span></div>
+    </div>
   </section>
 
   <!-- Before the hunt: the tie-breaker, answered once -->
   <section id="intro" class="screen" hidden>
     <div class="intro-wrap">
-      <h1>One question first</h1>
+      <h1>Before we begin…</h1>
       <div class="patch gold tb">
         <p class="tb-q" id="introQ"></p>
         <div class="dp" id="introDP" data-day="" data-month=""></div>
       </div>
+      <p class="tb-note">In the event of a tiebreaker, the closest wins!</p>
       <button class="btn wide" id="introGo" disabled>Start the hunt</button>
     </div>
   </section>
@@ -564,7 +610,7 @@
     <nav class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="code" aria-selected="true" id="tabCode">This card</button>
       <button class="tab" role="tab" data-tab="mine" aria-selected="false" id="tabMine">My answers<span class="badge" id="mineBadge" hidden></span></button>
-      <button class="tab" role="tab" data-tab="results" aria-selected="false" id="tabResults">Results</button>
+      <button class="tab" role="tab" data-tab="results" aria-selected="false" id="tabResults">Results<span class="lock" aria-hidden="true"></span></button>
     </nav>
     <div class="panels">
       <div class="panel" id="p-code" role="tabpanel"></div>
@@ -615,7 +661,7 @@ var FIREBASE_CONFIG = {
 var ROOT = 'game';
 var ALIAS_KEY = 'rl-game-alias', EPOCH_KEY = 'rl-game-epoch';
 var TOTAL_CODES = 10;
-var RESPINS = 2;
+var RESPINS = 4;
 var TB_YEAR = 2017;
 var NAMES = { R: 'Richard', L: 'Lorraine', E: 'Eric', T: 'Tango' };
 var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -755,7 +801,13 @@ function icon(file) {
    Content and Firebase boot
    ===================================================================== */
 function qnum(k) { return parseInt(String(k).replace('q', ''), 10); }
-function question(k) { return content.questions[qnum(k) - 1]; }
+function question(k) {
+  var base = content.questions[qnum(k) - 1], ov = config.statements && config.statements[k];
+  if (!ov) return base;
+  var q = { q: base.q, human: base.human, dog: base.dog };
+  ['human', 'dog'].forEach(function (side) { if (ov[side]) q[side] = Object.assign({}, base[side], { third: ov[side] }); });
+  return q;
+}
 function allKeys() { var a = []; for (var i = 1; i <= TOTAL_CODES; i++) a.push('q' + i); return a; }
 function statementText(k, side, person) {
   var q = question(k)[side];
@@ -895,7 +947,7 @@ function lockIn() {
     try { localStorage.setItem(ALIAS_KEY, alias); } catch (e) {}
     db.ref(ROOT + '/config/epoch').once('value').then(function (s) { try { localStorage.setItem(EPOCH_KEY, s.val() || 0); } catch (e) {} });
     $('spin').classList.add('lockin');
-    setTimeout(afterAlias, REDUCED ? 0 : 380);
+    setTimeout(showHello, REDUCED ? 0 : 380);
   }).catch(function (e) {
     console.error(e);
     $('taken').textContent = 'That didn’t save. Check your signal and try again.';
@@ -906,14 +958,32 @@ function lockIn() {
 /* =====================================================================
    The gate: one look at the player, then either the tie-breaker or the game
    ===================================================================== */
+/* The name lands: You are... then the rosette and the name stamp down, held for a beat. */
+function showHello() {
+  $('spin').hidden = true;
+  var h = $('hello'), card = h.querySelector('.hello-card');
+  $('helloName').textContent = prettyAlias(alias);
+  if (!card.querySelector('svg')) card.insertBefore($('aliasPill').querySelector('svg').cloneNode(true), card.firstChild);
+  h.hidden = false;
+  if (REDUCED) { afterAlias(); return; }
+  h.classList.add('go');
+  setTimeout(function () { if (navigator.vibrate) navigator.vibrate(30); }, 900);
+  setTimeout(function () { h.hidden = true; h.classList.remove('go'); afterAlias(); }, 2600);
+}
 function afterAlias() {
-  $('boot').hidden = true; $('spin').hidden = true;
+  $('boot').hidden = true; $('spin').hidden = true; $('hello').hidden = true;
   $('bootMsg').textContent = 'One moment.'; $('boot').hidden = false;
   Promise.all([
     db.ref(ROOT + '/players/' + alias + '/tiebreak').once('value'),
-    db.ref(ROOT + '/config/lockAt').once('value')
+    db.ref(ROOT + '/config/lockAt').once('value'),
+    db.ref(ROOT + '/config/epoch').once('value')
   ]).then(function (r) {
-    var tb = r[0].val(), lockAt = r[1].val();
+    var tb = r[0].val(), lockAt = r[1].val(), ep = r[2].val() || 0;
+    // A host reset stamped a new game number since this name was claimed: forget it, back to the reels.
+    if (ep && storedEpoch() !== ep) {
+      try { localStorage.removeItem(ALIAS_KEY); localStorage.setItem(EPOCH_KEY, ep); } catch (e) {}
+      alias = null; showSpin(); return;
+    }
     var isLocked = lockAt && now() >= lockAt;
     if (tb || isLocked) enterGame(); else showIntro();
   }).catch(function () { enterGame(); });
@@ -1054,8 +1124,6 @@ function setTabUI() {
   // Results is locked until the first card is revealed.
   var resultsOn = revealedKeys().length > 0;
   $('tabResults').classList.toggle('off', !resultsOn);
-  $('tabResults').setAttribute('aria-disabled', resultsOn ? 'false' : 'true');
-  if (!resultsOn && tab === 'results') tab = 'mine';
   document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false'); });
   ['code', 'mine', 'results'].forEach(function (t) { $('p-' + t).hidden = t !== tab; });
 }
@@ -1149,12 +1217,21 @@ document.addEventListener('pointerup', function (ev) {
   endDrag(overGap(drag.gap, ev.clientX, ev.clientY) || !drag.moved);
 });
 document.addEventListener('pointercancel', function (ev) { if (drag && ev.pointerId === drag.id) endDrag(false); });
+// Keyboard: Enter or Space on a focused name card places it, the same as a tap.
+document.addEventListener('keydown', function (ev) {
+  if (ev.key !== 'Enter' && ev.key !== ' ') return;
+  var card = ev.target.closest && ev.target.closest('.deck .namecard');
+  if (!card || locked || drag) return;
+  ev.preventDefault();
+  var host = card.closest('.dp') || card.closest('.patch, .row');
+  placeCard(card.dataset.q, card.dataset.side, card.dataset.pick, card, host);
+});
 /* The date picker: month tiles, then day tiles, impossible days greyed out (2017 is not a leap year). */
 var DIM = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 function renderDP(el) {
   var d = parseInt(el.dataset.day, 10) || 0, m = parseInt(el.dataset.month, 10) || 0;
   var max = m ? DIM[m - 1] : 31;
-  var card = function (side, val, label, placed) { return '<span class="namecard sm' + (justPlaced === 'tiebreak' + side ? ' just' : '') + (placed && !pending.tiebreak && el.id !== 'introDP' ? ' pinned' : '') + '" data-q="tiebreak" data-side="' + side + '" data-pick="' + val + '">' + label + '</span>'; };
+  var card = function (side, val, label, placed) { return '<span class="namecard sm' + (justPlaced === 'tiebreak' + side ? ' just' : '') + (placed && !pending.tiebreak && el.id !== 'introDP' ? ' pinned' : '') + '" data-q="tiebreak" data-side="' + side + '"' + (placed ? '' : ' role="button" tabindex="0"') + ' data-pick="' + val + '">' + label + '</span>'; };
   var h = '<div class="date-row">' +
     '<span class="gap sm' + (d ? ' filled' : '') + '" data-q="tiebreak" data-side="day">' + (d ? card('day', d, d, true) : '') + '</span>' +
     '<span class="gap sm' + (m ? ' filled' : '') + '" data-q="tiebreak" data-side="month">' + (m ? card('month', m, MONTHS[m - 1].slice(0, 3).toUpperCase(), true) : '') + '</span>' +
@@ -1198,7 +1275,7 @@ function deckHtml(k, side) {
   return '<div class="deck">' + opts.map(function (o) {
     var placed = o === cur;
     return '<span class="slot' + (placed ? ' empty' : '') + '" data-name="' + NAMES[o] + '">' +
-      (placed ? '' : '<span class="namecard' + (justBack === k + side + o ? ' back' : '') + '" data-q="' + k + '" data-side="' + side + '" data-pick="' + o + '">' + NAMES[o] + '</span>') + '</span>';
+      (placed ? '' : '<span class="namecard' + (justBack === k + side + o ? ' back' : '') + '" role="button" tabindex="0" data-q="' + k + '" data-side="' + side + '" data-pick="' + o + '">' + NAMES[o] + '</span>') + '</span>';
   }).join('') + '</div>';
 }
 function stmtHtml(k, side) {
@@ -1322,8 +1399,7 @@ function renderResults() {
   var p = $('p-results');
   var keys = revealedKeys().filter(function (k) { return answers[k]; });
   if (!keys.length) {
-    p.innerHTML = codeHead('Results') +
-      '<p class="note">' + foundCount() + ' of ' + TOTAL_CODES + ' found · ' + answeredCount(me) + ' of ' + (TOTAL_CODES * 2) + ' answered</p>';
+    p.innerHTML = codeHead('Results') + '<div class="locked"><span class="lock" aria-hidden="true"></span><p>Unlocks at the reveal.</p></div>';
     lastScore = 0;
     return;
   }
