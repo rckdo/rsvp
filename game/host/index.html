@@ -4,6 +4,11 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v17.6 (12/09/2026): Run tab is the clock and the cards only, two large tiles and the table. Everything
+          reveal-related (count, Reveal all, Hide, Clear screens, feed) now lives on Present.
+          Statements panel builds as soon as content.json arrives.
+  v17.5 (12/09/2026): Statements panel on Setup: reword any sentence, set any answer. Feed and
+          presenter show the sentence with the name filled in.
   v17.4 (12/09/2026): Clues panel on Setup: one line per card, shown on phones in place of Not found yet.
   v17.3 (12/09/2026): Reset stamps a new game number so phones start over.
   v17.2 (12/09/2026): Reset always available on Setup (typed RESET plus confirm).
@@ -87,24 +92,29 @@
   .tab[aria-selected="true"]{background:var(--card);color:var(--forest);box-shadow:0 1px 2px rgba(0,0,0,.08)}
   .view[hidden]{display:none}
 
-  /* The three control tiles */
-  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2);margin-bottom:var(--s3)}
-  .tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:var(--s2);display:flex;flex-direction:column;gap:var(--s1);min-height:168px}
+  /* Two big control tiles: the clock and the cards. Reveal lives on the Present tab. */
+  .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s2);margin-bottom:var(--s3)}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:var(--s3);display:flex;flex-direction:column;gap:var(--s2);min-height:220px}
   .tile .lab{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sage)}
-  .tile .val{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:40px;line-height:1;color:var(--forest);font-variant-numeric:tabular-nums;margin:2px 0 auto;min-height:40px}
+  .tile .val{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:64px;line-height:1;color:var(--forest);font-variant-numeric:tabular-nums;margin:2px 0 auto;min-height:40px}
   .tile .val.hot{color:var(--rust)}
   .tile .val small{font-size:18px;color:var(--sage);font-family:'Karla',sans-serif;font-weight:400;margin-left:6px}
-  .tile .acts{display:flex;flex-direction:column;gap:6px}
+  .tile .acts{display:flex;flex-direction:column;gap:10px}
+  .tile .acts .btn{min-height:60px;font-size:18px}
   .tile .minor{display:flex;gap:var(--s2);min-height:20px}
-  .tile .minor button{background:none;border:0;padding:0;color:var(--sage);font-size:13px;font-weight:700;cursor:pointer;min-height:20px;text-decoration:underline;text-underline-offset:3px}
-  .tile .minor button:disabled{opacity:.35;text-decoration:none;cursor:default}
+  .tile .minor button,.ptools .minor button{background:none;border:0;padding:0;color:var(--sage);font-size:15px;font-weight:700;cursor:pointer;min-height:20px;text-decoration:underline;text-underline-offset:3px}
+  .tile .minor button:disabled,.ptools .minor button:disabled{opacity:.35;text-decoration:none;cursor:default}
+  .ptools{display:flex;align-items:baseline;gap:var(--s3);margin-bottom:var(--s2)}
+  .ptools .val{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:34px;line-height:1;color:var(--forest);font-variant-numeric:tabular-nums}
+  .ptools .val small{font-size:15px;color:var(--sage);font-family:'Karla',sans-serif;font-weight:400;margin-left:5px}
+  .ptools .minor{display:flex;gap:var(--s2);flex-wrap:wrap}
   button.btn{font-family:inherit;font-size:14px;font-weight:700;min-height:42px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--forest);background:var(--forest);color:#fff;cursor:pointer;width:100%}
   button.btn.warn{background:var(--rust);border-color:var(--rust)}
   button.btn.ghost{background:transparent;color:var(--forest)}
   button.btn:disabled{opacity:.4;cursor:default}
 
-  /* Two columns: the feed and the table */
-  .board{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:var(--s2);align-items:start}
+  /* The table, full width */
+  .board{display:grid;grid-template-columns:1fr;gap:var(--s2);align-items:start}
   .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:var(--s2)}
   .panel h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:22px;margin:0 0 var(--s1);color:var(--forest);display:flex;justify-content:space-between;align-items:baseline;gap:var(--s2)}
   .panel h2 small{font-family:'Karla',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sage);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -148,6 +158,7 @@
   .strip .stp.now .qb{opacity:1;outline:3px solid var(--forest);outline-offset:2px}
   .strip .stp.now{color:var(--forest);font-weight:700}
   .pgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:var(--s2);align-items:start;margin-bottom:96px}
+  .pgrid .feed{grid-column:1 / -1}
   .panel.now{border-color:var(--forest);border-width:2px}
   .panel.nxt{opacity:.8}
   .ptitle{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:30px;line-height:1.1;color:var(--forest);display:flex;align-items:center;gap:10px;margin:0 0 var(--s1)}
@@ -168,6 +179,16 @@
   input[type=text]{font-family:inherit;font-size:15px;min-height:42px;padding:8px 12px;border:1.5px solid var(--line-strong);border-radius:8px;background:#fff;width:100%}
   textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:8px;background:#fff;width:100%;resize:vertical;margin-bottom:var(--s1)}
   .row2{display:grid;grid-template-columns:1fr auto;gap:var(--s1)}
+  .panel.wide{grid-column:1 / -1}
+  .stm{display:grid;grid-template-columns:22px 28px 1fr auto;gap:var(--s1);align-items:start;padding:var(--s1) 0;border-top:1px solid var(--line)}
+  .stm:first-child{border-top:0}
+  .stm .num{font-size:12px;color:var(--sage);padding-top:10px;font-variant-numeric:tabular-nums}
+  .stm .qb{margin-top:8px}
+  .stm textarea{margin:0;min-height:60px;font-family:inherit;font-size:14px}
+  .stm .ans{display:flex;flex-direction:column;gap:4px}
+  .stm .ans button{font-family:inherit;font-size:12px;font-weight:700;min-height:28px;padding:2px 10px;border-radius:6px;border:1.5px solid var(--line-strong);background:#fff;color:var(--sage);cursor:pointer}
+  .stm .ans button.on{background:var(--olive);border-color:var(--olive);color:#fff}
+  @media (max-width:720px){ .stm{grid-template-columns:22px 1fr auto} .stm .num{display:none} }
   .clues{display:grid;gap:var(--s1)}
   .clue{display:grid;grid-template-columns:22px 22px 1fr;gap:var(--s1);align-items:center}
   .clue .num{font-size:12px;color:var(--sage);text-align:right;font-variant-numeric:tabular-nums}
@@ -185,11 +206,12 @@
     header{flex-direction:column;align-items:stretch;gap:var(--s1);padding-top:var(--s2)}
     .tabs{width:100%} .tab{flex:1;text-align:center}
     .tiles{gap:var(--s1)}
-    .tile{padding:10px;min-height:156px}
-    .tile .val{font-size:28px;min-height:28px}
+    .tile{padding:12px;min-height:170px;gap:var(--s1)}
+    .tile .val{font-size:40px;min-height:40px}
+    .tile .acts .btn{min-height:52px;font-size:15px}
     .tile .val small{font-size:13px;margin-left:4px}
     .tile .minor{gap:2px 10px}
-    .tile .minor button{font-size:12px}
+    .tile .minor button{font-size:13px}
     button.btn{padding:8px 4px;font-size:12px}
     .board,.setup{grid-template-columns:1fr}
   }
@@ -245,21 +267,9 @@
             <div class="minor"><button id="bUnrelease">Undo</button></div>
           </div>
         </div>
-        <div class="tile">
-          <div class="lab">Reveal</div>
-          <div class="val" id="revealVal">0<small>of 10</small></div>
-          <div class="acts">
-            <button class="btn" id="bNext">Reveal next</button>
-            <div class="minor"><button id="bBack">Back</button><button id="bScreen">Clear screens</button><button id="bAll">Reveal all</button><button id="bHide">Hide</button></div>
-          </div>
-        </div>
       </div>
 
       <div class="board">
-        <section class="panel">
-          <h2>Feed <small id="feedState"></small></h2>
-          <div id="revealCards"></div>
-        </section>
         <section class="panel">
           <h2>Table <small id="tableState"></small></h2>
           <table><thead><tr><th></th><th>Alias</th><th class="n">Found</th><th class="n">Ans</th><th class="n">Score</th><th class="n">Tie</th></tr></thead><tbody id="board"></tbody></table>
@@ -268,10 +278,19 @@
     </div>
 
     <div class="view" id="view-present" hidden>
+      <div class="ptools">
+        <div class="val" id="revealVal">0<small>of 10</small></div>
+        <div class="minor"><button id="bScreen">Clear screens</button><button id="bAll">Reveal all</button><button id="bHide">Hide</button></div>
+        <div hidden><button id="bNext">Reveal next</button><button id="bBack">Back</button></div>
+      </div>
       <div class="strip" id="pStrip"></div>
       <div class="pgrid">
         <section class="panel now"><h2>On screen <small id="pNowLab"></small></h2><div id="pNow"></div></section>
         <section class="panel nxt"><h2>Next <small id="pNextLab"></small></h2><div id="pNext"></div></section>
+        <section class="panel feed">
+          <h2>Feed <small id="feedState"></small></h2>
+          <div id="revealCards"></div>
+        </section>
       </div>
       <div class="pctl">
         <button class="btn ghost" id="pBack">Back</button>
@@ -293,6 +312,11 @@
           <p class="state" id="cardsState"></p>
           <ol class="urls" id="cardsList"></ol>
           <a class="btn" href="cards/">Open the card sheet</a>
+        </section>
+        <section class="panel wide">
+          <h2>Statements</h2>
+          <p class="state">Reword any sentence; four underscores mark where the name goes. Tap a name to set the answer. Saves as you go.</p>
+          <div id="stmts"></div>
         </section>
         <section class="panel">
           <h2>Clues</h2>
@@ -449,7 +473,7 @@ function bootHost() {
   firebase.initializeApp(FIREBASE_CONFIG);
   db = firebase.database(); auth = firebase.auth();
   db.ref('.info/serverTimeOffset').on('value', function (s) { offset = s.val() || 0; });
-  fetch('../content.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (c) { content = c; renderReveal(); });
+  fetch('../content.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (c) { content = c; renderReveal(); renderStatements(); });
   auth.signInAnonymously().then(function (cred) { uid = cred.user.uid; if (hostKey) claim(); else $('keySection').hidden = false; });
 }
 $('keyGo2').addEventListener('click', function () { $('keyInput').value = $('keyInput2').value; $('keyGo').click(); });
@@ -553,7 +577,7 @@ $('bSeed').addEventListener('click', function () {
 $('resetInput').addEventListener('input', function () { $('bReset').disabled = $('resetInput').value.trim() !== 'RESET'; });
 $('bReset').addEventListener('click', function () {
   if (!confirm('Wipe every player and all settings? This cannot be undone.')) return;
-  cfg().set({ epoch: Date.now(), clues: config.clues || null }).then(function () { return db.ref(ROOT + '/players').remove(); }).then(function () { $('resetInput').value = ''; $('bReset').disabled = true; }).catch(fail);
+  cfg().set({ epoch: Date.now(), clues: config.clues || null, statements: config.statements || null }).then(function () { return db.ref(ROOT + '/players').remove(); }).then(function () { $('resetInput').value = ''; $('bReset').disabled = true; }).catch(fail);
 });
 
 /* ---- Rendering ---- */
@@ -563,7 +587,41 @@ function phase() {
   var revealing = revealedKeys().length > 0 || !!(config.stage && config.stage.card);
   return revealing ? 'revealing' : (lockedNow ? 'closed' : 'open');
 }
-function renderAll() { renderClock(); renderRelease(); renderReveal(); renderBoard(); renderPresent(); renderClues(); }
+function renderAll() { renderClock(); renderRelease(); renderReveal(); renderBoard(); renderPresent(); renderClues(); renderStatements(); }
+/* Statements: wording overrides live in config.statements, answers in /game/answers. */
+var stmtsBuilt = false;
+function stmtText(k, side) {
+  var ov = config.statements && config.statements[k] && config.statements[k][side];
+  return (ov || content.questions[parseInt(k.slice(1), 10) - 1][side].third).replace('{name}', '____');
+}
+function renderStatements() {
+  var box = $('stmts'); if (!box || !content) return;
+  if (!stmtsBuilt) {
+    stmtsBuilt = true;
+    box.innerHTML = keys.map(function (k, i) {
+      return ['human', 'dog'].map(function (side) {
+        var opts = side === 'human' ? ['R', 'L'] : ['E', 'T'];
+        return '<div class="stm"><span class="num">' + (i + 1) + (side === 'human' ? 'a' : 'b') + '</span>' + CODE_STYLE[i] +
+          '<textarea data-k="' + k + '" data-side="' + side + '" rows="2" autocomplete="off"></textarea>' +
+          '<div class="ans">' + opts.map(function (o) { return '<button type="button" data-k="' + k + '" data-side="' + side + '" data-ans="' + o + '">' + NAMES[o] + '</button>'; }).join('') + '</div></div>';
+      }).join('');
+    }).join('');
+    box.addEventListener('change', function (ev) {
+      var ta = ev.target.closest('textarea[data-k]'); if (!ta) return;
+      var text = ta.value.trim().replace(/_{2,}/g, '{name}');
+      var base = content.questions[parseInt(ta.dataset.k.slice(1), 10) - 1][ta.dataset.side].third;
+      var up = {}; up['statements/' + ta.dataset.k + '/' + ta.dataset.side] = (text && text !== base) ? text : null;
+      cfg().update(up).catch(fail);
+    });
+    box.addEventListener('click', function (ev) {
+      var b = ev.target.closest('button[data-ans]'); if (!b) return;
+      if (!confirm('Set the answer for ' + b.dataset.k.slice(1) + (b.dataset.side === 'human' ? 'a' : 'b') + ' to ' + NAMES[b.dataset.ans] + '?')) return;
+      db.ref(ROOT + '/answers/' + b.dataset.k + '/' + b.dataset.side).set(b.dataset.ans).catch(fail);
+    });
+  }
+  box.querySelectorAll('textarea[data-k]').forEach(function (ta) { if (document.activeElement !== ta) ta.value = stmtText(ta.dataset.k, ta.dataset.side); });
+  box.querySelectorAll('button[data-ans]').forEach(function (b) { var a = answers[b.dataset.k]; b.classList.toggle('on', !!a && a[b.dataset.side] === b.dataset.ans); });
+}
 var cluesBuilt = false;
 function renderClues() {
   var box = $('clues'); if (!box) return;
@@ -609,7 +667,8 @@ function splitOf(k, side) {
 function stHtml(k, side, showSplit) {
   var q = content.questions[parseInt(k.slice(1), 10) - 1][side], sp = splitOf(k, side), total = Object.keys(players).length;
   var other = sp.opts.filter(function (o) { return o !== sp.truth; })[0];
-  var h = '<div class="st"><p class="txt">' + fmt(q.first) + '</p>';
+  var sentence = stmtText(k, side).replace('____', sp.truth ? NAMES[sp.truth] : '____');
+  var h = '<div class="st"><p class="txt">' + fmt(sentence) + '</p>';
   h += '<div class="ans">' + (sp.truth ? NAMES[sp.truth] : '<span class="muted">not seeded</span>') + '</div>';
   if (showSplit && sp.truth) {
     var pr = total ? sp.counts[sp.truth] / total * 100 : 0, pw = total ? sp.counts[other] / total * 100 : 0;
