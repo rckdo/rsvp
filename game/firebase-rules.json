@@ -2,12 +2,10 @@
   "rules": {
     ".read": false,
     ".write": false,
-
     "weddingTracker": {
       ".read": "auth != null",
       ".write": "auth != null"
     },
-
     "rsvp": {
       "replies": {
         ".read": "auth != null",
@@ -17,37 +15,41 @@
         }
       }
     },
-
     "game": {
       "codes": {
-        "$code": { ".read": "auth != null" }
+        ".write": "auth != null && root.child('game/host/REPLACE_WITH_HOST_KEY').val() === auth.uid",
+        "$code": {
+          ".read": "auth != null",
+          ".validate": "newData.isString() && newData.val().matches(/^q([1-9]|10)$/)"
+        }
       },
-
       "answers": {
         "$q": {
           ".read": "auth != null && (root.child('game/host/REPLACE_WITH_HOST_KEY').val() === auth.uid || root.child('game/config/revealed').child($q === 'tiebreak' ? 'q10' : $q).val() === true)"
-        }
+        },
+        ".write": "auth != null && root.child('game/host/REPLACE_WITH_HOST_KEY').val() === auth.uid"
       },
-
       "config": {
         ".read": "auth != null",
         ".write": "auth != null && root.child('game/host/REPLACE_WITH_HOST_KEY').val() === auth.uid"
       },
-
       "host": {
         "$key": {
           ".write": "auth != null && $key === 'REPLACE_WITH_HOST_KEY' && newData.val() === auth.uid"
         }
       },
-
       "players": {
         ".read": "auth != null",
         ".write": "auth != null && root.child('game/host/REPLACE_WITH_HOST_KEY').val() === auth.uid && !newData.exists()",
         "$slug": {
           ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
           ".validate": "$slug.matches(/^[a-z]+(-[a-z]+)+$/) && newData.hasChildren(['uid','claimedAt'])",
-          "uid": { ".validate": "newData.isString()" },
-          "claimedAt": { ".validate": "newData.isNumber()" },
+          "uid": {
+            ".validate": "newData.isString()"
+          },
+          "claimedAt": {
+            ".validate": "newData.isNumber()"
+          },
           "lastChange": {
             ".write": "auth != null && root.child('game/players').child($slug).child('uid').val() === auth.uid",
             ".validate": "newData.isNumber()"
@@ -68,7 +70,9 @@
             ".write": "auth != null && root.child('game/players').child($slug).child('uid').val() === auth.uid && (!root.child('game/config/lockAt').exists() || now < root.child('game/config/lockAt').val())",
             ".validate": "newData.hasChildren(['day','month','at']) && newData.child('day').isNumber() && newData.child('day').val() >= 1 && newData.child('day').val() <= 31 && newData.child('month').isNumber() && newData.child('month').val() >= 1 && newData.child('month').val() <= 12"
           },
-          "$other": { ".validate": false }
+          "$other": {
+            ".validate": false
+          }
         }
       }
     }

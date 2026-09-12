@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v12.0 (12/09/2026): Seed panel: paste the seed text and write codes and answers from the host phone.
+          Tie-breaker date corrected to 21 August 2017.
   v11.0 (12/09/2026): Photos from the answer key shown on reveal cards.
   v10.0 (12/09/2026): Backticks in statement text render as code.
   v8.0 (12/09/2026): Cards, not codes, in the wording.
@@ -70,6 +72,7 @@
   button.warn.ghost{background:transparent;color:var(--rust)}
   button:disabled{opacity:.4;cursor:default}
   input[type=text]{font-family:inherit;font-size:16px;min-height:42px;padding:8px 12px;border:1.5px solid var(--line-strong);border-radius:8px;background:#fff;width:100%;max-width:340px}
+  textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:8px;background:#fff;width:100%;resize:vertical}
   .stats{display:flex;flex-wrap:wrap;gap:18px 28px}
   .stat b{display:block;font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;line-height:1;color:var(--forest);font-weight:600}
   .stat span{font-size:13px;color:var(--sage)}
@@ -182,6 +185,14 @@
     <section>
       <h2>Players</h2>
       <table><thead><tr><th>Alias</th><th class="num">Found</th><th class="num">Answered</th><th>Tie-break guess</th></tr></thead><tbody id="playersTable"></tbody></table>
+    </section>
+
+    <section id="seedSection">
+      <h2>Seed</h2>
+      <p class="state" id="seedState">Paste the seed text (codes and answers) and write it. Safe to repeat: it replaces codes and answers only.</p>
+      <textarea id="seedInput" rows="6" placeholder='{"codes": {...}, "answers": {...}}' autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+      <div class="btns" style="margin-top:8px"><button id="bSeed">Write codes and answers</button></div>
+      <div class="err" id="seedErr"></div>
     </section>
 
     <section class="danger" id="resetSection">
@@ -335,6 +346,18 @@ $('bAll').addEventListener('click', function () {
   var up = {}; keys.forEach(function (k) { up['revealed/' + k] = true; }); cfg().update(up).catch(fail);
 });
 $('bHide').addEventListener('click', function () { if (confirm('Hide all results? Phones go back to the placeholder.')) cfg().update({ revealed: null }).catch(fail); });
+$('bSeed').addEventListener('click', function () {
+  $('seedErr').textContent = '';
+  var obj;
+  try { obj = JSON.parse($('seedInput').value.trim()); } catch (e) { $('seedErr').textContent = 'That isn\u2019t valid seed text. Copy the whole block again, from the first { to the last }.'; return; }
+  if (!obj || !obj.codes || !obj.answers) { $('seedErr').textContent = 'The seed needs both codes and answers.'; return; }
+  var nc = Object.keys(obj.codes).length, na = Object.keys(obj.answers).length;
+  if (!confirm('Write ' + nc + ' codes and ' + na + ' answers? This replaces whatever is there.')) return;
+  db.ref(ROOT).update({ codes: obj.codes, answers: obj.answers }).then(function () {
+    $('seedInput').value = '';
+    $('seedState').innerHTML = '<b>Seeded.</b> ' + nc + ' codes and ' + na + ' answers written.';
+  }).catch(function (e) { $('seedErr').textContent = 'Firebase refused it: ' + (e && e.code ? e.code : e) + '. Are the rules published?'; });
+});
 $('resetInput').addEventListener('input', function () { $('bReset').disabled = $('resetInput').value.trim() !== 'RESET'; });
 $('bReset').addEventListener('click', function () {
   if (!confirm('Wipe every player and all settings? This cannot be undone.')) return;
@@ -420,7 +443,7 @@ function renderBoard() {
   var rk = revealedKeys().filter(function (k) { return answers[k]; }), all = keys.filter(function (k) { return answers[k]; });
   var useAll = rk.length === 0;
   var table = standings(useAll ? all : rk);
-  $('boardState').textContent = useAll ? 'Private preview: scored against the full answer key. Phones see nothing yet.' : 'Scored on the ' + rk.length + ' card' + (rk.length === 1 ? '' : 's') + ' revealed so far. Ties broken by the tie-breaker (closest to 21 September 2017).';
+  $('boardState').textContent = useAll ? 'Private preview: scored against the full answer key. Phones see nothing yet.' : 'Scored on the ' + rk.length + ' card' + (rk.length === 1 ? '' : 's') + ' revealed so far. Ties broken by the tie-breaker (closest to 21 August 2017).';
   $('board').innerHTML = table.map(function (r) {
     return '<tr><td>' + r.pos + '</td><td>' + esc(pretty(r.slug)) + '</td><td class="num">' + r.score + '</td><td class="num">' + (r.tb === Infinity ? '<span class="muted">none</span>' : r.tb + ' day' + (r.tb === 1 ? '' : 's')) + '</td></tr>';
   }).join('') || '<tr><td colspan="4" class="muted">No players yet.</td></tr>';
