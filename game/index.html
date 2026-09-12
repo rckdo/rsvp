@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v13.9 (12/09/2026): 'Answers at the pub' dropped everywhere.
   v13.8 (12/09/2026): Tie-breaker row unnumbered. Closed-hunt wording made plain everywhere, and the
           gate says so if its write is refused.
   v13.7 (12/09/2026): Gate tightened further for small phones; button above the robin.
@@ -870,7 +871,7 @@ function showIntro() {
     db.ref(ROOT + '/players/' + alias).update({ tiebreak: { day: d, month: m, at: TS }, lastChange: TS })
       .then(function () { $('intro').hidden = true; enterGame(); })
       .catch(function (e) {
-        if (e && e.code === 'PERMISSION_DENIED') { $('intro').hidden = true; enterGame(); toast('The hunt has closed. Answers at the pub.'); }
+        if (e && e.code === 'PERMISSION_DENIED') { $('intro').hidden = true; enterGame(); toast('The hunt has closed.'); }
         else { toast('That didn\u2019t save. Check your signal.'); $('introGo').disabled = false; }
       });
   });
@@ -939,7 +940,7 @@ function tickClock() {
   var rem = config.lockAt - now();
   if (rem <= 0) {
     if (!locked) { locked = true; renderAll(); }
-    el.textContent = 'The hunt has closed. Answers at the pub.'; el.className = 'clock locked'; return;
+    el.textContent = 'The hunt has closed.'; el.className = 'clock locked'; return;
   }
   locked = false;
   var s = Math.ceil(rem / 1000), m = Math.floor(s / 60);
@@ -962,24 +963,24 @@ function showTab(t) {
 
 /* ---- Writes ---- */
 function saveAnswer(k, side, val) {
-  if (locked) { toast('The hunt has closed. Answers at the pub.'); return; }
+  if (locked) { toast('The hunt has closed.'); return; }
   var up = {}; up['answers/' + k + '/' + side] = val; up['answers/' + k + '/at'] = TS; up.lastChange = TS;
   db.ref(ROOT + '/players/' + alias).update(up).catch(function (e) {
-    if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast('The hunt has closed. Answers at the pub.'); renderAll(); }
+    if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast('The hunt has closed.'); renderAll(); }
     else toast('That didn’t save. Check your signal.');
   });
 }
 function saveTiebreak(day, month) {
-  if (locked) { toast('The hunt has closed. Answers at the pub.'); return; }
+  if (locked) { toast('The hunt has closed.'); return; }
   db.ref(ROOT + '/players/' + alias).update({ tiebreak: { day: day, month: month, at: TS }, lastChange: TS }).catch(function (e) {
-    if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast('The hunt has closed. Answers at the pub.'); renderAll(); }
+    if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast('The hunt has closed.'); renderAll(); }
     else toast('That didn’t save. Check your signal.');
   });
 }
 /* Name cards: drag one to the gap and it snaps in; a tap places it too. */
 var drag = null;
 function placeCard(k, side, val, cardEl, host) {
-  if (locked) { toast('The hunt has closed. Answers at the pub.'); return; }
+  if (locked) { toast('The hunt has closed.'); return; }
   if (k === 'tiebreak') { placeDate((host && host.classList.contains('dp')) ? host : (cardEl && cardEl.closest('.dp')), side, val); return; }
   me = me || {}; me.answers = me.answers || {}; me.answers[k] = me.answers[k] || {};
   var prev = me.answers[k][side];
@@ -1113,7 +1114,7 @@ function renderCode() {
   } else if (!qk) {
     html = codeHead('Scan a card') + '<p class="note">Ten are hidden around the venue. Each one opens here.</p>';
   } else if (locked) {
-    html = codeHead('Card ' + qnum(qk), qnum(qk)) + '<p class="note">The hunt has closed. Answers at the pub.</p>';
+    html = codeHead('Card ' + qnum(qk), qnum(qk)) + '<p class="note">The hunt has closed.</p>';
   } else {
     html = codeHead('Card ' + qnum(qk), qnum(qk));
     if (config.releasedAt) html += '<p class="note">Everything\u2019s open. Answer what you can.</p>';
@@ -1209,7 +1210,7 @@ function renderResults() {
   var p = $('p-results');
   var keys = revealedKeys().filter(function (k) { return answers[k]; });
   if (!keys.length) {
-    p.innerHTML = codeHead('Results at the pub') +
+    p.innerHTML = codeHead('Results') +
       '<p class="note">' + foundCount() + ' of ' + TOTAL_CODES + ' found · ' + answeredCount(me) + ' of ' + (TOTAL_CODES * 2) + ' answered</p>';
     lastScore = 0;
     return;
