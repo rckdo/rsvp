@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v1.1 (12/09/2026): No strip on the QR patch, no footer text. Icons served from /game/icons/.
   v1.0 (12/09/2026): First build. Ten 4x6in cards drawn on canvas at 300dpi: the invite's quilt band,
           the card number, its own quilt block and colour, the two statement icons, a QR code of the
           card's URL, and "Scan to play". Save each as a PNG for a photo printer, or print the page
@@ -146,7 +147,7 @@ var db, content = null, codes = null, icons = {};
 function boot() {
   firebase.initializeApp(FIREBASE_CONFIG); db = firebase.database();
   Promise.all([
-    fetch('../../content.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+    fetch('/game/content.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
     firebase.auth().signInAnonymously().then(function () { return db.ref(ROOT + '/codes').once('value'); }).then(function (s) { return s.val(); }).catch(function () { return null; })
   ]).then(function (r) {
     content = r[0]; codes = r[1];
@@ -194,18 +195,12 @@ function drawCard(n, code) {
   ctx.fillStyle = CARD; ctx.fillRect(W / 2 - 110, 570, 220, 220); ctx.restore();
   drawBlock(ctx, shape, colour, W / 2 - 90, 590, 180);
   // QR on a patch with the card's dashed strip
-  var qr = qrcode(0, 'M'); qr.addData(BASE + code); qr.make();
-  var mc = qr.getModuleCount(), qs = 700, px = Math.floor((qs - 80) / mc), qw = px * mc, qx = (W - qw) / 2, qy = 900;
+  var qr = qrcode(0, 'Q'); qr.addData(BASE + code); qr.make();
+  var mc = qr.getModuleCount(), qs = 720, px = Math.floor((qs - 80) / mc), qw = px * mc, qx = (W - qw) / 2, qy = 960;
   ctx.save(); ctx.shadowColor = 'rgba(74,63,47,.22)'; ctx.shadowBlur = 36; ctx.shadowOffsetY = 14;
   ctx.fillStyle = CARD; ctx.fillRect(qx - 44, qy - 44, qw + 88, qw + 88); ctx.restore();
-  for (var i = 0; i < 20; i++) { ctx.fillStyle = i % 2 ? CREAM : colour; ctx.fillRect(qx - 44 + i * ((qw + 88) / 20), qy - 44, (qw + 88) / 20, 14); }
   ctx.fillStyle = BARK;
   for (var r = 0; r < mc; r++) for (var c = 0; c < mc; c++) if (qr.isDark(r, c)) ctx.fillRect(qx + c * px, qy + r * px, px, px);
-  // footer
-  ctx.fillStyle = BARK; ctx.font = '46px Marcellus, serif';
-  spaced(ctx, 'SCAN TO PLAY', W / 2, qy + qw + 130, 10);
-  ctx.fillStyle = MUTED; ctx.font = 'italic 500 34px "Cormorant Garamond", Georgia, serif';
-  ctx.fillText('Who said it? Answer on your phone, results at the pub.', W / 2, qy + qw + 190);
   // the two statement icons, either side of the block
   var jobs = ['human', 'dog'].map(function (side, i) {
     var f = q[side].icon, url = /^https?:/.test(f) ? f : (content.iconBase || '') + f;

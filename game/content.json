@@ -1,5 +1,5 @@
 {
-  "version": "1.11",
+  "version": "1.12",
   "reels": {
     "items": [
       "Sausage",
@@ -38,7 +38,7 @@
       "Fiend"
     ]
   },
-  "iconBase": "https://cdn.jsdelivr.net/npm/lucide-static@0.475.0/icons/",
+  "iconBase": "/game/icons/",
   "tiebreak": {
     "question": "What date in 2017 did Richard and Lorraine become official?",
     "third": "The date in 2017 Richard and Lorraine became official"
@@ -54,7 +54,7 @@
       "dog": {
         "first": "I will do absolutely anything for a toothbrush.",
         "third": "{name} will do absolutely anything for a toothbrush.",
-        "icon": "brush.svg"
+        "icon": "toothbrush.svg"
       }
     },
     {
@@ -62,7 +62,7 @@
       "human": {
         "first": "I was \"playing an excellent game\" 19 moves in against a chess grandmaster (but eventually lost).",
         "third": "{name} was \"playing an excellent game\" 19 moves in against a chess grandmaster (but eventually lost).",
-        "icon": "crown.svg"
+        "icon": "chess-knight.svg"
       },
       "dog": {
         "first": "I once had a vet appointment card that said I was \"very well behaved\".",
@@ -127,7 +127,7 @@
       "human": {
         "first": "I know some card magic tricks, but can't do them particularly well.",
         "third": "{name} knows some card magic tricks but can't do them particularly well.",
-        "icon": "wand.svg"
+        "icon": "wand-sparkles.svg"
       },
       "dog": {
         "first": "I can woof on cue. Say \"woof\" to me and see.",
@@ -171,7 +171,7 @@
       "dog": {
         "first": "I once got a cuddle from Nitro off Gladiators.",
         "third": "{name} once got a cuddle from Nitro off Gladiators.",
-        "icon": "dumbbell.svg"
+        "icon": "biceps-flexed.svg"
       }
     }
   ]
