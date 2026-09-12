@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <!--
-  Find the codes : the wedding QR game, guest page
+  Find the cards : the wedding QR game, guest page
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v8.0 (12/09/2026): Alias badge: a gold and rust rosette beside the name in Playfair on a stitched
+          label. Cards, not codes, in every guest-facing word. Placed cards get a tick or cross
+          sticker and an olive or rust tint once revealed; Answers shows the card you placed with the
+          truth alongside when wrong.
   v7.0 (12/09/2026): The tie-breaker is a gate. After the name is locked (or on any later landing
           without an answer) one screen asks the date before the hunt opens. Skipped once the game
           is locked. Still editable as row 21 on My answers. Removed from the code tab.
@@ -49,7 +53,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#e0cfa4">
-<title>Find the codes · Lorraine &amp; Richard</title>
+<title>Find the cards · Lorraine &amp; Richard</title>
 <link rel="icon" href="/icons/favicon-32.png">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -127,15 +131,16 @@
   @keyframes bloom{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
 
   /* Header: a luggage-tag alias, the clock beneath */
-  .top{padding:18px 22px 0;text-align:center;min-height:54px}
+  .top{padding:20px 22px 0;text-align:center;min-height:60px}
   .alias{
-    display:inline-block;position:relative;
-    font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
-    color:var(--bark);background:var(--ochre);padding:9px 18px 8px 26px;
-    clip-path:polygon(0 50%, 12px 0, 100% 0, 100% 100%, 12px 100%);
+    display:inline-flex;align-items:center;gap:12px;position:relative;
+    background:#f7f0e0;padding:8px 20px 8px 12px;
+    box-shadow:0 4px 0 var(--ochre-deep), 0 10px 20px rgba(74,63,47,.16);
   }
   .alias[hidden]{display:none}
-  .alias:before{content:'';position:absolute;left:9px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:var(--cream)}
+  .alias:after{content:'';position:absolute;inset:5px;border:1px dashed var(--ochre-deep);pointer-events:none}
+  .alias .nm{font-family:var(--display);font-weight:600;font-size:21px;letter-spacing:.02em;color:var(--bark);line-height:1}
+  .alias .rosette{width:34px;height:42px;flex:0 0 34px;filter:drop-shadow(0 2px 2px rgba(74,63,47,.25))}
   .alias.arrive{animation:alias-in .5s var(--ease-out) both}
   @keyframes alias-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
   .clock{font-family:var(--body);font-style:italic;font-size:18px;color:var(--mutedbrown);margin-top:8px;min-height:24px;transition:color .4s ease}
@@ -252,9 +257,18 @@
   .gap .namecard{position:absolute;left:-2px;top:-3px;transform:rotate(-3deg);cursor:default}
   .gap .namecard.just{animation:drop .3s var(--ease-out)}
   @keyframes drop{from{transform:rotate(-3deg) scale(1.2);opacity:.5}to{transform:rotate(-3deg) scale(1);opacity:1}}
-  .gap.right .namecard{border-color:var(--olive);color:var(--olive-deep)}
-  .gap.wrong .namecard{color:var(--rust);text-decoration:line-through;text-decoration-thickness:1.5px}
+  .gap.right .namecard{background:#edf0de;border-color:var(--olive);color:var(--olive-deep)}
+  .gap.wrong .namecard{background:#f6e2da;border-color:var(--rust);color:var(--rust)}
+  .gap.right .namecard:after,.gap.wrong .namecard:after{content:'';position:absolute;right:-9px;top:-9px;width:20px;height:20px;border-radius:50%;
+    box-shadow:0 1px 3px rgba(74,63,47,.35);background-size:11px 11px;background-position:center;background-repeat:no-repeat}
+  .gap.right .namecard:after{background-color:var(--olive);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5l2.6 2.6L10 3.5' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+  .gap.wrong .namecard:after{background-color:var(--rust);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 3l6 6M9 3l-6 6' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E")}
   .gap.missed{border-style:solid;border-color:var(--mutedbrown);opacity:.5}
+  .gap.missed .namecard{background:var(--cream);color:var(--mutedbrown);box-shadow:none;border-color:var(--mutedbrown);transform:none;left:-1px;top:-1px}
+  .gap.filled.missed{opacity:.75}
+  .mark{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:5px;background-size:8px 8px;background-position:center;background-repeat:no-repeat}
+  .mark.right{background-color:var(--olive);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5l2.6 2.6L10 3.5' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+  .mark.wrong{background-color:var(--rust);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 3l6 6M9 3l-6 6' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E")}
   .deck{display:flex;gap:16px;justify-content:center;margin-top:18px;min-height:44px}
   .deck .namecard:nth-child(odd){transform:rotate(-2deg)}
   .deck .namecard:nth-child(even){transform:rotate(2deg)}
@@ -345,7 +359,8 @@
   .split .bar{display:flex;height:10px;margin:8px 0 4px;background:var(--ochre);overflow:hidden}
   .split .bar i{display:block;height:100%;background:var(--olive);transition:width .6s var(--ease-out)}
   .split .bar i.wrong{background:var(--rust)}
-  .split .lab{display:flex;justify-content:space-between;font-family:var(--label);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mutedbrown)}
+  .split .lab{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 10px;font-family:var(--label);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mutedbrown)}
+  .split .lab span{white-space:nowrap}
   .split .lab .ok{color:var(--olive-deep)}
   section.patch{padding-top:24px}
 
@@ -390,7 +405,7 @@
   <div class="band" id="band" aria-hidden="true"></div>
 
   <header class="top">
-    <div id="aliasPill" class="alias" hidden></div>
+    <div id="aliasPill" class="alias" hidden><svg class="rosette" viewBox="0 0 34 42" aria-hidden="true"><path d="M11 24l-4 16 10-5 10 5-4-16z" fill="#a34a2c"/><path d="M17 24l-4 15 4-2 4 2z" fill="#7e3820"/><g fill="#c99a3f"><circle cx="17" cy="4" r="3.2"/><circle cx="23.5" cy="5.7" r="3.2"/><circle cx="28.3" cy="10.5" r="3.2"/><circle cx="30" cy="17" r="3.2"/><circle cx="28.3" cy="23.5" r="3.2"/><circle cx="23.5" cy="28.3" r="3.2"/><circle cx="17" cy="30" r="3.2"/><circle cx="10.5" cy="28.3" r="3.2"/><circle cx="5.7" cy="23.5" r="3.2"/><circle cx="4" cy="17" r="3.2"/><circle cx="5.7" cy="10.5" r="3.2"/><circle cx="10.5" cy="5.7" r="3.2"/></g><circle cx="17" cy="17" r="10.5" fill="#c99a3f"/><circle cx="17" cy="17" r="7" fill="#efe6d3"/><circle cx="17" cy="17" r="3" fill="#a34a2c"/></svg><span class="nm" id="aliasName"></span></div>
     <div id="clock" class="clock"></div>
   </header>
 
@@ -432,7 +447,7 @@
   <!-- The game -->
   <section id="app" class="screen" hidden>
     <nav class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="code" aria-selected="true" id="tabCode">This code</button>
+      <button class="tab" role="tab" data-tab="code" aria-selected="true" id="tabCode">This card</button>
       <button class="tab" role="tab" data-tab="mine" aria-selected="false" id="tabMine">My answers<span class="badge" id="mineBadge" hidden></span></button>
       <button class="tab" role="tab" data-tab="results" aria-selected="false" id="tabResults">Results</button>
     </nav>
@@ -768,7 +783,7 @@ function afterAlias() {
 }
 function showIntro() {
   $('boot').hidden = true; $('intro').hidden = false;
-  var pill = $('aliasPill'); pill.textContent = prettyAlias(alias); pill.hidden = false; pill.classList.add('arrive');
+  var pill = $('aliasPill'); $('aliasName').textContent = prettyAlias(alias); pill.hidden = false; pill.classList.add('arrive');
   $('introQ').textContent = content.tiebreak.question;
   var dayOpts = '<option value="">Day</option>'; for (var d = 1; d <= 31; d++) dayOpts += '<option value="' + d + '">' + d + '</option>';
   var monOpts = '<option value="">Month</option>'; MONTHS.forEach(function (m, i) { monOpts += '<option value="' + (i + 1) + '">' + m + '</option>'; });
@@ -793,7 +808,7 @@ function showIntro() {
    ===================================================================== */
 function enterGame() {
   $('boot').hidden = true; $('spin').hidden = true; $('app').hidden = false;
-  var pill = $('aliasPill'); pill.textContent = prettyAlias(alias); pill.hidden = false; pill.classList.add('arrive');
+  var pill = $('aliasPill'); $('aliasName').textContent = prettyAlias(alias); pill.hidden = false; pill.classList.add('arrive');
   document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () { showTab(b.dataset.tab); }); });
 
   db.ref(ROOT + '/config').on('value', function (s) { config = s.val() || {}; onConfig(); });
@@ -1003,11 +1018,11 @@ function renderCode() {
   if (codeUnknown) {
     html = codeHead('Not one of ours') + '<p class="note">Try the scan again, or find another.</p>';
   } else if (!qk) {
-    html = codeHead('Scan a code') + '<p class="note">Ten are hidden around the venue. Each one opens here.</p>';
+    html = codeHead('Scan a card') + '<p class="note">Ten are hidden around the venue. Each one opens here.</p>';
   } else if (locked) {
-    html = codeHead('Code ' + qnum(qk), qnum(qk)) + '<p class="note">Locked. Answers at the pub.</p>';
+    html = codeHead('Card ' + qnum(qk), qnum(qk)) + '<p class="note">Locked. Answers at the pub.</p>';
   } else {
-    html = codeHead('Code ' + qnum(qk), qnum(qk));
+    html = codeHead('Card ' + qnum(qk), qnum(qk));
     if (config.releasedAt) html += '<p class="note">Everything\u2019s open. Answer what you can.</p>';
     html += stmtHtml(qk, 'human');
     if (answeredCount(me) === 0) html += '<p class="deck-hint">Drag or tap a name into the gap</p>';
@@ -1020,12 +1035,12 @@ function renderMine() {
   var p = $('p-mine');
   var found = foundCount(), left = TOTAL_CODES - found;
   var head;
-  if (config.releasedAt) head = 'Everything’s open. Answer what you can.';
-  else if (left === 0) head = 'All found. Answers at the pub.';
-  else head = left + ' more code' + (left === 1 ? '' : 's') + ' to find';
+  if (config.releasedAt) head = 'Everything’s open';
+  else if (left === 0) head = 'All ten found';
+  else head = left + ' more card' + (left === 1 ? '' : 's') + ' to find';
   var pending = 0;
   allKeys().forEach(function (k) { if (isFound(k)) { if (!pick(k, 'human')) pending++; if (!pick(k, 'dog')) pending++; } });
-  var html = '<div class="progress" aria-label="' + found + ' of ' + TOTAL_CODES + ' codes found">';
+  var html = '<div class="progress" aria-label="' + found + ' of ' + TOTAL_CODES + ' cards found">';
   allKeys().forEach(function (k, i) { html += window.codeBlock(i, 0, 'pb' + (isFound(k) ? ' on' : '')); });
   html += '</div>';
   html += '<div class="ph"><h2>' + head + '</h2></div>';
@@ -1046,12 +1061,12 @@ function renderMine() {
       if (revealed[k] && answers[k]) {
         var truth = answers[k][side];
         if (!cur) { cls += ' missed'; verdict = 'Not answered. It was ' + NAMES[truth] + '.'; }
-        else if (cur === truth) { cls += ' right'; verdict = 'Right'; }
-        else { cls += ' wrong'; verdict = 'Wrong. It was ' + NAMES[truth] + '.'; }
+        else if (cur === truth) { cls += ' right'; verdict = '<span class="mark right"></span>Right'; }
+        else { cls += ' wrong'; verdict = '<span class="mark wrong"></span>It was ' + NAMES[truth] + '.'; }
       }
       html += '<li class="' + cls + '" style="' + window.codeVars(n - 1) + '"><span class="n">' + label + '</span><span class="ic">' + icon(q.icon) + '</span><div class="body">';
       html += '<p>' + sentenceHtml(k, side) + '</p>';
-      if (verdict) html += '<div class="verdict">' + esc(verdict) + '</div>';
+      if (verdict) html += '<div class="verdict">' + verdict + '</div>';
       else if (locked && !cur) html += '<div class="verdict">Not answered</div>';
       else html += deckHtml(k, side);
       html += '</div></li>';
@@ -1128,7 +1143,7 @@ function renderResults() {
   html += '<section class="patch"><p class="sec-k">Answers</p>';
   var total = Object.keys(players).length;
   keys.slice().reverse().forEach(function (k) {
-    html += '<div class="split-code" style="' + window.codeVars(qnum(k) - 1) + '">' + window.codeBlock(qnum(k) - 1, 22) + 'Code ' + qnum(k) + '</div>';
+    html += '<div class="split-code" style="' + window.codeVars(qnum(k) - 1) + '">' + window.codeBlock(qnum(k) - 1, 22) + 'Card ' + qnum(k) + '</div>';
     ['human', 'dog'].forEach(function (side) {
       var truth = answers[k][side], mine = pick(k, side);
       var opts = side === 'human' ? ['R', 'L'] : ['E', 'T'];
@@ -1136,9 +1151,9 @@ function renderResults() {
       Object.keys(players).forEach(function (s) { var pl = players[s]; var a = pl.answers && pl.answers[k] && pl.answers[k][side]; if (a && counts[a] !== undefined) counts[a]++; });
       var wrongName = opts.filter(function (o) { return o !== truth; })[0];
       var pctR = total ? Math.round(counts[truth] / total * 100) : 0, pctW = total ? Math.round(counts[wrongName] / total * 100) : 0;
-      var answerCard = '<span class="gap filled right"><span class="namecard">' + NAMES[truth] + '</span></span>';
-      var you = !mine ? '<span class="you missed">You didn\u2019t answer</span>' : (mine === truth ? '<span class="you right">You said ' + NAMES[mine] + '</span>' : '<span class="you wrong">You said ' + NAMES[mine] + '</span>');
-      html += '<div class="split" style="' + window.codeVars(qnum(k) - 1) + '"><p>' + esc(question(k)[side].third).replace('{name}', answerCard) + '</p>' +
+      var yourCard = mine ? '<span class="gap filled ' + (mine === truth ? 'right' : 'wrong') + '"><span class="namecard">' + NAMES[mine] + '</span></span>' : '<span class="gap filled missed"><span class="namecard">' + NAMES[truth] + '</span></span>';
+      var you = !mine ? '<span class="you missed">Not answered</span>' : (mine === truth ? '<span class="you right"><span class="mark right"></span>Right</span>' : '<span class="you wrong"><span class="mark wrong"></span>It was ' + NAMES[truth] + '</span>');
+      html += '<div class="split" style="' + window.codeVars(qnum(k) - 1) + '"><p>' + esc(question(k)[side].third).replace('{name}', yourCard) + '</p>' +
         '<div class="bar"><i style="width:' + pctR + '%"></i><i class="wrong" style="width:' + pctW + '%"></i></div>' +
         '<div class="lab"><span class="ok">' + NAMES[truth] + ' ' + counts[truth] + '</span>' + you + '<span>' + NAMES[wrongName] + ' ' + counts[wrongName] + '</span></div></div>';
     });
@@ -1173,7 +1188,7 @@ function runAck() {
     return '<div class="ackp ' + cls + '"><div class="v">' + esc(v) + '</div><div class="s">' + esc(question(k)[side].third.replace('{name}', NAMES[truth])) + '</div></div>';
   }).join('');
   var el = $('ack');
-  el.innerHTML = '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + 'Code ' + qnum(k) + '</div>' + panels;
+  el.innerHTML = '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + 'Card ' + qnum(k) + '</div>' + panels;
   void el.offsetWidth;
   el.classList.add('show');
   try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {}

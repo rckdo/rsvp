@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v8.0 (12/09/2026): Cards, not codes, in the wording.
   v6.0 (12/09/2026): Alias shown without the article.
   v4.0 (12/09/2026): Each code's quilt block shown on its reveal card, matching the guest page.
   v1.0 (12/09/2026): First build from spec v55. Sits behind the couple's passcode splash
@@ -116,7 +117,7 @@
 
 <div class="wrap">
   <header>
-    <div><h1>Find the codes</h1><p class="sub">Host controls for the pub</p></div>
+    <div><h1>Find the cards</h1><p class="sub">Host controls for the pub</p></div>
     <a href="/menu/">Menu</a>
   </header>
 
@@ -131,7 +132,7 @@
     <section>
       <div class="stats">
         <div class="stat"><b id="sPlayers">0</b><span>players</span></div>
-        <div class="stat"><b id="sFound">0</b><span>codes found (all players)</span></div>
+        <div class="stat"><b id="sFound">0</b><span>cards found (all players)</span></div>
         <div class="stat"><b id="sAnswered">0</b><span>statements answered</span></div>
         <div class="stat"><b id="sRevealed">0</b><span>of 10 revealed</span></div>
       </div>
@@ -149,8 +150,8 @@
     </section>
 
     <section>
-      <h2>Release all codes</h2>
-      <p class="state" id="releaseState">Codes only open when scanned.</p>
+      <h2>Release all cards</h2>
+      <p class="state" id="releaseState">Cards only open when scanned.</p>
       <div class="btns">
         <button id="bRelease">Release all</button>
         <button class="ghost" id="bUnrelease">Undo</button>
@@ -325,7 +326,7 @@ $('bNext').addEventListener('click', function () {
   var up = {}; up['revealed/q' + (n + 1)] = true; cfg().update(up).catch(fail);
 });
 $('bAll').addEventListener('click', function () {
-  if (!confirm('Reveal all ten codes at once?')) return;
+  if (!confirm('Reveal all ten cards at once?')) return;
   var up = {}; keys.forEach(function (k) { up['revealed/' + k] = true; }); cfg().update(up).catch(fail);
 });
 $('bHide').addEventListener('click', function () { if (confirm('Hide all results? Phones go back to the placeholder.')) cfg().update({ revealed: null }).catch(fail); });
@@ -354,7 +355,7 @@ function renderClock() {
 }
 function renderRelease() {
   var r = !!config.releasedAt;
-  $('releaseState').innerHTML = r ? '<b>Released</b> at ' + new Date(config.releasedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + '. Every phone shows all twenty statements.' : 'Codes only open when scanned.';
+  $('releaseState').innerHTML = r ? '<b>Released</b> at ' + new Date(config.releasedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + '. Every phone shows all twenty statements.' : 'Cards only open when scanned.';
   $('bRelease').disabled = r; $('bUnrelease').disabled = !r;
 }
 function splitOf(k, side) {
@@ -386,12 +387,12 @@ function renderReveal() {
   if (!content) return;
   var rk = revealedKeys(), n = rk.length;
   $('revealState').innerHTML = n === 0 ? 'Nothing revealed yet. Phones show the placeholder.' : (n < TOTAL ? '<b>' + n + ' of ' + TOTAL + '</b> revealed.' : '<b>All ten revealed.</b> Phones show their rank.');
-  $('bNext').disabled = n >= TOTAL; $('bNext').textContent = n >= TOTAL ? 'All revealed' : 'Reveal next (code ' + (n + 1) + ')';
+  $('bNext').disabled = n >= TOTAL; $('bNext').textContent = n >= TOTAL ? 'All revealed' : 'Reveal next (card ' + (n + 1) + ')';
   $('bAll').disabled = n >= TOTAL; $('bHide').disabled = n === 0;
   $('resetSection').hidden = n > 0;
   var h = '';
-  if (n < TOTAL) { var nk = 'q' + (n + 1); h += '<div class="reveal-card next"><h3>' + CODE_STYLE[n] + 'Next up: code ' + (n + 1) + '<small>not yet revealed</small></h3>' + stHtml(nk, 'human', false) + stHtml(nk, 'dog', false) + '</div>'; }
-  rk.slice().reverse().forEach(function (k) { h += '<div class="reveal-card"><h3>' + CODE_STYLE[parseInt(k.slice(1), 10) - 1] + 'Code ' + k.slice(1) + '<small>revealed</small></h3>' + stHtml(k, 'human', true) + stHtml(k, 'dog', true) + '</div>'; });
+  if (n < TOTAL) { var nk = 'q' + (n + 1); h += '<div class="reveal-card next"><h3>' + CODE_STYLE[n] + 'Next up: card ' + (n + 1) + '<small>not yet revealed</small></h3>' + stHtml(nk, 'human', false) + stHtml(nk, 'dog', false) + '</div>'; }
+  rk.slice().reverse().forEach(function (k) { h += '<div class="reveal-card"><h3>' + CODE_STYLE[parseInt(k.slice(1), 10) - 1] + 'Card ' + k.slice(1) + '<small>revealed</small></h3>' + stHtml(k, 'human', true) + stHtml(k, 'dog', true) + '</div>'; });
   $('revealCards').innerHTML = h;
 }
 function tbDistance(p) {
@@ -412,7 +413,7 @@ function renderBoard() {
   var rk = revealedKeys().filter(function (k) { return answers[k]; }), all = keys.filter(function (k) { return answers[k]; });
   var useAll = rk.length === 0;
   var table = standings(useAll ? all : rk);
-  $('boardState').textContent = useAll ? 'Private preview: scored against the full answer key. Phones see nothing yet.' : 'Scored on the ' + rk.length + ' code' + (rk.length === 1 ? '' : 's') + ' revealed so far. Ties broken by the tie-breaker (closest to 21 September 2017).';
+  $('boardState').textContent = useAll ? 'Private preview: scored against the full answer key. Phones see nothing yet.' : 'Scored on the ' + rk.length + ' card' + (rk.length === 1 ? '' : 's') + ' revealed so far. Ties broken by the tie-breaker (closest to 21 September 2017).';
   $('board').innerHTML = table.map(function (r) {
     return '<tr><td>' + r.pos + '</td><td>' + esc(pretty(r.slug)) + '</td><td class="num">' + r.score + '</td><td class="num">' + (r.tb === Infinity ? '<span class="muted">none</span>' : r.tb + ' day' + (r.tb === 1 ? '' : 's')) + '</td></tr>';
   }).join('') || '<tr><td colspan="4" class="muted">No players yet.</td></tr>';
