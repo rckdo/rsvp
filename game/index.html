@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v15.6 (12/09/2026): Smaller pin on the small date cards so the number stays clear.
   v15.5 (12/09/2026): Remaining explanatory lines removed from the card tab and home view.
   v15.4 (12/09/2026): Hint line under the first card removed.
   v15.3 (12/09/2026): 'It was' shows the true name as an olive card, on the stage and on My answers.
@@ -312,6 +313,7 @@
     background:radial-gradient(circle at 35% 35%,#e6d7b1,#a8956e 60%,#6e5f43);box-shadow:0 1px 2px rgba(0,0,0,.45), inset 0 0 0 1px rgba(0,0,0,.2);
     animation:pin .25s var(--ease-out)}
   @keyframes pin{from{transform:scale(0);opacity:0}}
+  .namecard.sm.pinned:before{width:7px;height:7px;left:50%;margin-left:-3.5px;top:-3px}
   @keyframes drop{from{transform:rotate(-3deg) scale(1.2);opacity:.5}to{transform:rotate(-3deg) scale(1);opacity:1}}
   .namecard.right{background:#edf0de;border-color:var(--olive);color:var(--olive-deep)}
   .namecard.wrong{background:#f6e2da;border-color:var(--rust);color:var(--rust)}
