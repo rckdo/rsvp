@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v13.0 (12/09/2026): The date works like the names: 2017 is a fixed card, day and month are gaps, the
+          tiles below are cards to tap or drag in. Hint line and Saved line removed.
   v12.2 (12/09/2026): Tie-breaker hint line under the question on the gate.
   v12.1 (12/09/2026): Picker tiles ochre, chosen tile olive.
   v12.0 (12/09/2026): Bespoke date picker (month tiles, day tiles, impossible days greyed) on the
@@ -320,16 +322,21 @@
   /* Tie-breaker */
   .tb{padding:24px 18px 18px}
   .tb .tb-q{font-family:var(--display);font-size:19px;color:var(--bark);margin:0}
-  .tb .tb-hint{font-style:italic;color:var(--mutedbrown);font-size:17px;margin:6px 0 0}
   .tb .tb-k{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 6px}
-  .dp{margin-top:14px}
-  .dp .months{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-  .dp .days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-  .dp button{-webkit-appearance:none;appearance:none;border:0;background:var(--ochre);color:var(--bark);font-family:var(--label);font-size:14px;letter-spacing:.04em;min-height:40px;padding:0;cursor:pointer;box-shadow:0 3px 0 #b39c6b;transition:transform .08s ease,box-shadow .08s ease}
-  .dp .months button{font-size:11px;letter-spacing:.12em;text-transform:uppercase}
-  .dp button:active{transform:translateY(2px);box-shadow:0 1px 0 #b39c6b}
-  .dp button.on{background:var(--olive);color:var(--cream);box-shadow:0 3px 0 var(--olive-deep)}
-  .dp button:disabled{opacity:.22;box-shadow:none;cursor:default;transform:none}
+  .dp{margin-top:14px;--c:var(--gold);--cd:#8a6a2a}
+  .date-row{display:flex;gap:10px;align-items:center;justify-content:center;margin:0 0 16px}
+  .gap.sm,.namecard.sm{width:92px;height:40px}
+  .namecard.sm{font-size:12px}
+  .namecard.fixed{background:var(--ochre);color:var(--bark);box-shadow:0 2px 0 #b39c6b;cursor:default}
+  .dp .deck{display:grid;gap:6px;margin:0 0 10px;justify-content:stretch}
+  .dp .deck.months{grid-template-columns:repeat(6,1fr)}
+  .dp .deck.days{grid-template-columns:repeat(7,1fr)}
+  .slot.sm{width:auto;height:40px;border-color:#b39c6b}
+  .slot.sm .namecard{position:absolute;inset:0;width:100%;height:100%;font-size:12px;letter-spacing:.06em}
+  .slot.sm:before{font-size:11px;letter-spacing:.06em}
+  .slot.sm.off{opacity:.25;border-style:dotted}
+  .slot.sm.off:before{opacity:.5}
+  .dp .slot:nth-child(odd) .namecard,.dp .slot:nth-child(even) .namecard{transform:none}
   .tb-saved{font-style:italic;color:var(--olive-deep);margin-top:8px;min-height:22px}
 
   /* My answers: ten quilt blocks that fill in as codes are found */
@@ -470,7 +477,6 @@
       <p class="lede">Closest answer settles any tie at the pub.</p>
       <div class="patch gold tb">
         <p class="tb-q" id="introQ"></p>
-        <p class="tb-hint" id="introHint"></p>
         <div class="dp" id="introDP" data-day="" data-month=""></div>
       </div>
       <button class="btn wide" id="introGo" disabled>Start the hunt</button>
@@ -823,7 +829,6 @@ function showIntro() {
   $('boot').hidden = true; $('intro').hidden = false;
   var pill = $('aliasPill'); $('aliasName').textContent = prettyAlias(alias); pill.hidden = false; pill.classList.add('arrive');
   $('introQ').textContent = content.tiebreak.question;
-  $('introHint').textContent = content.tiebreak.hint || '';
   renderDP($('introDP'));
   $('introGo').addEventListener('click', function () {
     var d = parseInt($('introDP').dataset.day, 10), m = parseInt($('introDP').dataset.month, 10);
@@ -940,8 +945,9 @@ function saveTiebreak(day, month) {
 }
 /* Name cards: drag one to the gap and it snaps in; a tap places it too. */
 var drag = null;
-function placeCard(k, side, val) {
+function placeCard(k, side, val, cardEl, host) {
   if (locked) { toast('Too late. Answers at the pub.'); return; }
+  if (k === 'tiebreak') { placeDate((host && host.classList.contains('dp')) ? host : (cardEl && cardEl.closest('.dp')), side, val); return; }
   me = me || {}; me.answers = me.answers || {}; me.answers[k] = me.answers[k] || {};
   var prev = me.answers[k][side];
   me.answers[k][side] = val; justPlaced = k + side; justBack = prev ? k + side + prev : null;
@@ -961,11 +967,11 @@ document.addEventListener('pointerdown', function (ev) {
   var r = card.getBoundingClientRect();
   var ghost = card.cloneNode(true);
   ghost.className = 'namecard dragcard';
-  var host = card.closest('.patch, .row');
-  ghost.style.cssText = (host ? host.getAttribute('style') + ';' : '') + 'left:' + r.left + 'px;top:' + r.top + 'px;width:' + r.width + 'px;height:' + r.height + 'px';
+  var host = card.closest('.dp') || card.closest('.patch, .row');
+  ghost.style.cssText = (host && host.getAttribute('style') ? host.getAttribute('style') + ';' : '') + 'left:' + r.left + 'px;top:' + r.top + 'px;width:' + r.width + 'px;height:' + r.height + 'px';
   document.body.appendChild(ghost);
   var gap = host ? host.querySelector('.gap[data-side="' + card.dataset.side + '"]') : null;
-  drag = { card: card, ghost: ghost, gap: gap, x0: ev.clientX, y0: ev.clientY, moved: false, id: ev.pointerId, rect: r };
+  drag = { card: card, ghost: ghost, gap: gap, host: host, x0: ev.clientX, y0: ev.clientY, moved: false, id: ev.pointerId, rect: r };
   card.classList.add('dragging');
   try { card.setPointerCapture(ev.pointerId); } catch (e) {}
 });
@@ -990,7 +996,7 @@ function endDrag(place) {
   setTimeout(function () {
     d.ghost.remove();
     d.card.classList.remove('dragging');
-    if (ok) placeCard(d.card.dataset.q, d.card.dataset.side, d.card.dataset.pick);
+    if (ok) placeCard(d.card.dataset.q, d.card.dataset.side, d.card.dataset.pick, d.card, d.host);
   }, 200);
 }
 document.addEventListener('pointerup', function (ev) {
@@ -1003,22 +1009,26 @@ var DIM = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 function renderDP(el) {
   var d = parseInt(el.dataset.day, 10) || 0, m = parseInt(el.dataset.month, 10) || 0;
   var max = m ? DIM[m - 1] : 31;
-  var h = '<div class="months">';
-  MONTHS.forEach(function (name, i) { h += '<button type="button" data-m="' + (i + 1) + '"' + (m === i + 1 ? ' class="on"' : '') + '>' + name.slice(0, 3) + '</button>'; });
-  h += '</div><div class="days">';
-  for (var i = 1; i <= 31; i++) h += '<button type="button" data-d="' + i + '"' + (d === i ? ' class="on"' : '') + (i > max ? ' disabled' : '') + '>' + i + '</button>';
+  var card = function (side, val, label) { return '<span class="namecard sm' + (justPlaced === 'tiebreak' + side ? ' just' : '') + '" data-q="tiebreak" data-side="' + side + '" data-pick="' + val + '">' + label + '</span>'; };
+  var h = '<div class="date-row">' +
+    '<span class="gap sm' + (d ? ' filled' : '') + '" data-q="tiebreak" data-side="day">' + (d ? card('day', d, d) : '') + '</span>' +
+    '<span class="gap sm' + (m ? ' filled' : '') + '" data-q="tiebreak" data-side="month">' + (m ? card('month', m, MONTHS[m - 1].slice(0, 3).toUpperCase()) : '') + '</span>' +
+    '<span class="namecard sm fixed">' + TB_YEAR + '</span></div>';
+  h += '<div class="deck months">';
+  MONTHS.forEach(function (name, i) { var lab = name.slice(0, 3).toUpperCase(); h += '<span class="slot sm' + (m === i + 1 ? ' empty' : '') + '" data-name="' + lab + '">' + (m === i + 1 ? '' : card('month', i + 1, lab)) + '</span>'; });
+  h += '</div><div class="deck days">';
+  for (var i = 1; i <= 31; i++) { var off = i > max; h += '<span class="slot sm' + (d === i ? ' empty' : '') + (off ? ' off' : '') + '" data-name="' + i + '">' + (d === i || off ? '' : card('day', i, i)) + '</span>'; }
   el.innerHTML = h + '</div>';
 }
-document.addEventListener('click', function (ev) {
-  var b = ev.target.closest('.dp button'); if (!b || b.disabled) return;
-  var el = b.closest('.dp');
-  if (b.dataset.m) { el.dataset.month = b.dataset.m; var mx = DIM[parseInt(b.dataset.m, 10) - 1]; if (parseInt(el.dataset.day, 10) > mx) el.dataset.day = ''; }
-  if (b.dataset.d) el.dataset.day = b.dataset.d;
-  renderDP(el);
-  var d = parseInt(el.dataset.day, 10), m = parseInt(el.dataset.month, 10);
-  if (el.id === 'introDP') { $('introGo').disabled = !(d && m); }
+function placeDate(dp, side, val) {
+  if (!dp) return;
+  dp.dataset[side] = val;
+  if (side === 'month') { var mx = DIM[parseInt(val, 10) - 1]; if (parseInt(dp.dataset.day, 10) > mx) dp.dataset.day = ''; }
+  justPlaced = 'tiebreak' + side; renderDP(dp); setTimeout(function () { justPlaced = null; }, 400);
+  var d = parseInt(dp.dataset.day, 10), m = parseInt(dp.dataset.month, 10);
+  if (dp.id === 'introDP') { $('introGo').disabled = !(d && m); }
   else if (d && m) saveTiebreak(d, m);
-});
+}
 
 /* =====================================================================
    Rendering
@@ -1056,8 +1066,7 @@ function tiebreakHtml(compact) {
   if (locked) {
     return '<p class="after-lock">' + (tb ? 'You said ' + tb.day + ' ' + MONTHS[tb.month - 1] + ' ' + TB_YEAR + '.' : 'Not answered.') + '</p>';
   }
-  return '<div class="dp" data-day="' + (tb ? tb.day : '') + '" data-month="' + (tb ? tb.month : '') + '"></div>' +
-    '<div class="tb-saved">' + (tb ? 'Saved: ' + tb.day + ' ' + MONTHS[tb.month - 1] + ' ' + TB_YEAR + '. Change it any time.' : (compact ? '' : 'Closest wins any tie.')) + '</div>';
+  return '<div class="dp" data-day="' + (tb ? tb.day : '') + '" data-month="' + (tb ? tb.month : '') + '"></div>';
 }
 
 function codeHead(title, n) {
