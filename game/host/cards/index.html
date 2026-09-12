@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<!--
+  Find the cards : the printable card sheet (host only)
+  Lorraine & Richard, Monday 21 September 2026
+
+  Changelog
+  v1.0 (12/09/2026): First build. Ten 4x6in cards drawn on canvas at 300dpi: the invite's quilt band,
+          the card number, its own quilt block and colour, the two statement icons, a QR code of the
+          card's URL, and "Scan to play". Save each as a PNG for a photo printer, or print the page
+          (one card per 4x6 page). Behind the couple's passcode; codes come from Firebase or from the
+          copy kept on the host phone when the seed was written. QR encoder: qrcode-generator (MIT).
+-->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Card sheet · Lorraine &amp; Richard</title>
+<link rel="icon" href="/icons/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Marcellus&family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Karla:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#26332c;--forest:#2f4a3c;--sage:#6f8a77;--gold:#a3762f;--paper:#eef1ea;--card:#fbfaf5;--line:#dce0d6;--line-strong:#c6cdbe;--rust:#a34a2c}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--paper);color:var(--ink);font-family:'Karla',system-ui,sans-serif;font-size:16px;line-height:1.55}
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px 80px}
+  header{padding:30px 0 16px;border-bottom:1px solid var(--line);margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:32px;line-height:1.05;margin:0;color:var(--forest)}
+  header .sub{color:var(--sage);font-size:14px;margin:4px 0 0}
+  header a{color:var(--sage);font-size:14px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+  button,a.btn{font-family:inherit;font-size:14px;font-weight:700;min-height:42px;padding:8px 16px;border-radius:8px;border:1.5px solid var(--forest);background:var(--forest);color:#fff;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+  button.ghost,a.btn.ghost{background:transparent;color:var(--forest)}
+  .state{color:var(--sage);font-size:14px;margin:0 0 14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+  .cardbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .cardbox canvas{width:100%;height:auto;display:block;box-shadow:0 6px 16px rgba(0,0,0,.12)}
+  .cardbox .row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px}
+  .cardbox .row b{font-size:15px}
+  .cardbox .row a{font-size:13px}
+  #splash{position:fixed;inset:0;z-index:70;background:var(--forest);display:flex;align-items:center;justify-content:center;padding:24px}
+  #splash.hidden{display:none}
+  .splash-card{background:var(--card);border-radius:18px;padding:38px 30px 34px;max-width:340px;width:100%;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.28)}
+  .splash-card h1{font-size:30px}
+  .splash-card .amp{color:var(--gold);font-style:italic;font-weight:500}
+  .splash-card p{font-size:14px;color:var(--sage);margin:10px 0 24px}
+  .dots{display:flex;gap:12px;justify-content:center;cursor:text;position:relative}
+  .dot{width:50px;height:58px;border:1.5px solid var(--line-strong);border-radius:10px;background:#fff;font-size:26px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:center}
+  .dot.filled{border-color:var(--sage)}
+  #pin{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;font-size:26px}
+  .splash-err{font-size:13px;color:#a3512f;margin-top:14px;min-height:20px}
+  .err{color:var(--rust);font-size:14px;margin:8px 0}
+  @media print{
+    body{background:#fff}
+    .wrap{max-width:none;padding:0}
+    header,.btns,.state,.cardbox .row,#splash{display:none!important}
+    .grid{display:block}
+    .cardbox{border:0;padding:0;margin:0;background:none;page-break-after:always;break-after:page}
+    .cardbox canvas{width:4in;height:6in;box-shadow:none}
+    @page{size:4in 6in;margin:0}
+  }
+</style>
+</head>
+<body>
+<div id="splash">
+  <div class="splash-card">
+    <h1>Lorraine <span class="amp">&amp;</span> Richard</h1>
+    <p>Host code</p>
+    <div class="dots" id="dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <input id="pin" type="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="4" aria-label="4 character passcode">
+    </div>
+    <div class="splash-err" id="splash-err"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div><h1>Card sheet</h1><p class="sub">Ten cards, 4 × 6 inches, 300 dpi</p></div>
+    <a href="/game/host/">Host page</a>
+  </header>
+  <p class="state" id="state">Loading.</p>
+  <div class="btns"><button id="bPrint">Print all (one card per page)</button><button class="ghost" id="bRedraw">Redraw</button></div>
+  <div class="err" id="err"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script src="qrcode.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>
+var FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyBI-BFXh8BzvsaDw3Mm0Mxi7UmqyU1Y_g8',
+  authDomain: 'rl-wedding-fe94a.firebaseapp.com',
+  databaseURL: 'https://rl-wedding-fe94a-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'rl-wedding-fe94a',
+  storageBucket: 'rl-wedding-fe94a.firebasestorage.app',
+  messagingSenderId: '54300603401',
+  appId: '1:54300603401:web:b743cdc18f80b9626874d8'
+};
+var ROOT = 'game', BASE = 'https://lorraine-richard.rsvp/game/?c=';
+var $ = function (id) { return document.getElementById(id); };
+
+/* ---- Gate: Richard's passcode, same as the host page ---- */
+var PASSCODES = { EGGS: 'R' }, UNLOCK_KEY = 'rl-tracker-unlocked';
+var splash = $('splash'), pin = $('pin'), dotsEl = $('dots'), splashErr = $('splash-err');
+function unlock() { try { localStorage.setItem(UNLOCK_KEY, '1'); localStorage.setItem('rl-tracker-who', 'R'); } catch (e) {} splash.classList.add('hidden'); boot(); }
+function paintDots() { var v = pin.value; dotsEl.querySelectorAll('.dot').forEach(function (d, i) { d.textContent = v[i] ? v[i].toUpperCase() : ''; d.classList.toggle('filled', !!v[i]); }); }
+pin.addEventListener('input', function () {
+  pin.value = pin.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4); paintDots();
+  if (pin.value.length === 4) { if (PASSCODES[pin.value.toUpperCase()]) unlock(); else { splashErr.textContent = 'That’s not the host code.'; setTimeout(function () { pin.value = ''; paintDots(); }, 420); } }
+});
+dotsEl.addEventListener('click', function () { pin.focus(); });
+(function () { var ok = false; try { ok = localStorage.getItem(UNLOCK_KEY) === '1' && localStorage.getItem('rl-tracker-who') === 'R'; } catch (e) {} if (ok) { splash.classList.add('hidden'); boot(); } else pin.focus(); })();
+
+/* ---- Quilt: the invite's band and the ten code blocks, drawn on canvas ---- */
+var CREAM = '#efe6d3', CARD = '#fbf6ea', OCHRE = '#e0cfa4', BARK = '#4a3f2f', MUTED = '#8a7256';
+var COLOURS = { rust: '#a34a2c', olive: '#7a7c47', gold: '#c99a3f', terracotta: '#bf6a43', bark: '#4a3f2f' };
+var PAIRS = [['geese', 'rust'], ['pinwheel', 'olive'], ['dishes', 'gold'], ['nine', 'terracotta'], ['hourglass', 'bark'],
+             ['pinwheel', 'rust'], ['dishes', 'olive'], ['geese', 'gold'], ['hourglass', 'terracotta'], ['nine', 'bark']];
+var BAND = [['pinwheel', '#7a7c47'], ['dishes', '#c99a3f'], ['nine', '#bf6a43'], ['hourglass', '#4a3f2f'], ['geese', '#a34a2c'], ['pinwheel', '#7a7c47'], ['dishes', '#c99a3f']];
+var HST = { geese: ['tr', 'tl', 'tr', 'tl'], pinwheel: ['tr', 'br', 'tl', 'bl'], dishes: ['br', 'bl', 'tr', 'tl'] };
+function tri(ctx, pts, colour) { ctx.fillStyle = colour; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); ctx.lineTo(pts[1][0], pts[1][1]); ctx.lineTo(pts[2][0], pts[2][1]); ctx.closePath(); ctx.fill(); }
+function hst(ctx, dir, x, y, w, h, a, b) {
+  ctx.fillStyle = b; ctx.fillRect(x, y, w, h);
+  var TL = [x, y], TR = [x + w, y], BR = [x + w, y + h], BL = [x, y + h];
+  if (dir === 'tr') tri(ctx, [TL, TR, BR], a);
+  if (dir === 'tl') tri(ctx, [TL, TR, BL], a);
+  if (dir === 'br') tri(ctx, [TR, BR, BL], a);
+  if (dir === 'bl') tri(ctx, [TL, BL, BR], a);
+}
+function drawBlock(ctx, shape, colour, x, y, s) {
+  if (HST[shape]) { var h = s / 2; HST[shape].forEach(function (d, i) { hst(ctx, d, x + (i % 2) * h, y + Math.floor(i / 2) * h, h, h, colour, CREAM); }); return; }
+  if (shape === 'nine') { var c = s / 3; for (var i = 0; i < 9; i++) { ctx.fillStyle = i % 2 === 0 ? colour : CREAM; ctx.fillRect(x + (i % 3) * c, y + Math.floor(i / 3) * c, c, c); } return; }
+  ctx.fillStyle = CREAM; ctx.fillRect(x, y, s, s);
+  var cx = x + s / 2, cy = y + s / 2;
+  tri(ctx, [[x, y], [x + s, y], [cx, cy]], colour);
+  tri(ctx, [[x, y + s], [x + s, y + s], [cx, cy]], colour);
+}
+
+/* ---- Data ---- */
+var db, content = null, codes = null, icons = {};
+function boot() {
+  firebase.initializeApp(FIREBASE_CONFIG); db = firebase.database();
+  Promise.all([
+    fetch('../../content.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+    firebase.auth().signInAnonymously().then(function () { return db.ref(ROOT + '/codes').once('value'); }).then(function (s) { return s.val(); }).catch(function () { return null; })
+  ]).then(function (r) {
+    content = r[0]; codes = r[1];
+    if (!codes) { try { codes = JSON.parse(localStorage.getItem('rl-game-codes') || 'null'); } catch (e) {} }
+    if (!codes) { $('state').textContent = ''; $('err').textContent = 'No codes on this phone. Open the host page, paste the seed and write it, then come back.'; return; }
+    return loadIcons().then(drawAll);
+  }).catch(function (e) { $('err').textContent = 'Could not load: ' + e; });
+}
+function loadIcons() {
+  var jobs = [];
+  content.questions.forEach(function (q) {
+    ['human', 'dog'].forEach(function (side) {
+      var f = q[side].icon, url = /^https?:/.test(f) ? f : (content.iconBase || '') + f;
+      if (icons[url] !== undefined) return;
+      icons[url] = null;
+      jobs.push(fetch(url).then(function (r) { if (!r.ok) throw 0; return r.text(); }).then(function (svg) { if (svg.indexOf('<svg') < 0) throw 0; icons[url] = svg; }).catch(function () {}));
+    });
+  });
+  return Promise.all(jobs);
+}
+function iconImage(url, colour, px) {
+  var svg = icons[url]; if (!svg) return Promise.resolve(null);
+  svg = svg.replace(/currentColor/g, colour).replace(/<svg /, '<svg width="' + px + '" height="' + px + '" ');
+  return new Promise(function (res) { var im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { res(null); }; im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
+}
+
+/* ---- One card: 1200 x 1800 (4 x 6 in at 300 dpi) ---- */
+var W = 1200, H = 1800;
+function drawCard(n, code) {
+  var q = content.questions[n - 1], st = PAIRS[n - 1], colour = COLOURS[st[1]], shape = st[0];
+  var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  var ctx = cv.getContext('2d');
+  ctx.fillStyle = CREAM; ctx.fillRect(0, 0, W, H);
+  // the invite's band
+  ctx.fillStyle = OCHRE; ctx.fillRect(0, 0, W, 150);
+  var bs = 104, gap = 14, bx = (W - (7 * bs + 6 * gap)) / 2;
+  BAND.forEach(function (b, i) { drawBlock(ctx, b[0], b[1], bx + i * (bs + gap), 23, bs); });
+  // "Card" and the number
+  ctx.fillStyle = MUTED; ctx.font = '44px Marcellus, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  spaced(ctx, 'CARD', W / 2, 262, 12);
+  ctx.fillStyle = colour; ctx.font = '600 300px "Playfair Display", Georgia, serif';
+  ctx.fillText(String(n), W / 2, 520);
+  // this card's block, on a small raised patch
+  ctx.save(); ctx.shadowColor = 'rgba(74,63,47,.28)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 12;
+  ctx.fillStyle = CARD; ctx.fillRect(W / 2 - 110, 570, 220, 220); ctx.restore();
+  drawBlock(ctx, shape, colour, W / 2 - 90, 590, 180);
+  // QR on a patch with the card's dashed strip
+  var qr = qrcode(0, 'M'); qr.addData(BASE + code); qr.make();
+  var mc = qr.getModuleCount(), qs = 700, px = Math.floor((qs - 80) / mc), qw = px * mc, qx = (W - qw) / 2, qy = 900;
+  ctx.save(); ctx.shadowColor = 'rgba(74,63,47,.22)'; ctx.shadowBlur = 36; ctx.shadowOffsetY = 14;
+  ctx.fillStyle = CARD; ctx.fillRect(qx - 44, qy - 44, qw + 88, qw + 88); ctx.restore();
+  for (var i = 0; i < 20; i++) { ctx.fillStyle = i % 2 ? CREAM : colour; ctx.fillRect(qx - 44 + i * ((qw + 88) / 20), qy - 44, (qw + 88) / 20, 14); }
+  ctx.fillStyle = BARK;
+  for (var r = 0; r < mc; r++) for (var c = 0; c < mc; c++) if (qr.isDark(r, c)) ctx.fillRect(qx + c * px, qy + r * px, px, px);
+  // footer
+  ctx.fillStyle = BARK; ctx.font = '46px Marcellus, serif';
+  spaced(ctx, 'SCAN TO PLAY', W / 2, qy + qw + 130, 10);
+  ctx.fillStyle = MUTED; ctx.font = 'italic 500 34px "Cormorant Garamond", Georgia, serif';
+  ctx.fillText('Who said it? Answer on your phone, results at the pub.', W / 2, qy + qw + 190);
+  // the two statement icons, either side of the block
+  var jobs = ['human', 'dog'].map(function (side, i) {
+    var f = q[side].icon, url = /^https?:/.test(f) ? f : (content.iconBase || '') + f;
+    return iconImage(url, colour, 200).then(function (im) {
+      var x = i === 0 ? 235 : W - 235, y = 680, rot = i === 0 ? -8 : 8;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(rot * Math.PI / 180);
+      if (im) ctx.drawImage(im, -100, -100, 200, 200);
+      else drawBlock(ctx, shape, colour, -60, -60, 120);
+      ctx.restore();
+    });
+  });
+  return Promise.all(jobs).then(function () { return cv; });
+}
+function spaced(ctx, text, x, y, tracking) {
+  var chars = text.split(''), widths = chars.map(function (ch) { return ctx.measureText(ch).width; });
+  var total = widths.reduce(function (a, b) { return a + b; }, 0) + tracking * (chars.length - 1);
+  var cx = x - total / 2; ctx.textAlign = 'left';
+  chars.forEach(function (ch, i) { ctx.fillText(ch, cx, y); cx += widths[i] + tracking; });
+  ctx.textAlign = 'center';
+}
+function drawAll() {
+  var byQ = {}; Object.keys(codes).forEach(function (c) { byQ[codes[c]] = c; });
+  var fontsReady = document.fonts && document.fonts.load ? Promise.all([document.fonts.load('600 300px "Playfair Display"'), document.fonts.load('44px Marcellus'), document.fonts.load('italic 500 34px "Cormorant Garamond"')]).catch(function () {}) : Promise.resolve();
+  fontsReady.then(function () {
+    var grid = $('grid'); grid.innerHTML = '';
+    var chain = Promise.resolve();
+    for (var n = 1; n <= 10; n++) (function (n) {
+      chain = chain.then(function () {
+        var code = byQ['q' + n]; if (!code) return;
+        return drawCard(n, code).then(function (cv) {
+          var box = document.createElement('div'); box.className = 'cardbox';
+          box.appendChild(cv);
+          var row = document.createElement('div'); row.className = 'row';
+          row.innerHTML = '<b>Card ' + n + '</b>';
+          var a = document.createElement('a'); a.textContent = 'Save PNG'; a.href = cv.toDataURL('image/png'); a.download = 'card-' + n + '.png';
+          row.appendChild(a); box.appendChild(row); grid.appendChild(box);
+        });
+      });
+    })(n);
+    chain.then(function () { $('state').textContent = 'Save each card as a PNG for a photo printer (4 × 6 in), or print this page. The URL is inside the QR only.'; });
+  });
+}
+$('bPrint').addEventListener('click', function () { window.print(); });
+$('bRedraw').addEventListener('click', function () { if (codes) drawAll(); });
+</script>
+</body>
+</html>

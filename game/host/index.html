@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v13.0 (12/09/2026): Cards section: the ten URLs (from Firebase, or the copy kept when the seed was
+          written) and a link to the printable card sheet.
   v12.0 (12/09/2026): Seed panel: paste the seed text and write codes and answers from the host phone.
           Tie-breaker date corrected to 21 August 2017.
   v11.0 (12/09/2026): Photos from the answer key shown on reveal cards.
@@ -187,6 +189,13 @@
       <table><thead><tr><th>Alias</th><th class="num">Found</th><th class="num">Answered</th><th>Tie-break guess</th></tr></thead><tbody id="playersTable"></tbody></table>
     </section>
 
+    <section id="cardsSection">
+      <h2>Cards</h2>
+      <p class="state" id="cardsState"></p>
+      <ol id="cardsList" style="margin:0 0 12px;padding-left:22px;font-size:14px;word-break:break-all"></ol>
+      <div class="btns"><a class="btn" href="cards/" style="font-family:inherit;font-size:14px;font-weight:700;min-height:42px;padding:8px 16px;border-radius:8px;border:1.5px solid var(--forest);background:var(--forest);color:#fff;text-decoration:none;display:inline-flex;align-items:center">Open the card sheet</a></div>
+    </section>
+
     <section id="seedSection">
       <h2>Seed</h2>
       <p class="state" id="seedState">Paste the seed text (codes and answers) and write it. Safe to repeat: it replaces codes and answers only.</p>
@@ -319,7 +328,19 @@ function claim() {
     $('keySection').hidden = false; $('keyErr').textContent = 'That key isn’t right. Check it and try again.';
   });
 }
+var codesKnown = null;
+function renderCards() {
+  var el = $('cardsList'), st = $('cardsState');
+  if (!codesKnown) { st.textContent = 'No codes on this phone yet. Write the seed below and they appear here.'; el.innerHTML = ''; return; }
+  var byQ = {}; Object.keys(codesKnown).forEach(function (c) { byQ[codesKnown[c]] = c; });
+  st.textContent = 'The ten card URLs. The card sheet draws them as QR codes.';
+  el.innerHTML = keys.map(function (k) { var c = byQ[k]; return '<li>' + (c ? 'https://lorraine-richard.rsvp/game/?c=' + esc(c) : '<span class="muted">missing</span>') + '</li>'; }).join('');
+}
 function subscribe() {
+  db.ref(ROOT + '/codes').once('value').then(function (s) { codesKnown = s.val(); }).catch(function () {}).then(function () {
+    if (!codesKnown) { try { codesKnown = JSON.parse(localStorage.getItem('rl-game-codes') || 'null'); } catch (e) {} }
+    renderCards();
+  });
   db.ref(ROOT + '/config').on('value', function (s) { config = s.val() || {}; renderAll(); });
   db.ref(ROOT + '/players').on('value', function (s) { players = s.val() || {}; renderAll(); });
   keys.concat(['tiebreak']).forEach(function (k) { db.ref(ROOT + '/answers/' + k).on('value', function (s) { answers[k] = s.val(); renderAll(); }); });
@@ -354,6 +375,8 @@ $('bSeed').addEventListener('click', function () {
   var nc = Object.keys(obj.codes).length, na = Object.keys(obj.answers).length;
   if (!confirm('Write ' + nc + ' codes and ' + na + ' answers? This replaces whatever is there.')) return;
   db.ref(ROOT).update({ codes: obj.codes, answers: obj.answers }).then(function () {
+    try { localStorage.setItem('rl-game-codes', JSON.stringify(obj.codes)); } catch (e) {}
+    codesKnown = obj.codes; renderCards();
     $('seedInput').value = '';
     $('seedState').innerHTML = '<b>Seeded.</b> ' + nc + ' codes and ' + na + ' answers written.';
   }).catch(function (e) { $('seedErr').textContent = 'Firebase refused it: ' + (e && e.code ? e.code : e) + '. Are the rules published?'; });
