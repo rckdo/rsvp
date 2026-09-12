@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v14.0 (12/09/2026): A brass pin appears on a placed card once Firebase has stored it; a short
+          vibration on the drop.
   v13.9 (12/09/2026): 'Answers at the pub' dropped everywhere.
   v13.8 (12/09/2026): Tie-breaker row unnumbered. Closed-hunt wording made plain everywhere, and the
           gate says so if its write is refused.
@@ -287,6 +289,11 @@
     touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
   .gap .namecard{position:absolute;left:-2px;top:-3px;transform:rotate(-3deg);cursor:default}
   .gap .namecard.just{animation:drop .3s var(--ease-out)}
+  /* A brass pin appears once the card is stored, same brass as the placard screws. */
+  .namecard.pinned:before{content:'';position:absolute;left:5px;top:5px;width:9px;height:9px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,#e6d7b1,#a8956e 60%,#6e5f43);box-shadow:0 1px 2px rgba(0,0,0,.45), inset 0 0 0 1px rgba(0,0,0,.2);
+    animation:pin .25s var(--ease-out)}
+  @keyframes pin{from{transform:scale(0);opacity:0}}
   @keyframes drop{from{transform:rotate(-3deg) scale(1.2);opacity:.5}to{transform:rotate(-3deg) scale(1);opacity:1}}
   .namecard.right{background:#edf0de;border-color:var(--olive);color:var(--olive-deep)}
   .namecard.wrong{background:#f6e2da;border-color:var(--rust);color:var(--rust)}
@@ -965,14 +972,18 @@ function showTab(t) {
 function saveAnswer(k, side, val) {
   if (locked) { toast('The hunt has closed.'); return; }
   var up = {}; up['answers/' + k + '/' + side] = val; up['answers/' + k + '/at'] = TS; up.lastChange = TS;
-  db.ref(ROOT + '/players/' + alias).update(up).catch(function (e) {
+  pending[k + side] = true;
+  db.ref(ROOT + '/players/' + alias).update(up).then(function () { delete pending[k + side]; renderAll(); }).catch(function (e) {
+    delete pending[k + side];
     if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast('The hunt has closed.'); renderAll(); }
     else toast('That didn’t save. Check your signal.');
   });
 }
 function saveTiebreak(day, month) {
   if (locked) { toast('The hunt has closed.'); return; }
-  db.ref(ROOT + '/players/' + alias).update({ tiebreak: { day: day, month: month, at: TS }, lastChange: TS }).catch(function (e) {
+  pending.tiebreak = true;
+  db.ref(ROOT + '/players/' + alias).update({ tiebreak: { day: day, month: month, at: TS }, lastChange: TS }).then(function () { delete pending.tiebreak; renderAll(); }).catch(function (e) {
+    delete pending.tiebreak;
     if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast('The hunt has closed.'); renderAll(); }
     else toast('That didn’t save. Check your signal.');
   });
@@ -1030,7 +1041,7 @@ function endDrag(place) {
   setTimeout(function () {
     d.ghost.remove();
     d.card.classList.remove('dragging');
-    if (ok) placeCard(d.card.dataset.q, d.card.dataset.side, d.card.dataset.pick, d.card, d.host);
+    if (ok) { try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} placeCard(d.card.dataset.q, d.card.dataset.side, d.card.dataset.pick, d.card, d.host); }
   }, 200);
 }
 document.addEventListener('pointerup', function (ev) {
@@ -1043,10 +1054,10 @@ var DIM = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 function renderDP(el) {
   var d = parseInt(el.dataset.day, 10) || 0, m = parseInt(el.dataset.month, 10) || 0;
   var max = m ? DIM[m - 1] : 31;
-  var card = function (side, val, label) { return '<span class="namecard sm' + (justPlaced === 'tiebreak' + side ? ' just' : '') + '" data-q="tiebreak" data-side="' + side + '" data-pick="' + val + '">' + label + '</span>'; };
+  var card = function (side, val, label, placed) { return '<span class="namecard sm' + (justPlaced === 'tiebreak' + side ? ' just' : '') + (placed && !pending.tiebreak && el.id !== 'introDP' ? ' pinned' : '') + '" data-q="tiebreak" data-side="' + side + '" data-pick="' + val + '">' + label + '</span>'; };
   var h = '<div class="date-row">' +
-    '<span class="gap sm' + (d ? ' filled' : '') + '" data-q="tiebreak" data-side="day">' + (d ? card('day', d, d) : '') + '</span>' +
-    '<span class="gap sm' + (m ? ' filled' : '') + '" data-q="tiebreak" data-side="month">' + (m ? card('month', m, MONTHS[m - 1].slice(0, 3).toUpperCase()) : '') + '</span>' +
+    '<span class="gap sm' + (d ? ' filled' : '') + '" data-q="tiebreak" data-side="day">' + (d ? card('day', d, d, true) : '') + '</span>' +
+    '<span class="gap sm' + (m ? ' filled' : '') + '" data-q="tiebreak" data-side="month">' + (m ? card('month', m, MONTHS[m - 1].slice(0, 3).toUpperCase(), true) : '') + '</span>' +
     '<span class="namecard sm fixed">' + TB_YEAR + '</span></div>';
   h += '<div class="deck months">';
   MONTHS.forEach(function (name, i) { var lab = name.slice(0, 3).toUpperCase(); h += '<span class="slot sm' + (m === i + 1 ? ' empty' : '') + '" data-name="' + lab + '">' + (m === i + 1 ? '' : card('month', i + 1, lab)) + '</span>'; });
@@ -1069,13 +1080,13 @@ function placeDate(dp, side, val) {
    ===================================================================== */
 function renderAll() { if (!content || !$('app') || $('app').hidden) return; renderCode(); renderMine(); renderResults(); }
 
-var justPlaced = null, justBack = null;
+var justPlaced = null, justBack = null, pending = {};
 function gapHtml(k, side) {
   var cur = pick(k, side), cls = 'gap', v = '';
   var revealed = config.revealed && config.revealed[k] && answers[k];
   if (cur) cls += ' filled';
   if (revealed) { var truth = answers[k][side]; v = !cur ? ' missed' : (cur === truth ? ' right' : ' wrong'); cls += v; }
-  var inner = cur ? '<span class="namecard' + v + (justPlaced === k + side ? ' just' : '') + '">' + NAMES[cur] + '</span>' : '';
+  var inner = cur ? '<span class="namecard' + v + (justPlaced === k + side ? ' just' : '') + (pending[k + side] ? '' : ' pinned') + '">' + NAMES[cur] + '</span>' : '';
   return '<span class="' + cls + '" data-q="' + k + '" data-side="' + side + '">' + inner + '</span>';
 }
 function sentenceHtml(k, side) {
