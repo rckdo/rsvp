@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v13.4 (12/09/2026): Placed date cards keep their tile colour; only position changes.
   v13.3 (12/09/2026): 2017 as a screwed-on placard with pressed-in numerals.
   v13.2 (12/09/2026): Date tiles ochre, placed date cards olive, fixed 2017 in bark.
   v13.1 (12/09/2026): Gate text trimmed to heading, question and picker. Date tiles and placed date
@@ -343,7 +344,7 @@
   .namecard.fixed:before{left:8px}
   .namecard.fixed:after{right:8px;transform:rotate(70deg)}
   .dp .slot .namecard{background:var(--ochre);color:var(--bark);border-color:transparent;box-shadow:0 2px 0 #b39c6b}
-  .dp .gap.sm .namecard{background:var(--olive);color:var(--cream);border-color:var(--olive);box-shadow:0 2px 0 var(--olive-deep)}
+  .dp .gap.sm .namecard{background:var(--ochre);color:var(--bark);border-color:transparent;box-shadow:0 2px 0 #b39c6b, 0 6px 12px rgba(74,63,47,.18)}
   .dp .dragcard{background:var(--ochre);color:var(--bark)}
   .dp .deck{display:grid;gap:6px;margin:0 0 10px;justify-content:stretch}
   .dp .deck.months,.dp .deck.days{grid-template-columns:repeat(6,1fr)}
