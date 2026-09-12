@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v17.3 (12/09/2026): Reset stamps a new game number so phones start over.
   v17.2 (12/09/2026): Reset always available on Setup (typed RESET plus confirm).
   v17.1 (12/09/2026): Stale-tab guard.
   v17.0 (12/09/2026): Present tab: a strip of the ten cards, an On screen panel mirroring the phones,
@@ -542,7 +543,7 @@ $('bSeed').addEventListener('click', function () {
 $('resetInput').addEventListener('input', function () { $('bReset').disabled = $('resetInput').value.trim() !== 'RESET'; });
 $('bReset').addEventListener('click', function () {
   if (!confirm('Wipe every player and all settings? This cannot be undone.')) return;
-  Promise.all([db.ref(ROOT + '/players').remove(), cfg().remove()]).then(function () { $('resetInput').value = ''; $('bReset').disabled = true; }).catch(fail);
+  cfg().set({ epoch: Date.now() }).then(function () { return db.ref(ROOT + '/players').remove(); }).then(function () { $('resetInput').value = ''; $('bReset').disabled = true; }).catch(fail);
 });
 
 /* ---- Rendering ---- */

@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v16.0 (12/09/2026): Unfound cards are one row each with a larger block. Reset stamps a game number;
+          phones from the previous game forget their name and return to the reels.
   v15.6 (12/09/2026): Smaller pin on the small date cards so the number stays clear.
   v15.5 (12/09/2026): Remaining explanatory lines removed from the card tab and home view.
   v15.4 (12/09/2026): Hint line under the first card removed.
@@ -412,7 +414,9 @@
   .nudge{font-style:italic;color:var(--rust);margin:0 0 14px;font-size:19px}
   .rows{list-style:none;margin:0;padding:0}
   .row{display:flex;gap:12px;align-items:flex-start;padding:22px 14px 16px;margin:0 0 14px}
-  .row.hidden{padding:8px 14px;margin:0;box-shadow:none;background:transparent}
+  .row.hidden{padding:9px 14px;margin:0;box-shadow:none;background:transparent;align-items:center}
+  .row.hidden .n{padding-top:0}
+  .row.hidden .qb{flex:0 0 30px;width:30px;height:30px;margin:0}
   .row.hidden:before{display:none}
   .row.hidden + .row.hidden{border-top:1px solid var(--line)}
   .row .n{flex:0 0 28px;font-family:var(--label);font-size:12px;color:var(--mutedbrown);padding-top:6px}
@@ -606,7 +610,7 @@ var FIREBASE_CONFIG = {
   appId: '1:54300603401:web:b743cdc18f80b9626874d8'
 };
 var ROOT = 'game';
-var ALIAS_KEY = 'rl-game-alias';
+var ALIAS_KEY = 'rl-game-alias', EPOCH_KEY = 'rl-game-epoch';
 var TOTAL_CODES = 10;
 var RESPINS = 2;
 var TB_YEAR = 2017;
@@ -886,6 +890,7 @@ function lockIn() {
     }
     alias = slug;
     try { localStorage.setItem(ALIAS_KEY, alias); } catch (e) {}
+    db.ref(ROOT + '/config/epoch').once('value').then(function (s) { try { localStorage.setItem(EPOCH_KEY, s.val() || 0); } catch (e) {} });
     $('spin').classList.add('lockin');
     setTimeout(afterAlias, REDUCED ? 0 : 380);
   }).catch(function (e) {
@@ -948,7 +953,7 @@ function enterGame() {
 var healing = false;
 function onPlayer() {
   // After a host reset the alias node is gone: quietly re-claim it so the phone keeps working.
-  if (me === null && !healing) {
+  if (me === null && !healing && (!config.epoch || storedEpoch() === config.epoch)) {
     healing = true;
     db.ref(ROOT + '/players/' + alias).transaction(function (cur) { return cur === null ? { uid: uid, claimedAt: now(), lastChange: now() } : undefined; })
       .then(function () { healing = false; if (qk) recordFound(); }).catch(function () { healing = false; });
@@ -962,7 +967,14 @@ function recordFound() {
   db.ref(ROOT + '/players/' + alias).update(up).catch(function (e) { console.warn('found', e && e.code); });
 }
 var lastStage = '';
+function storedEpoch() { try { return +(localStorage.getItem(EPOCH_KEY) || 0); } catch (e) { return 0; } }
 function onConfig() {
+  // Reset stamps a new game number. A phone still holding a name from the old game starts over.
+  var ep = config.epoch || 0;
+  if (ep && storedEpoch() !== ep) {
+    try { localStorage.setItem(EPOCH_KEY, ep); } catch (e) {}
+    if (alias) { try { localStorage.removeItem(ALIAS_KEY); } catch (e) {} location.reload(); return; }
+  }
   var keys = revealedKeys();
   if (seenRevealed === null) { seenRevealed = {}; keys.forEach(function (k) { seenRevealed[k] = true; }); loadAnswers(keys, null); }
   else {
@@ -1233,13 +1245,14 @@ function renderMine() {
   html += '<ol class="rows">';
   var revealed = config.revealed || {};
   allKeys().forEach(function (k) {
+    if (!isFound(k)) {
+      var nn = qnum(k);
+      html += '<li class="row hidden" style="' + window.codeVars(nn - 1) + '"><span class="n">' + nn + '</span>' + window.codeBlock(nn - 1, 30) + '<div class="body"><p>Not found yet</p></div></li>';
+      return;
+    }
     ['human', 'dog'].forEach(function (side) {
       var q = question(k)[side], n = qnum(k);
       var label = n + (side === 'human' ? 'a' : 'b');
-      if (!isFound(k)) {
-        html += '<li class="row hidden ' + side + '" style="' + window.codeVars(n - 1) + '"><span class="n">' + label + '</span>' + window.codeBlock(n - 1, 22) + '<div class="body"><p>Not found yet</p></div></li>';
-        return;
-      }
       var cur = pick(k, side);
       var cls = 'row patch ' + side, verdict = '';
       if (revealed[k] && answers[k]) {
