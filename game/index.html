@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v15.1 (12/09/2026): Scrollbar space reserved on desktop so the card never shifts sideways.
   v15.0 (12/09/2026): Two-step, host-driven reveal. config.stage holds a card on every screen: first
           the sentences with each guest's own card in the gap, then the answers with stickers, the
           truth where wrong, and photos. It stays until the host moves on. The timed flash is gone.
@@ -115,6 +116,7 @@
   }
   *{box-sizing:border-box}
   html,body{margin:0}
+  html{scrollbar-gutter:stable;overflow-x:hidden}
   body{
     min-height:100dvh;
     background:var(--paper);
