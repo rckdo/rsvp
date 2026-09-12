@@ -4,6 +4,10 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v3.0 (12/09/2026): Physicality pass. Every statement, answered row, tie-breaker and results block
+          is a raised patch with a quilt strip along its top and a real shadow; unfound rows sit
+          flat behind them. Buttons have a solid face and a darker bottom edge that presses down
+          on tap, with a small pop when a pick lands.
   v2.0 (12/09/2026): Second pass on look and feel after review. The card floats on the invite's
           sky, glow and motes again with the full quilt band and Mr Robin. Rust for Richard and
           Lorraine, olive for Eric and Tango, on icons, buttons and picked names. Ochre tab strip,
@@ -161,15 +165,16 @@
 
   /* Buttons: the invite's rust button, its ochre sibling */
   .btn{
-    -webkit-appearance:none;appearance:none;border:1px solid var(--rust);background:var(--rust);color:var(--cream);
+    -webkit-appearance:none;appearance:none;border:0;background:var(--rust);color:var(--cream);
     font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
-    min-height:46px;padding:10px 24px;cursor:pointer;
-    transition:background .15s ease,color .15s ease,transform .15s ease,opacity .15s ease,box-shadow .2s ease;
-    box-shadow:0 6px 14px rgba(163,74,44,.22);
+    min-height:48px;padding:10px 24px;cursor:pointer;position:relative;
+    transition:background .15s ease,color .15s ease,transform .08s ease,box-shadow .08s ease,opacity .15s ease;
+    box-shadow:0 4px 0 var(--rust-deep), 0 8px 16px rgba(74,63,47,.18);
   }
-  .btn:active{transform:translateY(1px);box-shadow:none}
-  .btn.ghost{background:var(--ochre);color:var(--bark);border-color:var(--ochre);box-shadow:none}
-  .btn:disabled{opacity:.42;cursor:default;transform:none;box-shadow:none}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--rust-deep), 0 2px 4px rgba(74,63,47,.12)}
+  .btn.ghost{background:var(--ochre);color:var(--bark);box-shadow:0 4px 0 var(--ochre-deep), 0 8px 16px rgba(74,63,47,.12)}
+  .btn.ghost:active{box-shadow:0 1px 0 var(--ochre-deep), 0 2px 4px rgba(74,63,47,.1)}
+  .btn:disabled{opacity:.42;cursor:default;transform:translateY(3px);box-shadow:0 1px 0 rgba(74,63,47,.25)}
   .btn.wide{width:100%}
 
   /* ---- Tabs: an ochre strip, the active one cut from cream ---- */
@@ -197,10 +202,19 @@
   .ph small{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);padding-bottom:5px}
   .note{font-style:italic;color:var(--mutedbrown);margin:0 0 16px;font-size:19px}
 
+  /* The patch: every question, answer and result sits on one of these.
+     A lighter cream face, a quilt strip along the top in its colour, a real shadow. */
+  .patch{
+    position:relative;background:#f7f0e0;padding:22px 18px 18px;margin:0 0 16px;
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 12px 26px rgba(74,63,47,.16), 0 2px 4px rgba(74,63,47,.08);
+    --c:var(--ochre-deep);--cd:var(--bark);
+  }
+  .patch:before{content:'';position:absolute;left:0;right:0;top:0;height:7px;
+    background:repeating-linear-gradient(90deg, var(--c) 0 9px, var(--cream) 9px 18px)}
+  .patch.gold{--c:var(--gold);--cd:#8a6a2a}
   /* Statement: coloured icon beside the words, two names beneath.
      Richard and Lorraine wear rust; Eric and Tango wear olive. */
-  .stmt{padding:20px 0 22px;border-top:1px solid var(--line);position:relative}
-  .stmt:first-of-type{border-top:0;padding-top:0}
+  .stmt{padding:24px 18px 18px}
   .stmt.human{--c:var(--rust);--cd:var(--rust-deep)}
   .stmt.dog{--c:var(--olive);--cd:var(--olive-deep)}
   .stmt-row{display:flex;gap:14px;align-items:flex-start}
@@ -211,19 +225,22 @@
   .stmt-row.dog .icon{transform:rotate(8deg)}
   .icon .fb{width:36px;height:36px}
   .stmt-text{flex:1;font-size:22px;line-height:1.3;color:var(--ink);margin:0}
-  .choice{display:flex;gap:10px;margin-top:14px}
+  .choice{display:flex;gap:12px;margin-top:16px}
   .choice .btn{flex:1;padding:10px 6px}
-  .choice .btn.pick{background:transparent;color:var(--cd);border-color:var(--c);box-shadow:none}
-  .choice .btn.pick.on{background:var(--c);border-color:var(--c);color:var(--cream);box-shadow:0 6px 14px rgba(74,63,47,.18)}
+  .choice .btn.pick{background:var(--cream);color:var(--cd);box-shadow:0 4px 0 var(--ochre-deep), 0 8px 16px rgba(74,63,47,.12)}
+  .choice .btn.pick:active{box-shadow:0 1px 0 var(--ochre-deep), 0 2px 4px rgba(74,63,47,.1)}
+  .choice .btn.pick.on{background:var(--c);color:var(--cream);box-shadow:0 4px 0 var(--cd), 0 8px 16px rgba(74,63,47,.2);animation:pop .22s ease-out}
+  .choice .btn.pick.on:active{box-shadow:0 1px 0 var(--cd), 0 2px 4px rgba(74,63,47,.12)}
   .choice .btn.pick:disabled{opacity:.55}
+  @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.04)}100%{transform:scale(1)}}
   .after-lock{font-style:italic;color:var(--mutedbrown);margin:10px 0 0}
 
   /* Tie-breaker */
-  .tb{margin-top:4px;padding-top:20px;border-top:1px solid var(--line)}
+  .tb{padding:24px 18px 18px}
   .tb .tb-q{font-family:var(--display);font-size:19px;color:var(--bark);margin:0}
   .tb .tb-k{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 6px}
   .pickers{display:flex;gap:10px;margin-top:12px}
-  select{flex:1;min-height:46px;font-family:var(--body);font-size:18px;color:var(--ink);background:#f7f0e0;border:1px solid var(--ochre-deep);padding:6px 10px;border-radius:0}
+  select{flex:1;min-height:48px;font-family:var(--body);font-size:18px;color:var(--ink);background:var(--cream);border:0;padding:6px 10px;border-radius:0;box-shadow:0 4px 0 var(--ochre-deep), 0 8px 16px rgba(74,63,47,.12)}
   .tb-saved{font-style:italic;color:var(--olive-deep);margin-top:8px;min-height:22px}
 
   /* My answers: ten quilt blocks that fill in as codes are found */
@@ -233,8 +250,10 @@
   .progress .pb .cell{width:100%;height:100%}
   .nudge{font-style:italic;color:var(--rust);margin:0 0 14px;font-size:19px}
   .rows{list-style:none;margin:0;padding:0}
-  .row{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-top:1px solid var(--line);position:relative}
-  .row:first-child{border-top:0}
+  .row{display:flex;gap:12px;align-items:flex-start;padding:22px 14px 16px;margin:0 0 14px}
+  .row.hidden{padding:8px 14px;margin:0;box-shadow:none;background:transparent}
+  .row.hidden:before{display:none}
+  .row.hidden + .row.hidden{border-top:1px solid var(--line)}
   .row.human{--c:var(--rust);--cd:var(--rust-deep)}
   .row.dog{--c:var(--olive);--cd:var(--olive-deep)}
   .row .n{flex:0 0 28px;font-family:var(--label);font-size:12px;color:var(--mutedbrown);padding-top:6px}
@@ -246,8 +265,8 @@
   .row.hidden .ic{opacity:.3}
   .row .body p{margin:0;font-size:19px;line-height:1.35}
   .row .body .who{font-family:var(--label);font-size:15px;letter-spacing:.06em;color:var(--cd)}
-  .row .choice{margin-top:10px}
-  .row .choice .btn{min-height:42px;font-size:12px}
+  .row .choice{margin-top:12px}
+  .row .choice .btn{min-height:44px;font-size:12px}
   .row .edit{background:none;border:0;padding:6px 0 0;color:var(--mutedbrown);font-family:var(--label);font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;min-height:32px}
   .row .edit:disabled{opacity:.4;cursor:default}
   .row.right .who{color:var(--olive-deep)}
@@ -260,13 +279,13 @@
   /* Results */
   .score{font-family:var(--display);font-size:72px;line-height:1;color:var(--rust);margin:2px 0 0}
   .score small{font-size:26px;color:var(--mutedbrown)}
-  .rank-card{text-align:center;padding:6px 0 22px;border-bottom:1px solid var(--line);margin-bottom:20px}
+  .rank-card{text-align:center;padding:26px 18px 22px}
   .rank-card .rank{font-family:var(--display);font-size:64px;line-height:1;color:var(--rust)}
   .rank-card .of{font-style:italic;color:var(--mutedbrown);font-size:19px;margin-top:4px}
   .rank-card .tbres{margin-top:10px;font-size:18px}
   .sec-k{font-family:var(--label);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mutedbrown);margin:0 0 8px;display:flex;align-items:center;gap:10px}
   .sec-k:after{content:'';flex:1;height:1px;background:var(--line)}
-  .board{list-style:none;margin:0 0 26px;padding:0}
+  .board{list-style:none;margin:0;padding:0}
   .board li{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
   .board li:first-child{border-top:0}
   .board .pos{flex:0 0 30px;height:30px;display:grid;place-items:center;font-family:var(--label);font-size:12px;color:var(--bark);background:var(--ochre)}
@@ -284,7 +303,7 @@
   .split .bar i.wrong{background:var(--rust)}
   .split .lab{display:flex;justify-content:space-between;font-family:var(--label);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mutedbrown)}
   .split .lab .ok{color:var(--olive-deep)}
-  section + section{margin-top:26px}
+  section.patch{padding-top:24px}
 
   /* Full-screen reveal flash */
   #ack{position:fixed;inset:0;z-index:50;background:var(--cream);display:flex;flex-direction:column;justify-content:center;padding:28px 24px;
@@ -802,7 +821,7 @@ function choiceHtml(k, side, disabled) {
 }
 function stmtHtml(k, side) {
   var q = question(k)[side];
-  return '<div class="stmt ' + side + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + esc(q.first) + '</p></div>' +
+  return '<div class="patch stmt ' + side + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + esc(q.first) + '</p></div>' +
     (locked ? '<p class="after-lock">' + (pick(k, side) ? 'You said ' + NAMES[pick(k, side)] + '.' : 'Not answered.') + '</p>' : choiceHtml(k, side, false)) + '</div>';
 }
 var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -833,7 +852,7 @@ function renderCode() {
     if (config.releasedAt) html += '<p class="note">Everything\u2019s open. Answer what you can.</p>';
     html += stmtHtml(qk, 'human') + stmtHtml(qk, 'dog');
     if (!(me && me.tiebreak)) {
-      html += '<div class="tb"><p class="tb-k">Tie-breaker</p><p class="tb-q">' + esc(content.tiebreak.question) + '</p>' + tiebreakHtml(false) + '</div>';
+      html += '<div class="patch gold tb"><p class="tb-k">Tie-breaker</p><p class="tb-q">' + esc(content.tiebreak.question) + '</p>' + tiebreakHtml(false) + '</div>';
     }
   }
   p.innerHTML = html;
@@ -865,7 +884,7 @@ function renderMine() {
         return;
       }
       var cur = pick(k, side);
-      var cls = 'row ' + side, verdict = '';
+      var cls = 'row patch ' + side, verdict = '';
       if (revealed[k] && answers[k]) {
         var truth = answers[k][side];
         if (!cur) { cls += ' missed'; verdict = 'Not answered. It was ' + NAMES[truth] + '.'; }
@@ -887,7 +906,7 @@ function renderMine() {
     });
   });
   if (me) {
-    html += '<li class="row human"><span class="n">21</span><span class="ic">' + iconFallback() + '</span><div class="body tb" style="border:0;padding:0;margin:0"><p>' + esc(content.tiebreak.third) + '</p>' + tiebreakHtml(true) + '</div></li>';
+    html += '<li class="row patch gold"><span class="n">21</span><span class="ic">' + iconFallback() + '</span><div class="body tb" style="border:0;padding:0;margin:0"><p>' + esc(content.tiebreak.third) + '</p>' + tiebreakHtml(true) + '</div></li>';
   }
   html += '</ol>';
   p.innerHTML = html;
@@ -940,7 +959,7 @@ function renderResults() {
   var done = keys.length === TOTAL_CODES;
   var html = '<div class="ph"><h2>Results</h2><small>' + keys.length + ' of ' + TOTAL_CODES + ' revealed</small></div>';
   if (done && mine) {
-    html += '<div class="rank-card"><div class="rank">' + (mine.shared ? '=' : '') + ordinal(mine.pos) + '</div><div class="of">of ' + table.length + '</div>';
+    html += '<div class="patch gold rank-card"><div class="rank">' + (mine.shared ? '=' : '') + ordinal(mine.pos) + '</div><div class="of">of ' + table.length + '</div>';
     var d = tbDistance(me);
     if (answers.tiebreak) {
       html += '<div class="tbres">The date was ' + answers.tiebreak.day + ' ' + MONTHS[answers.tiebreak.month - 1] + ' ' + TB_YEAR + '. ' +
@@ -948,13 +967,13 @@ function renderResults() {
     }
     html += '</div>';
   }
-  html += '<section><p class="sec-k">Your score</p><div class="score"><span id="scoreNum">' + lastScore + '</span> <small>/ ' + (TOTAL_CODES * 2) + '</small></div></section>';
-  html += '<section><p class="sec-k">Leaderboard</p><ol class="board">';
+  html += '<section class="patch"><p class="sec-k">Your score</p><div class="score"><span id="scoreNum">' + lastScore + '</span> <small>/ ' + (TOTAL_CODES * 2) + '</small></div></section>';
+  html += '<section class="patch"><p class="sec-k">Leaderboard</p><ol class="board">';
   table.forEach(function (r) {
     html += '<li class="' + (r.slug === alias ? 'me ' : '') + (r.pos <= 3 ? 'p' + r.pos : '') + '"><span class="pos">' + (r.shared ? '=' : '') + r.pos + '</span><span class="nm">' + esc(prettyAlias(r.slug)) + '</span><span class="pts">' + r.score + '</span></li>';
   });
   html += '</ol></section>';
-  html += '<section><p class="sec-k">The room</p>';
+  html += '<section class="patch"><p class="sec-k">The room</p>';
   var total = Object.keys(players).length;
   keys.slice().reverse().forEach(function (k) {
     ['human', 'dog'].forEach(function (side) {
