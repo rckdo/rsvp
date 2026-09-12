@@ -1,5 +1,5 @@
 {
-  "version": "1.4",
+  "version": "1.6",
   "reels": {
     "items": [
       "Sausage",
@@ -164,9 +164,9 @@
     {
       "q": 10,
       "human": {
-        "first": "PLACEHOLDER: I have never ______ in my life.",
-        "third": "{name} has never ______.",
-        "icon": "circle-off.svg"
+        "first": "I can read this without blinking: `=IFERROR(INDEX(Leases[Rent],MATCH(1,(Leases[Building]=$B$2)*(Leases[Quarter]=C$1),0)),XLOOKUP($B$2,Buildings[Name],Buildings[Floor Area],0)*$D$1)`",
+        "third": "{name} can read this without blinking: `=IFERROR(INDEX(Leases[Rent],MATCH(1,(Leases[Building]=$B$2)*(Leases[Quarter]=C$1),0)),XLOOKUP($B$2,Buildings[Name],Buildings[Floor Area],0)*$D$1)`",
+        "icon": "sigma.svg"
       },
       "dog": {
         "first": "I once got a cuddle from Nitro off Gladiators.",

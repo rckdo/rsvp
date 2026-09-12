@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v10.0 (12/09/2026): Statement text may carry `backticks`, rendered as monospace code, for the
+          Excel formula on card 10.
   v9.0 (12/09/2026): Each name has its own dashed spot below the sentence; placing one leaves its spot
           empty and bumps the other back to its place. Answers shows the correct name neutrally in the
           gap, then You said with a small stickered card, or nothing if unanswered.
@@ -248,6 +250,8 @@
   .stmt-row.dog .icon{transform:rotate(8deg)}
   .icon .fb{width:36px;height:36px}
   .stmt-text{flex:1;font-size:22px;line-height:1.55;color:var(--ink);margin:0}
+  code{display:block;margin:8px 0 2px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.6em;line-height:1.5;background:var(--cream);padding:8px 10px;color:var(--bark);word-break:break-all;overflow-wrap:anywhere;text-align:left;font-style:normal}
+  .ackp code{background:rgba(255,255,255,.15);color:inherit}
   /* The gap in the sentence, and the name cards. All cards one size, on purpose. */
   .gap{display:inline-block;vertical-align:middle;width:108px;height:38px;margin:0 6px 4px 0;position:relative;
     border:1.5px dashed var(--c);opacity:.9;transition:transform .15s ease,background .15s ease}
@@ -525,6 +529,8 @@ var lastScore = 0;
 
 var $ = function (id) { return document.getElementById(id); };
 var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+// statement text: escaped, with `backticks` rendered as code (for the formula)
+var fmt = function (s) { return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>'); };
 var now = function () { return Date.now() + offset; };
 var slugOf = function (item, role) { return (item + '-' + role).toLowerCase().replace(/[^a-z]+/g, '-'); };
 var prettyAlias = function (slug) {
@@ -997,7 +1003,7 @@ function gapHtml(k, side) {
   return '<span class="' + cls + '" data-q="' + k + '" data-side="' + side + '">' + inner + '</span>';
 }
 function sentenceHtml(k, side) {
-  return esc(question(k)[side].third).replace('{name}', gapHtml(k, side));
+  return fmt(question(k)[side].third).replace('{name}', gapHtml(k, side));
 }
 function deckHtml(k, side) {
   if (locked) return '';
@@ -1168,7 +1174,7 @@ function renderResults() {
       var pctR = total ? Math.round(counts[truth] / total * 100) : 0, pctW = total ? Math.round(counts[wrongName] / total * 100) : 0;
       var truthCard = '<span class="gap filled"><span class="namecard">' + NAMES[truth] + '</span></span>';
       var said = mine ? '<div class="said">You said<span class="namecard mini ' + (mine === truth ? 'right' : 'wrong') + '">' + NAMES[mine] + '</span></div>' : '';
-      html += '<div class="split" style="' + window.codeVars(qnum(k) - 1) + '"><p>' + esc(question(k)[side].third).replace('{name}', truthCard) + '</p>' + said +
+      html += '<div class="split" style="' + window.codeVars(qnum(k) - 1) + '"><p>' + fmt(question(k)[side].third).replace('{name}', truthCard) + '</p>' + said +
         '<div class="bar"><i style="width:' + pctR + '%"></i><i class="wrong" style="width:' + pctW + '%"></i></div>' +
         '<div class="lab"><span class="ok">' + NAMES[truth] + ' ' + counts[truth] + '</span><span>' + NAMES[wrongName] + ' ' + counts[wrongName] + '</span></div></div>';
     });
@@ -1200,7 +1206,7 @@ function runAck() {
     var truth = a[side], cur = pick(k, side);
     var cls = !cur ? 'missed' : (cur === truth ? 'right' : 'wrong');
     var v = cls === 'right' ? 'Right' : (cls === 'wrong' ? 'Wrong. It was ' + NAMES[truth] : 'Not answered. It was ' + NAMES[truth]);
-    return '<div class="ackp ' + cls + '"><div class="v">' + esc(v) + '</div><div class="s">' + esc(question(k)[side].third.replace('{name}', NAMES[truth])) + '</div></div>';
+    return '<div class="ackp ' + cls + '"><div class="v">' + esc(v) + '</div><div class="s">' + fmt(question(k)[side].third.replace('{name}', NAMES[truth])) + '</div></div>';
   }).join('');
   var el = $('ack');
   el.innerHTML = '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + 'Card ' + qnum(k) + '</div>' + panels;

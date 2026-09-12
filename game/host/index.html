@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v10.0 (12/09/2026): Backticks in statement text render as code.
   v8.0 (12/09/2026): Cards, not codes, in the wording.
   v6.0 (12/09/2026): Alias shown without the article.
   v4.0 (12/09/2026): Each code's quilt block shown on its reveal card, matching the guest page.
@@ -81,6 +82,7 @@
   .st{padding:10px 0}
   .st + .st{border-top:1px dashed var(--line)}
   .st .txt{margin:0 0 6px;font-size:17px}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8em;background:var(--paper);padding:2px 5px;word-break:break-all;overflow-wrap:anywhere}
   .st .ans{font-weight:700;color:var(--olive)}
   .bar{display:flex;height:10px;background:var(--paper);border-radius:5px;overflow:hidden;margin:6px 0 4px}
   .bar i{display:block;height:100%;background:var(--olive);transition:width .5s ease}
@@ -248,6 +250,7 @@ var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'A
 var HOSTKEY_STORE = 'rl-game-hostkey';
 var $ = function (id) { return document.getElementById(id); };
 var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+var fmt = function (s) { return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>'); };
 var pretty = function (slug) { var p = slug.split('-'), r = p.pop(); return (p.join(' ') + ' ' + r).replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }); };
 var keys = []; for (var i = 1; i <= TOTAL; i++) keys.push('q' + i);
 
@@ -371,7 +374,7 @@ function splitOf(k, side) {
 function stHtml(k, side, showSplit) {
   var q = content.questions[parseInt(k.slice(1), 10) - 1][side], sp = splitOf(k, side), total = Object.keys(players).length;
   var other = sp.opts.filter(function (o) { return o !== sp.truth; })[0];
-  var h = '<div class="st"><p class="txt">' + esc(q.first) + '</p>';
+  var h = '<div class="st"><p class="txt">' + fmt(q.first) + '</p>';
   h += '<div class="ans">' + (sp.truth ? NAMES[sp.truth] : '<span class="muted">answer not seeded</span>') + '</div>';
   if (showSplit && sp.truth) {
     var pr = total ? sp.counts[sp.truth] / total * 100 : 0, pw = total ? sp.counts[other] / total * 100 : 0;
