@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v12.1 (12/09/2026): Picker tiles ochre, chosen tile olive.
   v12.0 (12/09/2026): Bespoke date picker (month tiles, day tiles, impossible days greyed) on the
           gate and row 21. Patch strip divides into the width. Spin screen line removed.
   v11.0 (12/09/2026): Photos at the reveal. An answer-key entry may carry humanImg or dogImg; the
@@ -322,10 +323,10 @@
   .dp{margin-top:14px}
   .dp .months{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
   .dp .days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-  .dp button{-webkit-appearance:none;appearance:none;border:0;background:var(--cream);color:var(--bark);font-family:var(--label);font-size:14px;letter-spacing:.04em;min-height:40px;padding:0;cursor:pointer;box-shadow:0 3px 0 var(--ochre-deep);transition:transform .08s ease,box-shadow .08s ease}
+  .dp button{-webkit-appearance:none;appearance:none;border:0;background:var(--ochre);color:var(--bark);font-family:var(--label);font-size:14px;letter-spacing:.04em;min-height:40px;padding:0;cursor:pointer;box-shadow:0 3px 0 #b39c6b;transition:transform .08s ease,box-shadow .08s ease}
   .dp .months button{font-size:11px;letter-spacing:.12em;text-transform:uppercase}
-  .dp button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ochre-deep)}
-  .dp button.on{background:var(--gold);color:var(--cream);box-shadow:0 3px 0 #8a6a2a}
+  .dp button:active{transform:translateY(2px);box-shadow:0 1px 0 #b39c6b}
+  .dp button.on{background:var(--olive);color:var(--cream);box-shadow:0 3px 0 var(--olive-deep)}
   .dp button:disabled{opacity:.22;box-shadow:none;cursor:default;transform:none}
   .tb-saved{font-style:italic;color:var(--olive-deep);margin-top:8px;min-height:22px}
 

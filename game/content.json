@@ -1,5 +1,5 @@
 {
-  "version": "1.13",
+  "version": "1.14",
   "reels": {
     "items": [
       "Sausage",
@@ -40,8 +40,8 @@
   },
   "iconBase": "/game/icons/",
   "tiebreak": {
-    "question": "What date in 2017 did Richard and Lorraine become official?",
-    "third": "The date in 2017 Richard and Lorraine became official"
+    "question": "What date in 2017 did Richard and Lorraine get together?",
+    "third": "The date in 2017 Richard and Lorraine got together"
   },
   "questions": [
     {
