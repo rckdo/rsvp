@@ -1,5 +1,5 @@
 {
-  "version": "1.8",
+  "version": "1.9",
   "reels": {
     "items": [
       "Sausage",
@@ -60,8 +60,8 @@
     {
       "q": 2,
       "human": {
-        "first": "I was described as \"playing an excellent game\" by a grandmaster (but still lost).",
-        "third": "{name} was described as \"playing an excellent game\" by a grandmaster (but still lost).",
+        "first": "Nineteen moves in against a grandmaster, I was \"playing an excellent game\" (but eventually lost).",
+        "third": "Nineteen moves in against a grandmaster, {name} was \"playing an excellent game\" (but eventually lost).",
         "icon": "crown.svg"
       },
       "dog": {
