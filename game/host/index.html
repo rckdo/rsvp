@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v15.0 (12/09/2026): Redesigned. Run and Setup tabs. Three equal control tiles (Clock, Cards, Reveal)
+          with one figure and one main button each. Below, the feed and a single table on a two-column
+          grid. Setup holds seed, card URLs, key and reset. One spacing scale throughout.
   v14.3 (12/09/2026): Fix: state variables declared before the gate. An already-unlocked phone started
           the page before the declaration line ran, which wiped the stored key. Refreshes now keep it.
   v14.2 (12/09/2026): Storage diagnostic line under the key box; key stored again on every successful claim.
@@ -42,11 +45,12 @@
     --ink:#26332c; --forest:#2f4a3c; --sage:#6f8a77; --gold:#a3762f;
     --paper:#eef1ea; --card:#fbfaf5; --line:#dce0d6; --line-strong:#c6cdbe;
     --cream:#efe6d3; --ochre:#e0cfa4; --rust:#a34a2c; --bark:#4a3f2f; --olive:#7a7c47;
+    --s1:8px; --s2:16px; --s3:24px; --s4:32px;
   }
   *{box-sizing:border-box}
   html,body{margin:0}
-  body{background:var(--paper);color:var(--ink);font-family:'Karla',system-ui,sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:760px;margin:0 auto;padding:0 20px 80px}
+  body{background:var(--paper);color:var(--ink);font-family:'Karla',system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:0 var(--s2) 80px}
 
   /* Passcode splash, same as the menu */
   #splash{position:fixed;inset:0;z-index:70;background:var(--forest);display:flex;align-items:center;justify-content:center;padding:24px}
@@ -63,56 +67,93 @@
   .dots.shake{animation:shake .4s ease}
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 
-  header{padding:34px 0 18px;border-bottom:1px solid var(--line);margin-bottom:22px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
-  h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:34px;line-height:1.05;margin:0;color:var(--forest)}
-  header .sub{color:var(--sage);font-size:14px;margin:4px 0 0}
-  header a{color:var(--sage);font-size:14px}
-  h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:24px;margin:0 0 10px;color:var(--forest)}
-  section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
-  .state{color:var(--sage);font-size:14px;margin:0 0 12px}
-  .state b{color:var(--ink);font-weight:700}
-  .state.hot b{color:var(--rust)}
-  .btns{display:flex;flex-wrap:wrap;gap:8px}
-  button{font-family:inherit;font-size:14px;font-weight:700;min-height:42px;padding:8px 16px;border-radius:8px;border:1.5px solid var(--forest);background:var(--forest);color:#fff;cursor:pointer}
-  button.ghost{background:transparent;color:var(--forest)}
-  button.warn{background:var(--rust);border-color:var(--rust)}
-  button.warn.ghost{background:transparent;color:var(--rust)}
-  button:disabled{opacity:.4;cursor:default}
-  input[type=text]{font-family:inherit;font-size:16px;min-height:42px;padding:8px 12px;border:1.5px solid var(--line-strong);border-radius:8px;background:#fff;width:100%;max-width:340px}
-  textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:8px;background:#fff;width:100%;resize:vertical}
-  .stats{display:flex;flex-wrap:wrap;gap:18px 28px}
-  .stat b{display:block;font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;line-height:1;color:var(--forest);font-weight:600}
-  .stat span{font-size:13px;color:var(--sage)}
+  /* Header and the two tabs */
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s2);padding:var(--s3) 0 var(--s2);border-bottom:1px solid var(--line);margin-bottom:var(--s3)}
+  h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:28px;line-height:1;margin:0;color:var(--forest)}
+  .tabs{display:flex;gap:4px;background:#e2e6dc;padding:4px;border-radius:10px}
+  .tab{font-family:inherit;font-size:14px;font-weight:700;border:0;background:transparent;color:var(--sage);padding:8px 16px;border-radius:7px;cursor:pointer;min-height:40px}
+  .tab[aria-selected="true"]{background:var(--card);color:var(--forest);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .view[hidden]{display:none}
 
-  .reveal-card{border-top:1px solid var(--line);padding:14px 0 4px;margin-top:14px}
-  .reveal-card.next{border-top:1px dashed var(--line-strong)}
-  .reveal-card h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:20px;margin:0 0 8px;color:var(--forest);display:flex;align-items:center;gap:10px}
-  .qb{display:grid;width:26px;height:26px;flex:0 0 26px;box-shadow:0 2px 5px rgba(0,0,0,.15)}
+  /* The three control tiles */
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2);margin-bottom:var(--s3)}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:var(--s2);display:flex;flex-direction:column;gap:var(--s1);min-height:168px}
+  .tile .lab{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sage)}
+  .tile .val{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:40px;line-height:1;color:var(--forest);font-variant-numeric:tabular-nums;margin:2px 0 auto;min-height:40px}
+  .tile .val.hot{color:var(--rust)}
+  .tile .val small{font-size:18px;color:var(--sage);font-family:'Karla',sans-serif;font-weight:400;margin-left:6px}
+  .tile .acts{display:flex;flex-direction:column;gap:6px}
+  .tile .minor{display:flex;gap:var(--s2);min-height:20px}
+  .tile .minor button{background:none;border:0;padding:0;color:var(--sage);font-size:13px;font-weight:700;cursor:pointer;min-height:20px;text-decoration:underline;text-underline-offset:3px}
+  .tile .minor button:disabled{opacity:.35;text-decoration:none;cursor:default}
+  button.btn{font-family:inherit;font-size:14px;font-weight:700;min-height:42px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--forest);background:var(--forest);color:#fff;cursor:pointer;width:100%}
+  button.btn.warn{background:var(--rust);border-color:var(--rust)}
+  button.btn.ghost{background:transparent;color:var(--forest)}
+  button.btn:disabled{opacity:.4;cursor:default}
+
+  /* Two columns: the feed and the table */
+  .board{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:var(--s2);align-items:start}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:var(--s2)}
+  .panel h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:22px;margin:0 0 var(--s1);color:var(--forest);display:flex;justify-content:space-between;align-items:baseline;gap:var(--s2)}
+  .panel h2 small{font-family:'Karla',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sage);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  /* Feed */
+  .reveal-card{padding:var(--s2) 0 var(--s1);border-top:1px solid var(--line)}
+  .reveal-card:first-child{border-top:0;padding-top:var(--s1)}
+  .reveal-card.next{opacity:.65}
+  .reveal-card h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:18px;margin:0 0 var(--s1);color:var(--forest);display:flex;align-items:center;gap:10px}
+  .reveal-card h3 small{font-family:'Karla',sans-serif;font-size:11px;color:var(--sage);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-left:auto}
+  .qb{display:grid;width:22px;height:22px;flex:0 0 22px;box-shadow:0 1px 3px rgba(0,0,0,.15)}
   .qb .cell{display:block;width:100%;height:100%}
-  .reveal-card h3 small{font-family:'Karla',sans-serif;font-size:12px;color:var(--sage);font-weight:500;margin-left:8px}
-  .st{padding:10px 0}
+  .st{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:var(--s2);row-gap:4px;padding:var(--s1) 0}
   .st + .st{border-top:1px dashed var(--line)}
-  .st .txt{margin:0 0 6px;font-size:17px}
-  .photo{display:block;max-width:360px;width:100%;height:auto;margin:8px 0;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
-  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8em;background:var(--paper);padding:2px 5px;word-break:break-all;overflow-wrap:anywhere}
-  .st .ans{font-weight:700;color:var(--olive)}
-  .bar{display:flex;height:10px;background:var(--paper);border-radius:5px;overflow:hidden;margin:6px 0 4px}
+  .st .txt{margin:0;font-size:15px}
+  .st .ans{font-weight:700;color:var(--olive);text-align:right;white-space:nowrap}
+  .st .bar{grid-column:1 / -1;display:flex;height:8px;background:var(--paper);border-radius:4px;overflow:hidden}
   .bar i{display:block;height:100%;background:var(--olive);transition:width .5s ease}
   .bar i.w{background:var(--rust)}
-  .lab{display:flex;justify-content:space-between;font-size:13px;color:var(--sage)}
-  .lab .ok{color:var(--olive);font-weight:700}
-  .wrongs{font-size:14px;color:var(--rust);margin:4px 0 0}
-  .note{font-size:14px;color:var(--gold);font-style:italic;margin:4px 0 0}
-  .note:before{content:'Note: '}
-  table{width:100%;border-collapse:collapse;font-size:15px}
-  th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
-  th{font-size:12px;color:var(--sage);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-  td.num,th.num{text-align:right}
+  .st .lab{grid-column:1 / -1;display:flex;justify-content:space-between;font-size:12px;color:var(--sage);font-variant-numeric:tabular-nums}
+  .st .lab .ok{color:var(--olive);font-weight:700}
+  .st .wrongs{grid-column:1 / -1;font-size:13px;color:var(--rust);margin:0}
+  .st .note{grid-column:1 / -1;font-size:13px;color:var(--gold);font-style:italic;margin:0}
+  .st .photo{grid-column:1 / -1;display:block;max-width:320px;width:100%;height:auto;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85em;background:var(--paper);padding:2px 5px;word-break:break-all;overflow-wrap:anywhere}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+  th,td{padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{text-align:left;font-size:11px;color:var(--sage);font-weight:700;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+  td.n,th.n{text-align:right}
+  td.rank{width:28px;color:var(--sage)}
+  td.score{font-weight:700;color:var(--forest)}
   .muted{color:var(--sage)}
-  .danger{border-color:#e6c9bd}
-  .keybox{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .err{color:var(--rust);font-size:14px;margin-top:8px;min-height:20px}
+
+  /* Setup */
+  .setup{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2);align-items:start}
+  .panel p.state{color:var(--sage);font-size:14px;margin:0 0 var(--s2)}
+  .panel .state b{color:var(--ink)}
+  input[type=text]{font-family:inherit;font-size:15px;min-height:42px;padding:8px 12px;border:1.5px solid var(--line-strong);border-radius:8px;background:#fff;width:100%}
+  textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:8px;background:#fff;width:100%;resize:vertical;margin-bottom:var(--s1)}
+  .row2{display:grid;grid-template-columns:1fr auto;gap:var(--s1)}
+  .row2 button.btn{width:auto}
+  ol.urls{margin:0 0 var(--s2);padding-left:22px;font-size:13px;word-break:break-all;line-height:1.7}
+  a.btn{display:inline-flex;align-items:center;justify-content:center;font-family:inherit;font-size:14px;font-weight:700;min-height:42px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--forest);background:var(--forest);color:#fff;text-decoration:none;width:100%}
+  .err{color:var(--rust);font-size:14px;margin-top:var(--s1);min-height:20px}
+  .panel.danger{border-color:#e6c9bd}
   [hidden]{display:none!important}
+
+  button.btn{white-space:nowrap}
+  .tile .minor{flex-wrap:wrap;gap:4px 12px}
+  @media (max-width:720px){
+    .tiles{gap:var(--s1)}
+    .tile{padding:10px;min-height:156px}
+    .tile .val{font-size:28px;min-height:28px}
+    .tile .val small{font-size:13px;margin-left:4px}
+    .tile .minor{gap:2px 10px}
+    .tile .minor button{font-size:12px}
+    button.btn{padding:8px 4px;font-size:12px}
+    .board,.setup{grid-template-columns:1fr}
+  }
 </style>
 </head>
 <body>
@@ -131,91 +172,88 @@
 
 <div class="wrap">
   <header>
-    <div><h1>Find the cards</h1><p class="sub">Host controls for the pub</p></div>
-    <a href="/menu/">Menu</a>
+    <h1>Find the cards</h1>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-view="run" aria-selected="true">Run</button>
+      <button class="tab" role="tab" data-view="setup" aria-selected="false">Setup</button>
+    </nav>
   </header>
 
-  <section id="keySection" hidden>
+  <section id="keySection" class="panel" hidden style="margin-bottom:var(--s3)">
     <h2>Host key</h2>
-    <p class="state">This page needs the host key once. It stays on this phone afterwards.</p>
-    <div class="keybox"><input type="text" id="keyInput" placeholder="Paste the host key, or the whole host link" autocomplete="off"><button id="keyGo">Use key</button></div>
-    <p class="state" style="margin-top:10px">Asked every time? You're in an app's built-in browser, which forgets. Open this page in Chrome or Safari instead.</p>
+    <div class="row2"><input type="text" id="keyInput" placeholder="Paste the host key, or the whole host link" autocomplete="off"><button class="btn" id="keyGo">Use key</button></div>
     <div class="err" id="keyErr"></div>
-    <p class="state" id="keyDiag" style="margin-top:8px"></p>
+    <p class="state" id="keyDiag" style="margin:var(--s1) 0 0"></p>
   </section>
 
   <div id="dash" hidden>
-    <section>
-      <div class="stats">
-        <div class="stat"><b id="sPlayers">0</b><span>players</span></div>
-        <div class="stat"><b id="sFound">0</b><span>cards found (all players)</span></div>
-        <div class="stat"><b id="sAnswered">0</b><span>statements answered</span></div>
-        <div class="stat"><b id="sRevealed">0</b><span>of 10 revealed</span></div>
+    <div class="view" id="view-run">
+      <div class="tiles">
+        <div class="tile">
+          <div class="lab">Clock</div>
+          <div class="val" id="clockVal">&mdash;</div>
+          <div class="acts">
+            <button class="btn" id="bStart">Start 15 min</button>
+            <div class="minor"><button id="bPlus">+5 min</button><button id="bCancel">Cancel</button><button id="bLockNow">Lock now</button></div>
+          </div>
+        </div>
+        <div class="tile">
+          <div class="lab">Cards</div>
+          <div class="val" id="releaseVal">Closed</div>
+          <div class="acts">
+            <button class="btn" id="bRelease">Release all</button>
+            <div class="minor"><button id="bUnrelease">Undo</button></div>
+          </div>
+        </div>
+        <div class="tile">
+          <div class="lab">Reveal</div>
+          <div class="val" id="revealVal">0<small>of 10</small></div>
+          <div class="acts">
+            <button class="btn" id="bNext">Reveal next</button>
+            <div class="minor"><button id="bAll">Reveal all</button><button id="bHide">Hide</button></div>
+          </div>
+        </div>
       </div>
-    </section>
 
-    <section>
-      <h2>Countdown</h2>
-      <p class="state" id="clockState">No countdown running.</p>
-      <div class="btns">
-        <button id="bStart">Start 15 minutes</button>
-        <button class="ghost" id="bPlus">+5 minutes</button>
-        <button class="ghost" id="bCancel">Cancel</button>
-        <button class="warn" id="bLockNow">Lock now</button>
+      <div class="board">
+        <section class="panel">
+          <h2>Feed <small id="feedState"></small></h2>
+          <div id="revealCards"></div>
+        </section>
+        <section class="panel">
+          <h2>Table <small id="tableState"></small></h2>
+          <table><thead><tr><th></th><th>Alias</th><th class="n">Found</th><th class="n">Ans</th><th class="n">Score</th><th class="n">Tie</th></tr></thead><tbody id="board"></tbody></table>
+        </section>
       </div>
-    </section>
+    </div>
 
-    <section>
-      <h2>Release all cards</h2>
-      <p class="state" id="releaseState">Cards only open when scanned.</p>
-      <div class="btns">
-        <button id="bRelease">Release all</button>
-        <button class="ghost" id="bUnrelease">Undo</button>
+    <div class="view" id="view-setup" hidden>
+      <div class="setup">
+        <section class="panel">
+          <h2>Seed</h2>
+          <p class="state" id="seedState">Paste the seed text and write it. Safe to repeat.</p>
+          <textarea id="seedInput" rows="5" placeholder='{"codes": {...}, "answers": {...}}' autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+          <button class="btn" id="bSeed">Write codes and answers</button>
+          <div class="err" id="seedErr"></div>
+        </section>
+        <section class="panel">
+          <h2>Cards</h2>
+          <p class="state" id="cardsState"></p>
+          <ol class="urls" id="cardsList"></ol>
+          <a class="btn" href="cards/">Open the card sheet</a>
+        </section>
+        <section class="panel">
+          <h2>Host key</h2>
+          <p class="state">Held on this phone. Paste a new one to move hosting to another phone.</p>
+          <div class="row2"><input type="text" id="keyInput2" placeholder="Host key or host link" autocomplete="off"><button class="btn" id="keyGo2">Use</button></div>
+        </section>
+        <section class="panel danger" id="resetSection">
+          <h2>Reset</h2>
+          <p class="state">Wipes every player and the clock, release and reveal state. Codes and answers stay. Type RESET to arm.</p>
+          <div class="row2"><input type="text" id="resetInput" placeholder="RESET" autocomplete="off"><button class="btn warn" id="bReset" disabled>Reset</button></div>
+        </section>
       </div>
-    </section>
-
-    <section>
-      <h2>Reveal</h2>
-      <p class="state" id="revealState"></p>
-      <div class="btns">
-        <button id="bNext">Reveal next</button>
-        <button class="ghost" id="bAll">Reveal all</button>
-        <button class="warn ghost" id="bHide">Hide results</button>
-      </div>
-      <div id="revealCards"></div>
-    </section>
-
-    <section>
-      <h2>Leaderboard</h2>
-      <p class="state" id="boardState"></p>
-      <table><thead><tr><th>#</th><th>Alias</th><th class="num">Score</th><th class="num">Tie-break</th></tr></thead><tbody id="board"></tbody></table>
-    </section>
-
-    <section>
-      <h2>Players</h2>
-      <table><thead><tr><th>Alias</th><th class="num">Found</th><th class="num">Answered</th><th>Tie-break guess</th></tr></thead><tbody id="playersTable"></tbody></table>
-    </section>
-
-    <section id="cardsSection">
-      <h2>Cards</h2>
-      <p class="state" id="cardsState"></p>
-      <ol id="cardsList" style="margin:0 0 12px;padding-left:22px;font-size:14px;word-break:break-all"></ol>
-      <div class="btns"><a class="btn" href="cards/" style="font-family:inherit;font-size:14px;font-weight:700;min-height:42px;padding:8px 16px;border-radius:8px;border:1.5px solid var(--forest);background:var(--forest);color:#fff;text-decoration:none;display:inline-flex;align-items:center">Open the card sheet</a></div>
-    </section>
-
-    <section id="seedSection">
-      <h2>Seed</h2>
-      <p class="state" id="seedState">Paste the seed text (codes and answers) and write it. Safe to repeat: it replaces codes and answers only.</p>
-      <textarea id="seedInput" rows="6" placeholder='{"codes": {...}, "answers": {...}}' autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
-      <div class="btns" style="margin-top:8px"><button id="bSeed">Write codes and answers</button></div>
-      <div class="err" id="seedErr"></div>
-    </section>
-
-    <section class="danger" id="resetSection">
-      <h2>Reset all</h2>
-      <p class="state">For rehearsal only. Wipes every player and the config. Type RESET to arm the button.</p>
-      <div class="keybox"><input type="text" id="resetInput" placeholder="RESET" autocomplete="off" style="max-width:160px"><button class="warn" id="bReset" disabled>Reset everything</button></div>
-    </section>
+    </div>
   </div>
 </div>
 
@@ -287,6 +325,11 @@ var keys = []; for (var i = 1; i <= TOTAL; i++) keys.push('q' + i);
 var db, auth, uid, hostKey = null, offset = 0, content = null;
 var config = {}, players = {}, answers = {};
 
+document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () {
+  document.querySelectorAll('.tab').forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+  $('view-run').hidden = b.dataset.view !== 'run'; $('view-setup').hidden = b.dataset.view !== 'setup';
+}); });
+
 /* ---- Gate: Richard's passcode ---- */
 var PASSCODES = { EGGS: 'R' };
 var UNLOCK_KEY = 'rl-tracker-unlocked';
@@ -334,6 +377,7 @@ function bootHost() {
   fetch('../content.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (c) { content = c; renderReveal(); });
   auth.signInAnonymously().then(function (cred) { uid = cred.user.uid; if (hostKey) claim(); else $('keySection').hidden = false; });
 }
+$('keyGo2').addEventListener('click', function () { $('keyInput').value = $('keyInput2').value; $('keyGo').click(); });
 $('keyGo').addEventListener('click', function () {
   var k = $('keyInput').value.trim(); if (!k) return;
   var m = k.match(/[?&]key=([^&\s]+)/); if (m) k = decodeURIComponent(m[1]);
@@ -412,25 +456,17 @@ $('bReset').addEventListener('click', function () {
 });
 
 /* ---- Rendering ---- */
-function renderAll() { renderStats(); renderClock(); renderRelease(); renderReveal(); renderBoard(); renderPlayers(); }
-function renderStats() {
-  var slugs = Object.keys(players), found = 0, ans = 0;
-  slugs.forEach(function (s) {
-    var p = players[s]; found += p.found ? Object.keys(p.found).length : 0;
-    keys.forEach(function (k) { if (p.answers && p.answers[k]) { if (p.answers[k].human) ans++; if (p.answers[k].dog) ans++; } });
-  });
-  $('sPlayers').textContent = slugs.length; $('sFound').textContent = found; $('sAnswered').textContent = ans; $('sRevealed').textContent = revealedKeys().length;
-}
+function renderAll() { renderClock(); renderRelease(); renderReveal(); renderBoard(); }
 function renderClock() {
-  var el = $('clockState'), running = !!config.lockAt, rem = running ? config.lockAt - now() : 0;
-  if (!running) { el.innerHTML = 'No countdown running. Phones can answer freely.'; el.className = 'state'; }
-  else if (rem <= 0) { el.innerHTML = '<b>Locked.</b> Answers are frozen. Cancel reopens the game.'; el.className = 'state hot'; }
-  else { var s = Math.ceil(rem / 1000); el.innerHTML = 'Locks in <b>' + Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2) + '</b>'; el.className = 'state' + (rem < 120000 ? ' hot' : ''); }
+  var el = $('clockVal'), running = !!config.lockAt, rem = running ? config.lockAt - now() : 0;
+  if (!running) { el.textContent = '\u2014'; el.className = 'val'; }
+  else if (rem <= 0) { el.textContent = 'Locked'; el.className = 'val hot'; }
+  else { var s = Math.ceil(rem / 1000); el.textContent = Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); el.className = 'val' + (rem < 120000 ? ' hot' : ''); }
   $('bStart').disabled = running && rem > 0; $('bPlus').disabled = !running; $('bCancel').disabled = !running; $('bLockNow').disabled = running && rem <= 0;
 }
 function renderRelease() {
   var r = !!config.releasedAt;
-  $('releaseState').innerHTML = r ? '<b>Released</b> at ' + new Date(config.releasedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + '. Every phone shows all twenty statements.' : 'Cards only open when scanned.';
+  $('releaseVal').textContent = r ? 'Open' : 'Closed';
   $('bRelease').disabled = r; $('bUnrelease').disabled = !r;
 }
 function splitOf(k, side) {
@@ -447,7 +483,7 @@ function stHtml(k, side, showSplit) {
   var q = content.questions[parseInt(k.slice(1), 10) - 1][side], sp = splitOf(k, side), total = Object.keys(players).length;
   var other = sp.opts.filter(function (o) { return o !== sp.truth; })[0];
   var h = '<div class="st"><p class="txt">' + fmt(q.first) + '</p>';
-  h += '<div class="ans">' + (sp.truth ? NAMES[sp.truth] : '<span class="muted">answer not seeded</span>') + '</div>';
+  h += '<div class="ans">' + (sp.truth ? NAMES[sp.truth] : '<span class="muted">not seeded</span>') + '</div>';
   if (showSplit && sp.truth) {
     var pr = total ? sp.counts[sp.truth] / total * 100 : 0, pw = total ? sp.counts[other] / total * 100 : 0;
     h += '<div class="bar"><i style="width:' + pr + '%"></i><i class="w" style="width:' + pw + '%"></i></div>';
@@ -462,9 +498,11 @@ function stHtml(k, side, showSplit) {
 }
 function renderReveal() {
   if (!content) return;
-  var rk = revealedKeys(), n = rk.length;
-  $('revealState').innerHTML = n === 0 ? 'Nothing revealed yet. Phones show the placeholder.' : (n < TOTAL ? '<b>' + n + ' of ' + TOTAL + '</b> revealed.' : '<b>All ten revealed.</b> Phones show their rank.');
-  $('bNext').disabled = n >= TOTAL; $('bNext').textContent = n >= TOTAL ? 'All revealed' : 'Reveal next (card ' + (n + 1) + ')';
+  var rk = revealedKeys(), n = rk.length, slugs = Object.keys(players), found = 0, ans = 0;
+  slugs.forEach(function (s) { var p = players[s]; found += p.found ? Object.keys(p.found).length : 0; keys.forEach(function (k) { if (p.answers && p.answers[k]) { if (p.answers[k].human) ans++; if (p.answers[k].dog) ans++; } }); });
+  $('revealVal').innerHTML = n + '<small>of ' + TOTAL + '</small>';
+  $('feedState').textContent = slugs.length + ' players \u00b7 ' + found + ' found \u00b7 ' + ans + ' answered';
+  $('bNext').disabled = n >= TOTAL; $('bNext').textContent = n >= TOTAL ? 'All revealed' : 'Reveal card ' + (n + 1);
   $('bAll').disabled = n >= TOTAL; $('bHide').disabled = n === 0;
   $('resetSection').hidden = n > 0;
   var h = '';
@@ -490,18 +528,13 @@ function renderBoard() {
   var rk = revealedKeys().filter(function (k) { return answers[k]; }), all = keys.filter(function (k) { return answers[k]; });
   var useAll = rk.length === 0;
   var table = standings(useAll ? all : rk);
-  $('boardState').textContent = useAll ? 'Private preview: scored against the full answer key. Phones see nothing yet.' : 'Scored on the ' + rk.length + ' card' + (rk.length === 1 ? '' : 's') + ' revealed so far. Ties broken by the tie-breaker (closest to 21 August 2017).';
+  $('tableState').textContent = useAll ? 'private preview, full key' : 'on ' + rk.length + ' revealed';
   $('board').innerHTML = table.map(function (r) {
-    return '<tr><td>' + r.pos + '</td><td>' + esc(pretty(r.slug)) + '</td><td class="num">' + r.score + '</td><td class="num">' + (r.tb === Infinity ? '<span class="muted">none</span>' : r.tb + ' day' + (r.tb === 1 ? '' : 's')) + '</td></tr>';
-  }).join('') || '<tr><td colspan="4" class="muted">No players yet.</td></tr>';
-}
-function renderPlayers() {
-  $('playersTable').innerHTML = Object.keys(players).sort().map(function (s) {
-    var p = players[s], f = p.found ? Object.keys(p.found).length : 0, a = 0;
+    var p = players[r.slug], f = p.found ? Object.keys(p.found).length : 0, a = 0;
     keys.forEach(function (k) { if (p.answers && p.answers[k]) { if (p.answers[k].human) a++; if (p.answers[k].dog) a++; } });
-    var tb = p.tiebreak ? p.tiebreak.day + ' ' + MONTHS[p.tiebreak.month - 1] : '<span class="muted">none</span>';
-    return '<tr><td>' + esc(pretty(s)) + '</td><td class="num">' + f + '</td><td class="num">' + a + '</td><td>' + tb + '</td></tr>';
-  }).join('') || '<tr><td colspan="4" class="muted">No players yet.</td></tr>';
+    var tb = p.tiebreak ? (r.tb === Infinity ? p.tiebreak.day + ' ' + MONTHS[p.tiebreak.month - 1].slice(0, 3) : r.tb + 'd') : '\u2014';
+    return '<tr><td class="rank">' + r.pos + '</td><td>' + esc(pretty(r.slug)) + '</td><td class="n">' + f + '</td><td class="n">' + a + '</td><td class="n score">' + r.score + '</td><td class="n muted">' + tb + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" class="muted">No players yet.</td></tr>';
 }
 </script>
 </body>
