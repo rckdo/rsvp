@@ -1,5 +1,5 @@
 {
-  "version": "1.6",
+  "version": "1.7",
   "reels": {
     "items": [
       "Sausage",
@@ -60,8 +60,8 @@
     {
       "q": 2,
       "human": {
-        "first": "I played a decent game of chess against a grandmaster. Still lost.",
-        "third": "{name} played a decent game of chess against a grandmaster and still lost.",
+        "first": "I played a decent game of chess against a grandmaster (but still lost).",
+        "third": "{name} played a decent game of chess against a grandmaster (but still lost).",
         "icon": "crown.svg"
       },
       "dog": {
@@ -99,8 +99,8 @@
     {
       "q": 5,
       "human": {
-        "first": "I got a box of motors for my birthday.",
-        "third": "{name} got a box of motors for a birthday.",
+        "first": "I got a box of motors for my most recent birthday.",
+        "third": "{name} got a box of motors for their most recent birthday.",
         "icon": "cog.svg"
       },
       "dog": {
@@ -112,13 +112,13 @@
     {
       "q": 6,
       "human": {
-        "first": "I read a lot of Agatha Christie.",
-        "third": "{name} reads a lot of Agatha Christie.",
-        "icon": "book-open.svg"
+        "first": "I recently binge-watched the whole of Agatha Christie's Poirot.",
+        "third": "{name} recently binge-watched the whole of Agatha Christie's Poirot.",
+        "icon": "tv.svg"
       },
       "dog": {
-        "first": "I swallowed the lid off a yoghurt pot and brought it back up ten days later.",
-        "third": "{name} swallowed the lid off a yoghurt pot and brought it back up ten days later.",
+        "first": "I swallowed the lid off a yoghurt pot and threw it back up ten days later.",
+        "third": "{name} swallowed the lid off a yoghurt pot and threw it back up ten days later.",
         "icon": "recycle.svg"
       }
     },
