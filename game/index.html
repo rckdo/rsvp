@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v12.0 (12/09/2026): Bespoke date picker (month tiles, day tiles, impossible days greyed) on the
+          gate and row 21. Patch strip divides into the width. Spin screen line removed.
   v11.0 (12/09/2026): Photos at the reveal. An answer-key entry may carry humanImg or dogImg; the
           picture shows in the flash (which holds a little longer), under the statement in Answers,
           and on the host page.
@@ -241,7 +243,7 @@
     --c:var(--ochre-deep);--cd:var(--bark);
   }
   .patch:before{content:'';position:absolute;left:0;right:0;top:0;height:7px;
-    background:repeating-linear-gradient(90deg, var(--c) 0 9px, var(--cream) 9px 18px)}
+    background-image:linear-gradient(90deg, var(--c) 0 50%, var(--cream) 50% 100%);background-size:calc(100% / 19) 7px;background-repeat:repeat-x}
   .patch.gold{--c:var(--gold);--cd:#8a6a2a}
   /* Statement: the code's icon colour beside the words, two names beneath. */
   .stmt{padding:24px 18px 18px}
@@ -317,8 +319,14 @@
   .tb{padding:24px 18px 18px}
   .tb .tb-q{font-family:var(--display);font-size:19px;color:var(--bark);margin:0}
   .tb .tb-k{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 6px}
-  .pickers{display:flex;gap:10px;margin-top:12px}
-  select{flex:1;min-height:48px;font-family:var(--body);font-size:18px;color:var(--ink);background:var(--cream);border:0;padding:6px 10px;border-radius:0;box-shadow:0 4px 0 var(--ochre-deep), 0 8px 16px rgba(74,63,47,.12)}
+  .dp{margin-top:14px}
+  .dp .months{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+  .dp .days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .dp button{-webkit-appearance:none;appearance:none;border:0;background:var(--cream);color:var(--bark);font-family:var(--label);font-size:14px;letter-spacing:.04em;min-height:40px;padding:0;cursor:pointer;box-shadow:0 3px 0 var(--ochre-deep);transition:transform .08s ease,box-shadow .08s ease}
+  .dp .months button{font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+  .dp button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ochre-deep)}
+  .dp button.on{background:var(--gold);color:var(--cream);box-shadow:0 3px 0 #8a6a2a}
+  .dp button:disabled{opacity:.22;box-shadow:none;cursor:default;transform:none}
   .tb-saved{font-style:italic;color:var(--olive-deep);margin-top:8px;min-height:22px}
 
   /* My answers: ten quilt blocks that fill in as codes are found */
@@ -440,7 +448,6 @@
   <!-- Name reels -->
   <section id="spin" class="screen" hidden>
     <h1>First, a name</h1>
-    <p class="lede">No real names tonight. The reels decide.</p>
     <div class="tombolas" role="group" aria-label="Name reels">
       <div class="tombola"><p class="lab">Item</p><div class="window"><div class="reel-wrap"><div class="reel" id="reelItem"><div class="strip"></div></div></div></div></div>
       <div class="tombola"><p class="lab">Role</p><div class="window"><div class="reel-wrap"><div class="reel" id="reelRole"><div class="strip"></div></div></div></div></div>
@@ -460,7 +467,7 @@
       <p class="lede">Closest answer settles any tie at the pub.</p>
       <div class="patch gold tb">
         <p class="tb-q" id="introQ"></p>
-        <div class="pickers"><select class="tb-day" id="introDay" aria-label="Day"></select><select class="tb-month" id="introMonth" aria-label="Month"></select></div>
+        <div class="dp" id="introDP" data-day="" data-month=""></div>
       </div>
       <button class="btn wide" id="introGo" disabled>Start the hunt</button>
       <p class="deck-hint">You can change it later on My answers</p>
@@ -812,13 +819,9 @@ function showIntro() {
   $('boot').hidden = true; $('intro').hidden = false;
   var pill = $('aliasPill'); $('aliasName').textContent = prettyAlias(alias); pill.hidden = false; pill.classList.add('arrive');
   $('introQ').textContent = content.tiebreak.question;
-  var dayOpts = '<option value="">Day</option>'; for (var d = 1; d <= 31; d++) dayOpts += '<option value="' + d + '">' + d + '</option>';
-  var monOpts = '<option value="">Month</option>'; MONTHS.forEach(function (m, i) { monOpts += '<option value="' + (i + 1) + '">' + m + '</option>'; });
-  $('introDay').innerHTML = dayOpts; $('introMonth').innerHTML = monOpts;
-  var check = function () { $('introGo').disabled = !($('introDay').value && $('introMonth').value); };
-  $('introDay').addEventListener('change', check); $('introMonth').addEventListener('change', check);
+  renderDP($('introDP'));
   $('introGo').addEventListener('click', function () {
-    var d = parseInt($('introDay').value, 10), m = parseInt($('introMonth').value, 10);
+    var d = parseInt($('introDP').dataset.day, 10), m = parseInt($('introDP').dataset.month, 10);
     if (!d || !m) return;
     $('introGo').disabled = true;
     db.ref(ROOT + '/players/' + alias).update({ tiebreak: { day: d, month: m, at: TS }, lastChange: TS })
@@ -990,11 +993,26 @@ document.addEventListener('pointerup', function (ev) {
   endDrag(overGap(drag.gap, ev.clientX, ev.clientY) || !drag.moved);
 });
 document.addEventListener('pointercancel', function (ev) { if (drag && ev.pointerId === drag.id) endDrag(false); });
-document.addEventListener('change', function (ev) {
-  if (!ev.target.matches('#p-code .tb select, #p-mine .tb select')) return;
-  var box = ev.target.closest('.tb');
-  var d = parseInt(box.querySelector('.tb-day').value, 10), m = parseInt(box.querySelector('.tb-month').value, 10);
-  if (d && m) saveTiebreak(d, m);
+/* The date picker: month tiles, then day tiles, impossible days greyed out (2017 is not a leap year). */
+var DIM = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+function renderDP(el) {
+  var d = parseInt(el.dataset.day, 10) || 0, m = parseInt(el.dataset.month, 10) || 0;
+  var max = m ? DIM[m - 1] : 31;
+  var h = '<div class="months">';
+  MONTHS.forEach(function (name, i) { h += '<button type="button" data-m="' + (i + 1) + '"' + (m === i + 1 ? ' class="on"' : '') + '>' + name.slice(0, 3) + '</button>'; });
+  h += '</div><div class="days">';
+  for (var i = 1; i <= 31; i++) h += '<button type="button" data-d="' + i + '"' + (d === i ? ' class="on"' : '') + (i > max ? ' disabled' : '') + '>' + i + '</button>';
+  el.innerHTML = h + '</div>';
+}
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest('.dp button'); if (!b || b.disabled) return;
+  var el = b.closest('.dp');
+  if (b.dataset.m) { el.dataset.month = b.dataset.m; var mx = DIM[parseInt(b.dataset.m, 10) - 1]; if (parseInt(el.dataset.day, 10) > mx) el.dataset.day = ''; }
+  if (b.dataset.d) el.dataset.day = b.dataset.d;
+  renderDP(el);
+  var d = parseInt(el.dataset.day, 10), m = parseInt(el.dataset.month, 10);
+  if (el.id === 'introDP') { $('introGo').disabled = !(d && m); }
+  else if (d && m) saveTiebreak(d, m);
 });
 
 /* =====================================================================
@@ -1030,12 +1048,10 @@ function stmtHtml(k, side) {
 var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 function tiebreakHtml(compact) {
   var tb = me && me.tiebreak;
-  var dayOpts = '<option value="">Day</option>'; for (var d = 1; d <= 31; d++) dayOpts += '<option value="' + d + '"' + (tb && tb.day === d ? ' selected' : '') + '>' + d + '</option>';
-  var monOpts = '<option value="">Month</option>'; MONTHS.forEach(function (m, i) { monOpts += '<option value="' + (i + 1) + '"' + (tb && tb.month === i + 1 ? ' selected' : '') + '>' + m + '</option>'; });
   if (locked) {
     return '<p class="after-lock">' + (tb ? 'You said ' + tb.day + ' ' + MONTHS[tb.month - 1] + ' ' + TB_YEAR + '.' : 'Not answered.') + '</p>';
   }
-  return '<div class="pickers"><select class="tb-day" aria-label="Day">' + dayOpts + '</select><select class="tb-month" aria-label="Month">' + monOpts + '</select></div>' +
+  return '<div class="dp" data-day="' + (tb ? tb.day : '') + '" data-month="' + (tb ? tb.month : '') + '"></div>' +
     '<div class="tb-saved">' + (tb ? 'Saved: ' + tb.day + ' ' + MONTHS[tb.month - 1] + ' ' + TB_YEAR + '. Change it any time.' : (compact ? '' : 'Closest wins any tie.')) + '</div>';
 }
 
@@ -1107,6 +1123,7 @@ function renderMine() {
   }
   html += '</ol>';
   p.innerHTML = html;
+  p.querySelectorAll('.dp').forEach(renderDP);
   $('mineBadge').hidden = !(pending && !locked);
 }
 
