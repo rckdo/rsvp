@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v14.1 (12/09/2026): Countdown as a strip: Closes in, large tabular time, a draining bar; rust in the
+          last two minutes. My answers heading reads The hunt has closed when locked.
   v14.0 (12/09/2026): A brass pin appears on a placed card once Firebase has stored it; a short
           vibration on the drop.
   v13.9 (12/09/2026): 'Answers at the pub' dropped everywhere.
@@ -174,9 +176,14 @@
   .alias .rosette{width:34px;height:42px;flex:0 0 34px;filter:drop-shadow(0 2px 2px rgba(74,63,47,.25))}
   .alias.arrive{animation:alias-in .5s var(--ease-out) both}
   @keyframes alias-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-  .clock{font-family:var(--body);font-style:italic;font-size:18px;color:var(--mutedbrown);margin-top:8px;min-height:24px;transition:color .4s ease}
-  .clock.soon{color:var(--rust);font-style:normal;font-weight:600}
-  .clock.locked{color:var(--bark)}
+  .clock{margin:10px 0 0;min-height:24px;text-align:left}
+  .clock .cd{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown)}
+  .clock .cd b{font-family:var(--display);font-weight:600;font-size:28px;line-height:1;color:var(--bark);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+  .clock .bar{height:6px;background:var(--ochre);margin-top:6px}
+  .clock .bar i{display:block;height:100%;background:var(--olive);transition:width 1s linear,background .4s ease}
+  .clock.soon .cd,.clock.soon .cd b{color:var(--rust)}
+  .clock.soon .bar i{background:var(--rust)}
+  .clock.locked{font-family:var(--body);font-style:italic;font-size:18px;color:var(--bark);text-align:center}
 
   .screen{flex:1;display:flex;flex-direction:column}
   .screen[hidden]{display:none}
@@ -941,17 +948,21 @@ function loadAnswers(keys, fresh) {
 }
 
 /* ---- Countdown ---- */
+var FULL = 15 * 60000;
 function tickClock() {
   var el = $('clock');
-  if (!config.lockAt) { locked = false; el.textContent = ''; el.className = 'clock'; return; }
+  if (!config.lockAt) { if (locked) { locked = false; renderAll(); } if (el.dataset.mode !== 'off') { el.dataset.mode = 'off'; el.innerHTML = ''; el.className = 'clock'; } return; }
   var rem = config.lockAt - now();
   if (rem <= 0) {
     if (!locked) { locked = true; renderAll(); }
-    el.textContent = 'The hunt has closed.'; el.className = 'clock locked'; return;
+    if (el.dataset.mode !== 'closed') { el.dataset.mode = 'closed'; el.textContent = 'The hunt has closed.'; el.className = 'clock locked'; }
+    return;
   }
-  locked = false;
+  if (locked) { locked = false; renderAll(); }
+  if (el.dataset.mode !== 'run') { el.dataset.mode = 'run'; el.innerHTML = '<div class="cd"><span>Closes in</span><b id="cdNum"></b></div><div class="bar"><i id="cdBar"></i></div>'; }
   var s = Math.ceil(rem / 1000), m = Math.floor(s / 60);
-  el.textContent = 'Locks in ' + m + ':' + ('0' + (s % 60)).slice(-2);
+  $('cdNum').textContent = m + ':' + ('0' + (s % 60)).slice(-2);
+  $('cdBar').style.width = Math.max(0, Math.min(100, rem / FULL * 100)) + '%';
   el.className = 'clock' + (rem < 120000 ? ' soon' : '');
 }
 
@@ -1140,7 +1151,8 @@ function renderMine() {
   var p = $('p-mine');
   var found = foundCount(), left = TOTAL_CODES - found;
   var head;
-  if (config.releasedAt) head = 'Everything’s open';
+  if (locked) head = 'The hunt has closed';
+  else if (config.releasedAt) head = 'Everything’s open';
   else if (left === 0) head = 'All ten found';
   else head = left + ' more card' + (left === 1 ? '' : 's') + ' to find';
   var pending = 0;
@@ -1150,7 +1162,7 @@ function renderMine() {
   html += '</div>';
   html += '<div class="ph"><h2>' + head + '</h2></div>';
   if (pending && !locked) html += '<p class="nudge">' + pending + ' still to answer.</p>';
-  if (locked) html += '<p class="note">The hunt has closed.</p>';
+
   html += '<ol class="rows">';
   var revealed = config.revealed || {};
   allKeys().forEach(function (k) {
