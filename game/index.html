@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v16.2 (12/09/2026): Results tab locked until the first card is revealed.
   v16.1 (12/09/2026): A host clue, if set, replaces Not found yet on an unfound card's row.
   v16.0 (12/09/2026): Unfound cards are one row each with a larger block. Reset stamps a game number;
           phones from the previous game forget their name and return to the reels.
@@ -260,6 +261,7 @@
     min-height:44px;padding:10px 2px;cursor:pointer;position:relative;transition:background .15s ease,color .15s ease;
   }
   .tab[aria-selected="true"]{background:var(--cream);color:var(--rust);box-shadow:0 1px 3px rgba(74,63,47,.12)}
+  .tab.off{opacity:.38;pointer-events:none}
   .tab .badge{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--rust)}
   .panels{view-transition-name:panels;flex:1;padding:28px 22px 120px;position:relative}
   .panel[hidden]{display:none}
@@ -1049,6 +1051,11 @@ function tickClock() {
 
 /* ---- Tabs ---- */
 function setTabUI() {
+  // Results is locked until the first card is revealed.
+  var resultsOn = revealedKeys().length > 0;
+  $('tabResults').classList.toggle('off', !resultsOn);
+  $('tabResults').setAttribute('aria-disabled', resultsOn ? 'false' : 'true');
+  if (!resultsOn && tab === 'results') tab = 'mine';
   document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false'); });
   ['code', 'mine', 'results'].forEach(function (t) { $('p-' + t).hidden = t !== tab; });
 }
@@ -1171,7 +1178,7 @@ function placeDate(dp, side, val) {
 /* =====================================================================
    Rendering
    ===================================================================== */
-function renderAll() { if (!content || !$('app') || $('app').hidden) return; renderCode(); renderMine(); renderResults(); }
+function renderAll() { if (!content || !$('app') || $('app').hidden) return; setTabUI(); renderCode(); renderMine(); renderResults(); }
 
 var justPlaced = null, justBack = null, pending = {};
 function gapHtml(k, side) {
