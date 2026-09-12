@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v13.5 (12/09/2026): Placard numerals in gold, larger and bolder, pressed in.
   v13.4 (12/09/2026): Placed date cards keep their tile colour; only position changes.
   v13.3 (12/09/2026): 2017 as a screwed-on placard with pressed-in numerals.
   v13.2 (12/09/2026): Date tiles ochre, placed date cards olive, fixed 2017 in bark.
@@ -335,8 +336,9 @@
   .namecard.sm{font-size:12px;letter-spacing:.06em;height:40px}
   /* 2017: a placard, screwed on. Bevelled bark plate, two slotted screws, numerals pressed in. */
   .namecard.fixed{width:auto;padding:0 30px;margin-left:4px;cursor:default;position:relative;
-    background:linear-gradient(180deg,#5b4d3a,#43392a 55%,#3a3023);color:#2a2218;border:1px solid #2e2719;
-    text-shadow:0 1px 0 rgba(255,240,210,.28), 0 -1px 0 rgba(0,0,0,.55);letter-spacing:.16em;
+    background:linear-gradient(180deg,#5b4d3a,#43392a 55%,#3a3023);border:1px solid #2e2719;
+    font-family:var(--display);font-weight:600;font-size:19px;color:#b8892f;letter-spacing:.12em;text-transform:none;
+    text-shadow:0 -1px 0 rgba(0,0,0,.7), 0 1px 0 rgba(255,235,190,.35);
     box-shadow:inset 0 1px 0 rgba(255,240,210,.22), inset 0 -1px 0 rgba(0,0,0,.45), 0 2px 0 #2e2719, 0 6px 12px rgba(74,63,47,.28)}
   .namecard.fixed:before,.namecard.fixed:after{content:'';position:absolute;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;
     background:linear-gradient(40deg,transparent 42%,#3a3023 42% 58%,transparent 58%), radial-gradient(circle at 35% 35%,#e6d7b1,#a8956e 60%,#6e5f43);
