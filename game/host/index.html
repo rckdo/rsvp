@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v17.2 (12/09/2026): Reset always available on Setup (typed RESET plus confirm).
   v17.1 (12/09/2026): Stale-tab guard.
   v17.0 (12/09/2026): Present tab: a strip of the ten cards, an On screen panel mirroring the phones,
           a Next panel previewing the next press, and Back and Next pinned to the bottom.
@@ -607,7 +608,7 @@ function renderReveal() {
   $('bNext').disabled = si.mode === 'done' || ph === 'open'; $('bNext').textContent = ph === 'open' ? 'Close the hunt first' : lab;
   $('bAll').disabled = n >= TOTAL || ph === 'open'; $('bHide').disabled = ph !== 'revealing'; $('bScreen').disabled = !(config.stage && config.stage.card);
   $('bBack').disabled = ph !== 'revealing';
-  $('resetSection').hidden = n > 0;
+
   var h = '';
   var staged = config.stage && config.stage.card;
   if (n < TOTAL) { var nk = 'q' + (n + 1), onScreen = staged === nk && config.stage.step === 'question'; h += '<div class="reveal-card' + (onScreen ? '' : ' next') + '"><h3>' + CODE_STYLE[n] + (onScreen ? 'On screen: card ' : 'Next up: card ') + (n + 1) + '<small>' + (onScreen ? 'sentences showing' : 'not yet shown') + '</small></h3>' + stHtml(nk, 'human', false) + stHtml(nk, 'dog', false) + '</div>'; }

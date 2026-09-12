@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v15.3 (12/09/2026): 'It was' shows the true name as an olive card, on the stage and on My answers.
+          Results' Answers block runs in card order.
   v15.2 (12/09/2026): Stale-tab guard: reloads itself when a newer version is live and the tab comes
           back to the front.
   v15.1 (12/09/2026): Scrollbar space reserved on desktop so the card never shifts sideways.
@@ -316,6 +318,8 @@
   .namecard.mini{width:80px;height:28px;font-size:10px;letter-spacing:.12em;vertical-align:middle;margin-left:8px;transform:rotate(-2deg)}
   .namecard.mini:after{width:16px;height:16px;right:-7px;top:-7px;background-size:9px 9px}
   .said{font-style:italic;font-size:17px;color:var(--mutedbrown);margin:8px 0 2px}
+  .namecard.mini.truth{background:#edf0de;color:var(--olive-deep);border-color:var(--olive);box-shadow:0 2px 0 var(--olive-deep);margin-left:6px;transform:rotate(-2deg)}
+  .itwas{font-style:italic;font-size:17px;color:var(--mutedbrown);margin:12px 0 0;display:flex;align-items:center}
   .photo{display:block;max-width:100%;height:auto;margin:12px auto 6px;padding:6px 6px 14px;background:#fbf6ea;
     box-shadow:0 2px 0 var(--ochre-deep), 0 10px 20px rgba(74,63,47,.2);transform:rotate(-1.5deg)}
   .split .photo{max-width:82%}
@@ -470,8 +474,7 @@
   #ack .k .qb{width:36px;height:36px;box-shadow:0 3px 8px rgba(74,63,47,.18)}
   #ack .stage-stmt{padding:24px 18px 18px}
   #ack .stage-stmt .stmt-text{font-size:22px}
-  #ack .truth{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--olive-deep);margin:12px 0 0}
-  #ack .truth.missed{color:var(--mutedbrown)}
+  #ack .itwas{margin-top:14px}
   #ack .waiting{font-style:italic;color:var(--mutedbrown);text-align:center;margin-top:16px}
   #ack .stage-stmt .photo{margin-top:14px}
   .ackp{padding:24px 20px;color:var(--cream);text-align:center;margin:0 auto;width:100%;max-width:400px;box-shadow:0 14px 30px rgba(59,56,47,.2)}
@@ -984,8 +987,7 @@ function renderStage() {
     html += '<div class="patch stmt stage-stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + sentenceHtml(k, side) + '</p></div>';
     if (answerStep && ready) {
       var truth = answers[k][side];
-      if (!mine) html += '<p class="truth missed">Not answered. It was ' + NAMES[truth] + '</p>';
-      else if (mine !== truth) html += '<p class="truth">It was ' + NAMES[truth] + '</p>';
+      if (mine !== truth) html += '<p class="itwas">It was<span class="namecard mini truth">' + NAMES[truth] + '</span></p>';
       html += photoHtml(k, side);
     }
     html += '</div>';
@@ -1240,13 +1242,13 @@ function renderMine() {
       var cls = 'row patch ' + side, verdict = '';
       if (revealed[k] && answers[k]) {
         var truth = answers[k][side];
-        if (!cur) { cls += ' missed'; verdict = 'Not answered. It was ' + NAMES[truth] + '.'; }
-        else if (cur === truth) { cls += ' right'; verdict = '<span class="mark right"></span>Right'; }
-        else { cls += ' wrong'; verdict = '<span class="mark wrong"></span>It was ' + NAMES[truth] + '.'; }
+        if (!cur) { cls += ' missed'; verdict = '<span class="itwas" style="margin:6px 0 0">It was<span class="namecard mini truth">' + NAMES[truth] + '</span></span>'; }
+        else if (cur === truth) { cls += ' right'; verdict = ''; }
+        else { cls += ' wrong'; verdict = '<span class="itwas" style="margin:6px 0 0">It was<span class="namecard mini truth">' + NAMES[truth] + '</span></span>'; }
       }
       html += '<li class="' + cls + '" style="' + window.codeVars(n - 1) + '"><span class="n">' + label + '</span><span class="ic">' + icon(q.icon) + '</span><div class="body">';
       html += '<p>' + sentenceHtml(k, side) + '</p>';
-      if (verdict) html += '<div class="verdict">' + verdict + '</div>';
+      if (revealed[k] && answers[k]) { if (verdict) html += verdict; }
       else if (locked && !cur) html += '<div class="verdict">Not answered</div>';
       else html += deckHtml(k, side);
       html += '</div></li>';
@@ -1323,7 +1325,7 @@ function renderResults() {
   html += '</ol></section>';
   html += '<section class="patch"><p class="sec-k">Answers</p>';
   var total = Object.keys(players).length;
-  keys.slice().reverse().forEach(function (k) {
+  keys.forEach(function (k) {
     html += '<div class="split-code" style="' + window.codeVars(qnum(k) - 1) + '">' + window.codeBlock(qnum(k) - 1, 22) + 'Card ' + qnum(k) + '</div>';
     ['human', 'dog'].forEach(function (side) {
       var truth = answers[k][side], mine = pick(k, side);
