@@ -1,5 +1,5 @@
 {
-  "version": "1.3",
+  "version": "1.4",
   "reels": {
     "items": [
       "Sausage",
@@ -112,8 +112,8 @@
     {
       "q": 6,
       "human": {
-        "first": "My comfort reading is Agatha Christie.",
-        "third": "{name}'s comfort reading is Agatha Christie.",
+        "first": "I read a lot of Agatha Christie.",
+        "third": "{name} reads a lot of Agatha Christie.",
         "icon": "book-open.svg"
       },
       "dog": {
@@ -151,9 +151,9 @@
     {
       "q": 9,
       "human": {
-        "first": "PLACEHOLDER: I've owned the same ______ since I was ______.",
-        "third": "{name} has owned the same ______ since ______.",
-        "icon": "hourglass.svg"
+        "first": "I got into brewing kombucha, then got bored of it.",
+        "third": "{name} got into brewing kombucha, then got bored of it.",
+        "icon": "flask-conical.svg"
       },
       "dog": {
         "first": "The vet says I could do with putting on a bit of weight.",
