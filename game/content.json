@@ -1,5 +1,5 @@
 {
-  "version": "1.2",
+  "version": "1.3",
   "reels": {
     "items": [
       "Sausage",
@@ -112,8 +112,8 @@
     {
       "q": 6,
       "human": {
-        "first": "I read Agatha Christie novels for fun.",
-        "third": "{name} reads Agatha Christie novels for fun.",
+        "first": "My comfort reading is Agatha Christie.",
+        "third": "{name}'s comfort reading is Agatha Christie.",
         "icon": "book-open.svg"
       },
       "dog": {
@@ -138,9 +138,9 @@
     {
       "q": 8,
       "human": {
-        "first": "PLACEHOLDER: I once got banned from ______.",
-        "third": "{name} once got banned from ______.",
-        "icon": "ban.svg"
+        "first": "I bought a pair of binoculars specifically to go bird watching.",
+        "third": "{name} bought a pair of binoculars specifically to go bird watching.",
+        "icon": "binoculars.svg"
       },
       "dog": {
         "first": "Every new quilt has to be lain on by me before it's allowed.",
