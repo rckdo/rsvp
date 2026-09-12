@@ -1,0 +1,178 @@
+{
+  "version": "1.11",
+  "reels": {
+    "items": [
+      "Sausage",
+      "Scone",
+      "Pizza",
+      "Meatball",
+      "Crumpet",
+      "Tennis Ball",
+      "Gravy",
+      "Cider",
+      "Pickle",
+      "Custard",
+      "Slipper",
+      "Biscuit",
+      "Cake",
+      "Puddle",
+      "Sock",
+      "Kettle"
+    ],
+    "roles": [
+      "Bandit",
+      "Hoarder",
+      "Goblin",
+      "Sniffer",
+      "Botherer",
+      "Wrangler",
+      "Inspector",
+      "Menace",
+      "Smuggler",
+      "Dodger",
+      "Whisperer",
+      "Baron",
+      "Snaffler",
+      "Connoisseur",
+      "Custodian",
+      "Fiend"
+    ]
+  },
+  "iconBase": "https://cdn.jsdelivr.net/npm/lucide-static@0.475.0/icons/",
+  "tiebreak": {
+    "question": "What date in 2017 did Richard and Lorraine become official?",
+    "third": "The date in 2017 Richard and Lorraine became official"
+  },
+  "questions": [
+    {
+      "q": 1,
+      "human": {
+        "first": "I enjoy talking about planes.",
+        "third": "{name} enjoys talking about planes.",
+        "icon": "plane.svg"
+      },
+      "dog": {
+        "first": "I will do absolutely anything for a toothbrush.",
+        "third": "{name} will do absolutely anything for a toothbrush.",
+        "icon": "brush.svg"
+      }
+    },
+    {
+      "q": 2,
+      "human": {
+        "first": "I was \"playing an excellent game\" 19 moves in against a chess grandmaster (but eventually lost).",
+        "third": "{name} was \"playing an excellent game\" 19 moves in against a chess grandmaster (but eventually lost).",
+        "icon": "crown.svg"
+      },
+      "dog": {
+        "first": "I once had a vet appointment card that said I was \"very well behaved\".",
+        "third": "{name} was described as \"very well behaved\" on a vet appointment card.",
+        "icon": "clipboard-check.svg"
+      }
+    },
+    {
+      "q": 3,
+      "human": {
+        "first": "I'm a big fan of Finnish heavy metal.",
+        "third": "{name} is a big fan of Finnish heavy metal.",
+        "icon": "guitar.svg"
+      },
+      "dog": {
+        "first": "I used to be called Stitch.",
+        "third": "{name} used to be called Stitch.",
+        "icon": "tag.svg"
+      }
+    },
+    {
+      "q": 4,
+      "human": {
+        "first": "I ran the Reading Half Marathon in 1:51:50.",
+        "third": "{name} ran the Reading Half Marathon in 1:51:50.",
+        "icon": "medal.svg"
+      },
+      "dog": {
+        "first": "My mortal enemy is a collie.",
+        "third": "{name}'s mortal enemy is a collie.",
+        "icon": "dog.svg"
+      }
+    },
+    {
+      "q": 5,
+      "human": {
+        "first": "I got a box of motors for my most recent birthday.",
+        "third": "{name} got a box of motors for their most recent birthday.",
+        "icon": "cog.svg"
+      },
+      "dog": {
+        "first": "I once knocked a goose out of the sky.",
+        "third": "{name} once knocked a goose out of the sky.",
+        "icon": "bird.svg"
+      }
+    },
+    {
+      "q": 6,
+      "human": {
+        "first": "I recently binge-watched the whole of Agatha Christie's Poirot.",
+        "third": "{name} recently binge-watched the whole of Agatha Christie's Poirot.",
+        "icon": "tv.svg"
+      },
+      "dog": {
+        "first": "I swallowed the lid off a yoghurt pot and threw it back up ten days later.",
+        "third": "{name} swallowed the lid off a yoghurt pot and threw it back up ten days later.",
+        "icon": "recycle.svg"
+      }
+    },
+    {
+      "q": 7,
+      "human": {
+        "first": "I know some card magic tricks, but can't do them particularly well.",
+        "third": "{name} knows some card magic tricks but can't do them particularly well.",
+        "icon": "wand.svg"
+      },
+      "dog": {
+        "first": "I can woof on cue. Say \"woof\" to me and see.",
+        "third": "{name} can woof on cue.",
+        "icon": "megaphone.svg"
+      }
+    },
+    {
+      "q": 8,
+      "human": {
+        "first": "I bought a pair of binoculars specifically to go bird watching.",
+        "third": "{name} bought a pair of binoculars specifically to go bird watching.",
+        "icon": "binoculars.svg"
+      },
+      "dog": {
+        "first": "Every new quilt has to be lain on by me before it's allowed.",
+        "third": "{name} has to lie on every new quilt before it's allowed.",
+        "icon": "bed.svg"
+      }
+    },
+    {
+      "q": 9,
+      "human": {
+        "first": "I got into brewing kombucha, then got bored of it.",
+        "third": "{name} got into brewing kombucha, then got bored of it.",
+        "icon": "flask-conical.svg"
+      },
+      "dog": {
+        "first": "The vet says I could do with putting on a bit of weight.",
+        "third": "The vet says {name} could do with putting on a bit of weight.",
+        "icon": "weight.svg"
+      }
+    },
+    {
+      "q": 10,
+      "human": {
+        "first": "I can read this without blinking: `=IFERROR(INDEX(Leases[Rent],MATCH(1,(Leases[Building]=$B$2)*(Leases[Quarter]=C$1),0)),XLOOKUP($B$2,Buildings[Name],Buildings[Floor Area],0)*$D$1)`",
+        "third": "{name} can read this without blinking: `=IFERROR(INDEX(Leases[Rent],MATCH(1,(Leases[Building]=$B$2)*(Leases[Quarter]=C$1),0)),XLOOKUP($B$2,Buildings[Name],Buildings[Floor Area],0)*$D$1)`",
+        "icon": "sigma.svg"
+      },
+      "dog": {
+        "first": "I once got a cuddle from Nitro off Gladiators.",
+        "third": "{name} once got a cuddle from Nitro off Gladiators.",
+        "icon": "dumbbell.svg"
+      }
+    }
+  ]
+}

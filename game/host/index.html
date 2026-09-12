@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<!--
+  Find the codes : host page (the pub reveal)
+  Lorraine & Richard, Monday 21 September 2026
+
+  Changelog
+  v11.0 (12/09/2026): Photos from the answer key shown on reveal cards.
+  v10.0 (12/09/2026): Backticks in statement text render as code.
+  v8.0 (12/09/2026): Cards, not codes, in the wording.
+  v6.0 (12/09/2026): Alias shown without the article.
+  v4.0 (12/09/2026): Each code's quilt block shown on its reveal card, matching the guest page.
+  v1.0 (12/09/2026): First build from spec v55. Sits behind the couple's passcode splash
+          (Richard's code only). The Firebase host key is taken from ?key= once, kept on
+          the device, and never appears in the page source. Controls: 15-minute countdown
+          with +5, cancel and lock now; release all codes; reveal next, reveal all, hide
+          results; reset (typed RESET plus a native confirm, hidden while anything is
+          revealed). Live room: players, found and answered counts, per-statement split
+          bars, who got each wrong, private host notes, leaderboard with tie-break.
+          Statements come from ../content.json; the answer key is read from Firebase.
+-->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Game host · Lorraine &amp; Richard</title>
+<link rel="icon" href="/icons/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#26332c; --forest:#2f4a3c; --sage:#6f8a77; --gold:#a3762f;
+    --paper:#eef1ea; --card:#fbfaf5; --line:#dce0d6; --line-strong:#c6cdbe;
+    --cream:#efe6d3; --ochre:#e0cfa4; --rust:#a34a2c; --bark:#4a3f2f; --olive:#7a7c47;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--paper);color:var(--ink);font-family:'Karla',system-ui,sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px 80px}
+
+  /* Passcode splash, same as the menu */
+  #splash{position:fixed;inset:0;z-index:70;background:var(--forest);display:flex;align-items:center;justify-content:center;padding:24px}
+  #splash.hidden{display:none}
+  .splash-card{background:var(--card);border-radius:18px;padding:38px 30px 34px;max-width:340px;width:100%;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.28)}
+  .splash-card h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:30px;color:var(--forest);margin:0;line-height:1.1}
+  .splash-card .amp{color:var(--gold);font-style:italic;font-weight:500}
+  .splash-card p{font-size:14px;color:var(--sage);margin:10px 0 24px}
+  .dots{display:flex;gap:12px;justify-content:center;cursor:text;position:relative}
+  .dot{width:50px;height:58px;border:1.5px solid var(--line-strong);border-radius:10px;background:#fff;font-size:26px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:center;transition:border-color .15s ease}
+  .dot.filled{border-color:var(--sage)}
+  #pin{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;font-size:26px}
+  .splash-err{font-size:13px;color:#a3512f;margin-top:14px;min-height:20px}
+  .dots.shake{animation:shake .4s ease}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+
+  header{padding:34px 0 18px;border-bottom:1px solid var(--line);margin-bottom:22px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:34px;line-height:1.05;margin:0;color:var(--forest)}
+  header .sub{color:var(--sage);font-size:14px;margin:4px 0 0}
+  header a{color:var(--sage);font-size:14px}
+  h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:24px;margin:0 0 10px;color:var(--forest)}
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .state{color:var(--sage);font-size:14px;margin:0 0 12px}
+  .state b{color:var(--ink);font-weight:700}
+  .state.hot b{color:var(--rust)}
+  .btns{display:flex;flex-wrap:wrap;gap:8px}
+  button{font-family:inherit;font-size:14px;font-weight:700;min-height:42px;padding:8px 16px;border-radius:8px;border:1.5px solid var(--forest);background:var(--forest);color:#fff;cursor:pointer}
+  button.ghost{background:transparent;color:var(--forest)}
+  button.warn{background:var(--rust);border-color:var(--rust)}
+  button.warn.ghost{background:transparent;color:var(--rust)}
+  button:disabled{opacity:.4;cursor:default}
+  input[type=text]{font-family:inherit;font-size:16px;min-height:42px;padding:8px 12px;border:1.5px solid var(--line-strong);border-radius:8px;background:#fff;width:100%;max-width:340px}
+  .stats{display:flex;flex-wrap:wrap;gap:18px 28px}
+  .stat b{display:block;font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;line-height:1;color:var(--forest);font-weight:600}
+  .stat span{font-size:13px;color:var(--sage)}
+
+  .reveal-card{border-top:1px solid var(--line);padding:14px 0 4px;margin-top:14px}
+  .reveal-card.next{border-top:1px dashed var(--line-strong)}
+  .reveal-card h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:20px;margin:0 0 8px;color:var(--forest);display:flex;align-items:center;gap:10px}
+  .qb{display:grid;width:26px;height:26px;flex:0 0 26px;box-shadow:0 2px 5px rgba(0,0,0,.15)}
+  .qb .cell{display:block;width:100%;height:100%}
+  .reveal-card h3 small{font-family:'Karla',sans-serif;font-size:12px;color:var(--sage);font-weight:500;margin-left:8px}
+  .st{padding:10px 0}
+  .st + .st{border-top:1px dashed var(--line)}
+  .st .txt{margin:0 0 6px;font-size:17px}
+  .photo{display:block;max-width:360px;width:100%;height:auto;margin:8px 0;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8em;background:var(--paper);padding:2px 5px;word-break:break-all;overflow-wrap:anywhere}
+  .st .ans{font-weight:700;color:var(--olive)}
+  .bar{display:flex;height:10px;background:var(--paper);border-radius:5px;overflow:hidden;margin:6px 0 4px}
+  .bar i{display:block;height:100%;background:var(--olive);transition:width .5s ease}
+  .bar i.w{background:var(--rust)}
+  .lab{display:flex;justify-content:space-between;font-size:13px;color:var(--sage)}
+  .lab .ok{color:var(--olive);font-weight:700}
+  .wrongs{font-size:14px;color:var(--rust);margin:4px 0 0}
+  .note{font-size:14px;color:var(--gold);font-style:italic;margin:4px 0 0}
+  .note:before{content:'Note: '}
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;color:var(--sage);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+  td.num,th.num{text-align:right}
+  .muted{color:var(--sage)}
+  .danger{border-color:#e6c9bd}
+  .keybox{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .err{color:var(--rust);font-size:14px;margin-top:8px;min-height:20px}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="splash-card">
+    <h1>Lorraine <span class="amp">&amp;</span> Richard</h1>
+    <p>Host code</p>
+    <div class="dots" id="dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <input id="pin" type="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="4" aria-label="4 character passcode">
+    </div>
+    <div class="splash-err" id="splash-err"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div><h1>Find the cards</h1><p class="sub">Host controls for the pub</p></div>
+    <a href="/menu/">Menu</a>
+  </header>
+
+  <section id="keySection" hidden>
+    <h2>Host key</h2>
+    <p class="state">This page needs the host key once. It stays on this phone afterwards.</p>
+    <div class="keybox"><input type="text" id="keyInput" placeholder="Paste the host key" autocomplete="off"><button id="keyGo">Use key</button></div>
+    <div class="err" id="keyErr"></div>
+  </section>
+
+  <div id="dash" hidden>
+    <section>
+      <div class="stats">
+        <div class="stat"><b id="sPlayers">0</b><span>players</span></div>
+        <div class="stat"><b id="sFound">0</b><span>cards found (all players)</span></div>
+        <div class="stat"><b id="sAnswered">0</b><span>statements answered</span></div>
+        <div class="stat"><b id="sRevealed">0</b><span>of 10 revealed</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Countdown</h2>
+      <p class="state" id="clockState">No countdown running.</p>
+      <div class="btns">
+        <button id="bStart">Start 15 minutes</button>
+        <button class="ghost" id="bPlus">+5 minutes</button>
+        <button class="ghost" id="bCancel">Cancel</button>
+        <button class="warn" id="bLockNow">Lock now</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Release all cards</h2>
+      <p class="state" id="releaseState">Cards only open when scanned.</p>
+      <div class="btns">
+        <button id="bRelease">Release all</button>
+        <button class="ghost" id="bUnrelease">Undo</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Reveal</h2>
+      <p class="state" id="revealState"></p>
+      <div class="btns">
+        <button id="bNext">Reveal next</button>
+        <button class="ghost" id="bAll">Reveal all</button>
+        <button class="warn ghost" id="bHide">Hide results</button>
+      </div>
+      <div id="revealCards"></div>
+    </section>
+
+    <section>
+      <h2>Leaderboard</h2>
+      <p class="state" id="boardState"></p>
+      <table><thead><tr><th>#</th><th>Alias</th><th class="num">Score</th><th class="num">Tie-break</th></tr></thead><tbody id="board"></tbody></table>
+    </section>
+
+    <section>
+      <h2>Players</h2>
+      <table><thead><tr><th>Alias</th><th class="num">Found</th><th class="num">Answered</th><th>Tie-break guess</th></tr></thead><tbody id="playersTable"></tbody></table>
+    </section>
+
+    <section class="danger" id="resetSection">
+      <h2>Reset all</h2>
+      <p class="state">For rehearsal only. Wipes every player and the config. Type RESET to arm the button.</p>
+      <div class="keybox"><input type="text" id="resetInput" placeholder="RESET" autocomplete="off" style="max-width:160px"><button class="warn" id="bReset" disabled>Reset everything</button></div>
+    </section>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>
+/* Each code's quilt block and colour, matching the guest page. */
+var CODE_STYLE = (function () {
+  var CREAM = '#efe6d3';
+  function hst(dir, a) {
+    switch (dir) {
+      case 'tl': return 'linear-gradient(to bottom right,' + a + ' 0 50%,' + CREAM + ' 50% 100%)';
+      case 'br': return 'linear-gradient(to bottom right,' + CREAM + ' 0 50%,' + a + ' 50% 100%)';
+      case 'tr': return 'linear-gradient(to bottom left,' + a + ' 0 50%,' + CREAM + ' 50% 100%)';
+      case 'bl': return 'linear-gradient(to bottom left,' + CREAM + ' 0 50%,' + a + ' 50% 100%)';
+    }
+  }
+  var SHAPES = {
+    geese: function (a) { return [2, ['tr', 'tl', 'tr', 'tl'].map(function (d) { return hst(d, a); })]; },
+    pinwheel: function (a) { return [2, ['tr', 'br', 'tl', 'bl'].map(function (d) { return hst(d, a); })]; },
+    dishes: function (a) { return [2, ['br', 'bl', 'tr', 'tl'].map(function (d) { return hst(d, a); })]; },
+    nine: function (a) { return [3, [a, CREAM, a, CREAM, a, CREAM, a, CREAM, a]]; },
+    hourglass: function (a) { return [1, ['conic-gradient(' + a + ' 0 45deg,' + CREAM + ' 45deg 135deg,' + a + ' 135deg 225deg,' + CREAM + ' 225deg 315deg,' + a + ' 315deg)']]; }
+  };
+  var C = { rust: '#a34a2c', olive: '#7a7c47', gold: '#c99a3f', terracotta: '#bf6a43', bark: '#4a3f2f' };
+  var PAIRS = [['geese', 'rust'], ['pinwheel', 'olive'], ['dishes', 'gold'], ['nine', 'terracotta'], ['hourglass', 'bark'],
+               ['pinwheel', 'rust'], ['dishes', 'olive'], ['geese', 'gold'], ['hourglass', 'terracotta'], ['nine', 'bark']];
+  return PAIRS.map(function (p) {
+    var sh = SHAPES[p[0]](C[p[1]]);
+    return '<span class="qb" style="grid-template-columns:repeat(' + sh[0] + ',1fr);grid-template-rows:repeat(' + sh[0] + ',1fr)">' + sh[1].map(function (bg) { return '<span class="cell" style="background:' + bg + '"></span>'; }).join('') + '</span>';
+  });
+})();
+
+/* Private host notes: the anecdote cue for each statement. Never in Firebase. */
+var HOST_NOTES = {
+  q1: { human: '', dog: '' },
+  q2: { human: '', dog: '' },
+  q3: { human: '', dog: '' },
+  q4: { human: '', dog: '' },
+  q5: { human: '', dog: 'The goose was at the reservoir. Ask Lorraine.' },
+  q6: { human: '', dog: '' },
+  q7: { human: '', dog: '' },
+  q8: { human: '', dog: '' },
+  q9: { human: '', dog: '' },
+  q10: { human: '', dog: '' }
+};
+
+var FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyBI-BFXh8BzvsaDw3Mm0Mxi7UmqyU1Y_g8',
+  authDomain: 'rl-wedding-fe94a.firebaseapp.com',
+  databaseURL: 'https://rl-wedding-fe94a-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'rl-wedding-fe94a',
+  storageBucket: 'rl-wedding-fe94a.firebasestorage.app',
+  messagingSenderId: '54300603401',
+  appId: '1:54300603401:web:b743cdc18f80b9626874d8'
+};
+var ROOT = 'game', TOTAL = 10, TB_YEAR = 2017;
+var NAMES = { R: 'Richard', L: 'Lorraine', E: 'Eric', T: 'Tango' };
+var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+var HOSTKEY_STORE = 'rl-game-hostkey';
+var $ = function (id) { return document.getElementById(id); };
+var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+var fmt = function (s) { return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>'); };
+var pretty = function (slug) { var p = slug.split('-'), r = p.pop(); return (p.join(' ') + ' ' + r).replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }); };
+var keys = []; for (var i = 1; i <= TOTAL; i++) keys.push('q' + i);
+
+/* ---- Gate: Richard's passcode ---- */
+var PASSCODES = { EGGS: 'R' };
+var UNLOCK_KEY = 'rl-tracker-unlocked';
+var splash = $('splash'), pin = $('pin'), dotsEl = $('dots'), splashErr = $('splash-err');
+function unlock() {
+  try { localStorage.setItem(UNLOCK_KEY, '1'); localStorage.setItem('rl-tracker-who', 'R'); } catch (e) {}
+  splash.classList.add('hidden');
+  bootHost();
+}
+function paintDots() { var v = pin.value; dotsEl.querySelectorAll('.dot').forEach(function (d, i) { d.textContent = v[i] ? v[i].toUpperCase() : ''; d.classList.toggle('filled', !!v[i]); }); }
+pin.addEventListener('input', function () {
+  pin.value = pin.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4); paintDots();
+  if (pin.value.length === 4) {
+    if (PASSCODES[pin.value.toUpperCase()]) unlock();
+    else { splashErr.textContent = 'That’s not the host code.'; dotsEl.classList.add('shake'); setTimeout(function () { dotsEl.classList.remove('shake'); pin.value = ''; paintDots(); }, 420); }
+  } else splashErr.textContent = '';
+});
+dotsEl.addEventListener('click', function () { pin.focus(); });
+(function () {
+  var ok = false;
+  try { ok = localStorage.getItem(UNLOCK_KEY) === '1' && localStorage.getItem('rl-tracker-who') === 'R'; } catch (e) {}
+  if (ok) { splash.classList.add('hidden'); bootHost(); } else pin.focus();
+})();
+
+/* ---- Firebase and the host key ---- */
+var db, auth, uid, hostKey = null, offset = 0, content = null;
+var config = {}, players = {}, answers = {};
+function bootHost() {
+  var m = location.search.match(/[?&]key=([^&]+)/);
+  if (m) { hostKey = decodeURIComponent(m[1]); try { localStorage.setItem(HOSTKEY_STORE, hostKey); } catch (e) {} history.replaceState(null, '', location.pathname); }
+  else { try { hostKey = localStorage.getItem(HOSTKEY_STORE); } catch (e) {} }
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.database(); auth = firebase.auth();
+  db.ref('.info/serverTimeOffset').on('value', function (s) { offset = s.val() || 0; });
+  fetch('../content.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (c) { content = c; renderReveal(); });
+  auth.signInAnonymously().then(function (cred) { uid = cred.user.uid; if (hostKey) claim(); else $('keySection').hidden = false; });
+}
+$('keyGo').addEventListener('click', function () {
+  var k = $('keyInput').value.trim(); if (!k) return;
+  hostKey = k; try { localStorage.setItem(HOSTKEY_STORE, k); } catch (e) {}
+  claim();
+});
+function claim() {
+  $('keyErr').textContent = '';
+  db.ref(ROOT + '/host/' + hostKey).set(uid).then(function () {
+    $('keySection').hidden = true; $('dash').hidden = false;
+    subscribe();
+  }).catch(function () {
+    try { localStorage.removeItem(HOSTKEY_STORE); } catch (e) {}
+    $('keySection').hidden = false; $('keyErr').textContent = 'That key isn’t right. Check it and try again.';
+  });
+}
+function subscribe() {
+  db.ref(ROOT + '/config').on('value', function (s) { config = s.val() || {}; renderAll(); });
+  db.ref(ROOT + '/players').on('value', function (s) { players = s.val() || {}; renderAll(); });
+  keys.concat(['tiebreak']).forEach(function (k) { db.ref(ROOT + '/answers/' + k).on('value', function (s) { answers[k] = s.val(); renderAll(); }); });
+  setInterval(renderClock, 500);
+}
+var now = function () { return Date.now() + offset; };
+var cfg = function () { return db.ref(ROOT + '/config'); };
+function revealedKeys() { return keys.filter(function (k) { return config.revealed && config.revealed[k] === true; }); }
+function fail(e) { alert('That didn’t save: ' + (e && e.code ? e.code : e)); }
+
+/* ---- Controls ---- */
+$('bStart').addEventListener('click', function () { cfg().update({ lockAt: now() + 15 * 60000 }).catch(fail); });
+$('bPlus').addEventListener('click', function () { var base = config.lockAt && config.lockAt > now() ? config.lockAt : now(); cfg().update({ lockAt: base + 5 * 60000 }).catch(fail); });
+$('bCancel').addEventListener('click', function () { cfg().update({ lockAt: null }).catch(fail); });
+$('bLockNow').addEventListener('click', function () { if (confirm('Lock the game now? Nobody can answer after this.')) cfg().update({ lockAt: now() - 1000 }).catch(fail); });
+$('bRelease').addEventListener('click', function () { cfg().update({ releasedAt: firebase.database.ServerValue.TIMESTAMP }).catch(fail); });
+$('bUnrelease').addEventListener('click', function () { cfg().update({ releasedAt: null }).catch(fail); });
+$('bNext').addEventListener('click', function () {
+  var n = revealedKeys().length; if (n >= TOTAL) return;
+  var up = {}; up['revealed/q' + (n + 1)] = true; cfg().update(up).catch(fail);
+});
+$('bAll').addEventListener('click', function () {
+  if (!confirm('Reveal all ten cards at once?')) return;
+  var up = {}; keys.forEach(function (k) { up['revealed/' + k] = true; }); cfg().update(up).catch(fail);
+});
+$('bHide').addEventListener('click', function () { if (confirm('Hide all results? Phones go back to the placeholder.')) cfg().update({ revealed: null }).catch(fail); });
+$('resetInput').addEventListener('input', function () { $('bReset').disabled = $('resetInput').value.trim() !== 'RESET'; });
+$('bReset').addEventListener('click', function () {
+  if (!confirm('Wipe every player and all settings? This cannot be undone.')) return;
+  Promise.all([db.ref(ROOT + '/players').remove(), cfg().remove()]).then(function () { $('resetInput').value = ''; $('bReset').disabled = true; }).catch(fail);
+});
+
+/* ---- Rendering ---- */
+function renderAll() { renderStats(); renderClock(); renderRelease(); renderReveal(); renderBoard(); renderPlayers(); }
+function renderStats() {
+  var slugs = Object.keys(players), found = 0, ans = 0;
+  slugs.forEach(function (s) {
+    var p = players[s]; found += p.found ? Object.keys(p.found).length : 0;
+    keys.forEach(function (k) { if (p.answers && p.answers[k]) { if (p.answers[k].human) ans++; if (p.answers[k].dog) ans++; } });
+  });
+  $('sPlayers').textContent = slugs.length; $('sFound').textContent = found; $('sAnswered').textContent = ans; $('sRevealed').textContent = revealedKeys().length;
+}
+function renderClock() {
+  var el = $('clockState'), running = !!config.lockAt, rem = running ? config.lockAt - now() : 0;
+  if (!running) { el.innerHTML = 'No countdown running. Phones can answer freely.'; el.className = 'state'; }
+  else if (rem <= 0) { el.innerHTML = '<b>Locked.</b> Answers are frozen. Cancel reopens the game.'; el.className = 'state hot'; }
+  else { var s = Math.ceil(rem / 1000); el.innerHTML = 'Locks in <b>' + Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2) + '</b>'; el.className = 'state' + (rem < 120000 ? ' hot' : ''); }
+  $('bStart').disabled = running && rem > 0; $('bPlus').disabled = !running; $('bCancel').disabled = !running; $('bLockNow').disabled = running && rem <= 0;
+}
+function renderRelease() {
+  var r = !!config.releasedAt;
+  $('releaseState').innerHTML = r ? '<b>Released</b> at ' + new Date(config.releasedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + '. Every phone shows all twenty statements.' : 'Cards only open when scanned.';
+  $('bRelease').disabled = r; $('bUnrelease').disabled = !r;
+}
+function splitOf(k, side) {
+  var a = answers[k], truth = a ? a[side] : null;
+  var opts = side === 'human' ? ['R', 'L'] : ['E', 'T'], counts = {}, wrong = [], none = 0;
+  opts.forEach(function (o) { counts[o] = 0; });
+  Object.keys(players).forEach(function (s) {
+    var v = players[s].answers && players[s].answers[k] && players[s].answers[k][side];
+    if (v && counts[v] !== undefined) { counts[v]++; if (truth && v !== truth) wrong.push(s); } else none++;
+  });
+  return { truth: truth, opts: opts, counts: counts, wrong: wrong, none: none };
+}
+function stHtml(k, side, showSplit) {
+  var q = content.questions[parseInt(k.slice(1), 10) - 1][side], sp = splitOf(k, side), total = Object.keys(players).length;
+  var other = sp.opts.filter(function (o) { return o !== sp.truth; })[0];
+  var h = '<div class="st"><p class="txt">' + fmt(q.first) + '</p>';
+  h += '<div class="ans">' + (sp.truth ? NAMES[sp.truth] : '<span class="muted">answer not seeded</span>') + '</div>';
+  if (showSplit && sp.truth) {
+    var pr = total ? sp.counts[sp.truth] / total * 100 : 0, pw = total ? sp.counts[other] / total * 100 : 0;
+    h += '<div class="bar"><i style="width:' + pr + '%"></i><i class="w" style="width:' + pw + '%"></i></div>';
+    h += '<div class="lab"><span class="ok">' + NAMES[sp.truth] + ' ' + sp.counts[sp.truth] + '</span><span>' + NAMES[other] + ' ' + sp.counts[other] + ' · no answer ' + sp.none + '</span></div>';
+    if (sp.wrong.length) h += '<p class="wrongs">Wrong: ' + sp.wrong.map(pretty).map(esc).join(', ') + '</p>';
+  }
+  var img = answers[k] && answers[k][side + 'Img'];
+  if (img) h += '<img class="photo" src="../' + esc(img) + '" alt="">';
+  var note = HOST_NOTES[k] && HOST_NOTES[k][side];
+  if (note) h += '<p class="note">' + esc(note) + '</p>';
+  return h + '</div>';
+}
+function renderReveal() {
+  if (!content) return;
+  var rk = revealedKeys(), n = rk.length;
+  $('revealState').innerHTML = n === 0 ? 'Nothing revealed yet. Phones show the placeholder.' : (n < TOTAL ? '<b>' + n + ' of ' + TOTAL + '</b> revealed.' : '<b>All ten revealed.</b> Phones show their rank.');
+  $('bNext').disabled = n >= TOTAL; $('bNext').textContent = n >= TOTAL ? 'All revealed' : 'Reveal next (card ' + (n + 1) + ')';
+  $('bAll').disabled = n >= TOTAL; $('bHide').disabled = n === 0;
+  $('resetSection').hidden = n > 0;
+  var h = '';
+  if (n < TOTAL) { var nk = 'q' + (n + 1); h += '<div class="reveal-card next"><h3>' + CODE_STYLE[n] + 'Next up: card ' + (n + 1) + '<small>not yet revealed</small></h3>' + stHtml(nk, 'human', false) + stHtml(nk, 'dog', false) + '</div>'; }
+  rk.slice().reverse().forEach(function (k) { h += '<div class="reveal-card"><h3>' + CODE_STYLE[parseInt(k.slice(1), 10) - 1] + 'Card ' + k.slice(1) + '<small>revealed</small></h3>' + stHtml(k, 'human', true) + stHtml(k, 'dog', true) + '</div>'; });
+  $('revealCards').innerHTML = h;
+}
+function tbDistance(p) {
+  if (!p.tiebreak || !answers.tiebreak) return null;
+  return Math.abs(Math.round((Date.UTC(TB_YEAR, answers.tiebreak.month - 1, answers.tiebreak.day) - Date.UTC(TB_YEAR, p.tiebreak.month - 1, p.tiebreak.day)) / 86400000));
+}
+function standings(rk) {
+  var list = Object.keys(players).map(function (s) {
+    var p = players[s], sc = 0;
+    rk.forEach(function (k) { var a = answers[k], v = p.answers && p.answers[k]; if (!a || !v) return; if (v.human === a.human) sc++; if (v.dog === a.dog) sc++; });
+    var d = tbDistance(p); return { slug: s, score: sc, tb: d === null ? Infinity : d };
+  });
+  list.sort(function (a, b) { return b.score - a.score || a.tb - b.tb || (a.slug < b.slug ? -1 : 1); });
+  var pos = 0; list.forEach(function (r, i) { if (i === 0 || r.score !== list[i - 1].score || r.tb !== list[i - 1].tb) pos = i + 1; r.pos = pos; });
+  return list;
+}
+function renderBoard() {
+  var rk = revealedKeys().filter(function (k) { return answers[k]; }), all = keys.filter(function (k) { return answers[k]; });
+  var useAll = rk.length === 0;
+  var table = standings(useAll ? all : rk);
+  $('boardState').textContent = useAll ? 'Private preview: scored against the full answer key. Phones see nothing yet.' : 'Scored on the ' + rk.length + ' card' + (rk.length === 1 ? '' : 's') + ' revealed so far. Ties broken by the tie-breaker (closest to 21 September 2017).';
+  $('board').innerHTML = table.map(function (r) {
+    return '<tr><td>' + r.pos + '</td><td>' + esc(pretty(r.slug)) + '</td><td class="num">' + r.score + '</td><td class="num">' + (r.tb === Infinity ? '<span class="muted">none</span>' : r.tb + ' day' + (r.tb === 1 ? '' : 's')) + '</td></tr>';
+  }).join('') || '<tr><td colspan="4" class="muted">No players yet.</td></tr>';
+}
+function renderPlayers() {
+  $('playersTable').innerHTML = Object.keys(players).sort().map(function (s) {
+    var p = players[s], f = p.found ? Object.keys(p.found).length : 0, a = 0;
+    keys.forEach(function (k) { if (p.answers && p.answers[k]) { if (p.answers[k].human) a++; if (p.answers[k].dog) a++; } });
+    var tb = p.tiebreak ? p.tiebreak.day + ' ' + MONTHS[p.tiebreak.month - 1] : '<span class="muted">none</span>';
+    return '<tr><td>' + esc(pretty(s)) + '</td><td class="num">' + f + '</td><td class="num">' + a + '</td><td>' + tb + '</td></tr>';
+  }).join('') || '<tr><td colspan="4" class="muted">No players yet.</td></tr>';
+}
+</script>
+</body>
+</html>
