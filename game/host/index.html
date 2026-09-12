@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v14.3 (12/09/2026): Fix: state variables declared before the gate. An already-unlocked phone started
+          the page before the declaration line ran, which wiped the stored key. Refreshes now keep it.
   v14.2 (12/09/2026): Storage diagnostic line under the key box; key stored again on every successful claim.
   v14.1 (12/09/2026): Key failure message shows Firebase's reason.
   v14.0 (12/09/2026): Card URLs are links. Key box accepts the whole host link. Note about in-app browsers.
@@ -281,6 +283,10 @@ var fmt = function (s) { return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 var pretty = function (slug) { var p = slug.split('-'), r = p.pop(); return (p.join(' ') + ' ' + r).replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }); };
 var keys = []; for (var i = 1; i <= TOTAL; i++) keys.push('q' + i);
 
+/* ---- State (declared before the gate, which may start the page immediately) ---- */
+var db, auth, uid, hostKey = null, offset = 0, content = null;
+var config = {}, players = {}, answers = {};
+
 /* ---- Gate: Richard's passcode ---- */
 var PASSCODES = { EGGS: 'R' };
 var UNLOCK_KEY = 'rl-tracker-unlocked';
@@ -306,8 +312,6 @@ dotsEl.addEventListener('click', function () { pin.focus(); });
 })();
 
 /* ---- Firebase and the host key ---- */
-var db, auth, uid, hostKey = null, offset = 0, content = null;
-var config = {}, players = {}, answers = {};
 function storageDiag() {
   var lines = [];
   try { localStorage.setItem('rl-probe', '1'); lines.push(localStorage.getItem('rl-probe') === '1' ? 'Storage: works' : 'Storage: write did not stick'); localStorage.removeItem('rl-probe'); }
