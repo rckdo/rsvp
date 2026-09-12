@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v16.1 (12/09/2026): Back steps the reveal in reverse.
   v16.0 (12/09/2026): Two-step reveal. The Reveal button cycles Show card N, Reveal answers, then the
           next card, and Finish after the tenth. Clear screens drops every phone back to Results.
   v15.1 (12/09/2026): Clock tile reads Closed once the time is up and its main button becomes Unlock.
@@ -213,7 +214,7 @@
           <div class="val" id="revealVal">0<small>of 10</small></div>
           <div class="acts">
             <button class="btn" id="bNext">Reveal next</button>
-            <div class="minor"><button id="bScreen">Clear screens</button><button id="bAll">Reveal all</button><button id="bHide">Hide</button></div>
+            <div class="minor"><button id="bBack">Back</button><button id="bScreen">Clear screens</button><button id="bAll">Reveal all</button><button id="bHide">Hide</button></div>
           </div>
         </div>
       </div>
@@ -454,6 +455,16 @@ $('bAll').addEventListener('click', function () {
 });
 $('bHide').addEventListener('click', function () { if (confirm('Hide all results? Phones go back to the placeholder.')) cfg().update({ revealed: null, stage: null }).catch(fail); });
 $('bScreen').addEventListener('click', function () { cfg().update({ stage: null }).catch(fail); });
+/* Back: the same beats in reverse. Answers -> sentences (answers hidden again), sentences -> previous
+   card's answers, nothing on screen -> the last revealed card's answers. */
+$('bBack').addEventListener('click', function () {
+  var st = config.stage || {}, n = revealedKeys().length, up = {};
+  if (st.card && st.step === 'answer') { up['revealed/' + st.card] = null; up['stage/step'] = 'question'; }
+  else if (st.card && st.step === 'question') { var prev = parseInt(st.card.slice(1), 10) - 1; up.stage = prev >= 1 ? { card: 'q' + prev, step: 'answer' } : null; }
+  else if (n > 0) { up.stage = { card: 'q' + n, step: 'answer' }; }
+  else return;
+  cfg().update(up).catch(fail);
+});
 $('bSeed').addEventListener('click', function () {
   $('seedErr').textContent = '';
   var obj;
@@ -529,6 +540,7 @@ function renderReveal() {
   var si = stageInfo(), lab = { show: 'Show card ' + (si.card ? si.card.slice(1) : ''), answer: 'Reveal answers', finish: 'Finish', done: 'All revealed' }[si.mode];
   $('bNext').disabled = si.mode === 'done'; $('bNext').textContent = lab;
   $('bAll').disabled = n >= TOTAL; $('bHide').disabled = n === 0 && !(config.stage && config.stage.card); $('bScreen').disabled = !(config.stage && config.stage.card);
+  $('bBack').disabled = !(config.stage && config.stage.card) && n === 0;
   $('resetSection').hidden = n > 0;
   var h = '';
   var staged = config.stage && config.stage.card;
