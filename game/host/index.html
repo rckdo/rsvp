@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v17.2 (12/09/2026): Reset always available on Setup (typed RESET plus confirm).
+  v17.1 (12/09/2026): Stale-tab guard.
   v17.0 (12/09/2026): Present tab: a strip of the ten cards, an On screen panel mirroring the phones,
           a Next panel previewing the next press, and Back and Next pinned to the bottom.
   v16.2 (12/09/2026): Exclusive phases: open, closed, revealing. Reveal only once the hunt is closed;
@@ -346,6 +348,23 @@ var HOST_NOTES = {
   q10: { human: '', dog: '' }
 };
 
+/* Stale-tab guard: a page left open across a deploy reloads itself when it next comes to the front.
+   The ETag of this very page is the version stamp; state lives in Firebase so nothing is lost. */
+(function () {
+  var stamp = null, last = 0;
+  function check() {
+    if (Date.now() - last < 30000) return; last = Date.now();
+    fetch(location.pathname, { method: 'HEAD', cache: 'no-store' }).then(function (r) {
+      var e = r.headers.get('etag') || r.headers.get('last-modified'); if (!e) return;
+      if (stamp === null) { stamp = e; return; }
+      if (e !== stamp && !window.__busy) location.reload();
+    }).catch(function () {});
+  }
+  check();
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
+  window.addEventListener('focus', check);
+})();
+
 var FIREBASE_CONFIG = {
   apiKey: 'AIzaSyBI-BFXh8BzvsaDw3Mm0Mxi7UmqyU1Y_g8',
   authDomain: 'rl-wedding-fe94a.firebaseapp.com',
@@ -589,7 +608,7 @@ function renderReveal() {
   $('bNext').disabled = si.mode === 'done' || ph === 'open'; $('bNext').textContent = ph === 'open' ? 'Close the hunt first' : lab;
   $('bAll').disabled = n >= TOTAL || ph === 'open'; $('bHide').disabled = ph !== 'revealing'; $('bScreen').disabled = !(config.stage && config.stage.card);
   $('bBack').disabled = ph !== 'revealing';
-  $('resetSection').hidden = n > 0;
+
   var h = '';
   var staged = config.stage && config.stage.card;
   if (n < TOTAL) { var nk = 'q' + (n + 1), onScreen = staged === nk && config.stage.step === 'question'; h += '<div class="reveal-card' + (onScreen ? '' : ' next') + '"><h3>' + CODE_STYLE[n] + (onScreen ? 'On screen: card ' : 'Next up: card ') + (n + 1) + '<small>' + (onScreen ? 'sentences showing' : 'not yet shown') + '</small></h3>' + stHtml(nk, 'human', false) + stHtml(nk, 'dog', false) + '</div>'; }
