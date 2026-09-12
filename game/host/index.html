@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v14.0 (12/09/2026): Card URLs are links. Key box accepts the whole host link. Note about in-app browsers.
   v13.0 (12/09/2026): Cards section: the ten URLs (from Firebase, or the copy kept when the seed was
           written) and a link to the printable card sheet.
   v12.0 (12/09/2026): Seed panel: paste the seed text and write codes and answers from the host phone.
@@ -133,7 +134,8 @@
   <section id="keySection" hidden>
     <h2>Host key</h2>
     <p class="state">This page needs the host key once. It stays on this phone afterwards.</p>
-    <div class="keybox"><input type="text" id="keyInput" placeholder="Paste the host key" autocomplete="off"><button id="keyGo">Use key</button></div>
+    <div class="keybox"><input type="text" id="keyInput" placeholder="Paste the host key, or the whole host link" autocomplete="off"><button id="keyGo">Use key</button></div>
+    <p class="state" style="margin-top:10px">Asked every time? You're in an app's built-in browser, which forgets. Open this page in Chrome or Safari instead.</p>
     <div class="err" id="keyErr"></div>
   </section>
 
@@ -315,6 +317,7 @@ function bootHost() {
 }
 $('keyGo').addEventListener('click', function () {
   var k = $('keyInput').value.trim(); if (!k) return;
+  var m = k.match(/[?&]key=([^&\s]+)/); if (m) k = decodeURIComponent(m[1]);
   hostKey = k; try { localStorage.setItem(HOSTKEY_STORE, k); } catch (e) {}
   claim();
 });
@@ -334,7 +337,7 @@ function renderCards() {
   if (!codesKnown) { st.textContent = 'No codes on this phone yet. Write the seed below and they appear here.'; el.innerHTML = ''; return; }
   var byQ = {}; Object.keys(codesKnown).forEach(function (c) { byQ[codesKnown[c]] = c; });
   st.textContent = 'The ten card URLs. The card sheet draws them as QR codes.';
-  el.innerHTML = keys.map(function (k) { var c = byQ[k]; return '<li>' + (c ? 'https://lorraine-richard.rsvp/game/?c=' + esc(c) : '<span class="muted">missing</span>') + '</li>'; }).join('');
+  el.innerHTML = keys.map(function (k) { var c = byQ[k]; var u = 'https://lorraine-richard.rsvp/game/?c=' + esc(c); return '<li>' + (c ? '<a href="' + u + '" target="_blank" rel="noopener">' + u + '</a>' : '<span class="muted">missing</span>') + '</li>'; }).join('');
 }
 function subscribe() {
   db.ref(ROOT + '/codes').once('value').then(function (s) { codesKnown = s.val(); }).catch(function () {}).then(function () {

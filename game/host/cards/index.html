@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v1.2 (12/09/2026): The number is the hero: huge in the card's colour, the block and icons beneath,
+          a faint tilted block as background texture, QR at the foot.
   v1.1 (12/09/2026): No strip on the QR patch, no footer text. Icons served from /game/icons/.
   v1.0 (12/09/2026): First build. Ten 4x6in cards drawn on canvas at 300dpi: the invite's quilt band,
           the card number, its own quilt block and colour, the two statement icons, a QR code of the
@@ -181,34 +183,34 @@ function drawCard(n, code) {
   var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   var ctx = cv.getContext('2d');
   ctx.fillStyle = CREAM; ctx.fillRect(0, 0, W, H);
+  // background: this card's block, huge and faint, tilted, like a watermark on the paper
+  ctx.save(); ctx.globalAlpha = 0.10; ctx.translate(W / 2, 600); ctx.rotate(-8 * Math.PI / 180);
+  drawBlock(ctx, shape, colour, -430, -430, 860); ctx.restore();
   // the invite's band
   ctx.fillStyle = OCHRE; ctx.fillRect(0, 0, W, 150);
   var bs = 104, gap = 14, bx = (W - (7 * bs + 6 * gap)) / 2;
   BAND.forEach(function (b, i) { drawBlock(ctx, b[0], b[1], bx + i * (bs + gap), 23, bs); });
-  // "Card" and the number
-  ctx.fillStyle = MUTED; ctx.font = '44px Marcellus, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  spaced(ctx, 'CARD', W / 2, 262, 12);
-  ctx.fillStyle = colour; ctx.font = '600 300px "Playfair Display", Georgia, serif';
-  ctx.fillText(String(n), W / 2, 520);
-  // this card's block, on a small raised patch
-  ctx.save(); ctx.shadowColor = 'rgba(74,63,47,.28)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 12;
-  ctx.fillStyle = CARD; ctx.fillRect(W / 2 - 110, 570, 220, 220); ctx.restore();
-  drawBlock(ctx, shape, colour, W / 2 - 90, 590, 180);
-  // QR on a patch with the card's dashed strip
+  // the number, huge, in the card's colour
+  ctx.fillStyle = colour; ctx.font = '600 640px "Playfair Display", Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(String(n), W / 2, 830);
+  // block on its patch, icons either side
+  ctx.save(); ctx.shadowColor = 'rgba(74,63,47,.28)'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 10;
+  ctx.fillStyle = CARD; ctx.fillRect(W / 2 - 80, 890, 160, 160); ctx.restore();
+  drawBlock(ctx, shape, colour, W / 2 - 64, 906, 128);
+  // QR on a patch
   var qr = qrcode(0, 'Q'); qr.addData(BASE + code); qr.make();
-  var mc = qr.getModuleCount(), qs = 720, px = Math.floor((qs - 80) / mc), qw = px * mc, qx = Math.floor((W - qw) / 2), qy = 960;
+  var mc = qr.getModuleCount(), qs = 640, px = Math.floor((qs - 80) / mc), qw = px * mc, qx = Math.floor((W - qw) / 2), qy = 1120;
   ctx.save(); ctx.shadowColor = 'rgba(74,63,47,.22)'; ctx.shadowBlur = 36; ctx.shadowOffsetY = 14;
-  ctx.fillStyle = CARD; ctx.fillRect(qx - 44, qy - 44, qw + 88, qw + 88); ctx.restore();
+  ctx.fillStyle = CARD; ctx.fillRect(qx - 40, qy - 40, qw + 80, qw + 80); ctx.restore();
   ctx.fillStyle = BARK;
   for (var r = 0; r < mc; r++) for (var c = 0; c < mc; c++) if (qr.isDark(r, c)) ctx.fillRect(qx + c * px, qy + r * px, px, px);
-  // the two statement icons, either side of the block
   var jobs = ['human', 'dog'].map(function (side, i) {
     var f = q[side].icon, url = /^https?:/.test(f) ? f : (content.iconBase || '') + f;
-    return iconImage(url, colour, 200).then(function (im) {
-      var x = i === 0 ? 235 : W - 235, y = 680, rot = i === 0 ? -8 : 8;
+    return iconImage(url, colour, 170).then(function (im) {
+      var x = i === 0 ? 330 : W - 330, y = 970, rot = i === 0 ? -8 : 8;
       ctx.save(); ctx.translate(x, y); ctx.rotate(rot * Math.PI / 180);
-      if (im) ctx.drawImage(im, -100, -100, 200, 200);
-      else drawBlock(ctx, shape, colour, -60, -60, 120);
+      if (im) ctx.drawImage(im, -85, -85, 170, 170);
+      else drawBlock(ctx, shape, colour, -55, -55, 110);
       ctx.restore();
     });
   });
