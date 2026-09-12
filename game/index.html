@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v13.7 (12/09/2026): Gate tightened further for small phones; button above the robin.
+  v13.6 (12/09/2026): Gate fits a phone screen: months four across, days eight across, tighter
+          tiles and spacing. Placard aligned with the placed cards.
   v13.5 (12/09/2026): Placard numerals in gold, larger and bolder, pressed in.
   v13.4 (12/09/2026): Placed date cards keep their tile colour; only position changes.
   v13.3 (12/09/2026): 2017 as a screwed-on placard with pressed-in numerals.
@@ -111,7 +114,7 @@
     line-height:1.4;
     -webkit-font-smoothing:antialiased;
     display:flex;justify-content:center;
-    padding:14px 12px 30px;
+    padding:12px 10px 8px;
   }
   /* ---- The invite's environment: warm sky, breathing glow, motes ---- */
   .sky{
@@ -152,6 +155,9 @@
 
   /* Header: a luggage-tag alias, the clock beneath */
   .top{padding:20px 22px 0;text-align:center;min-height:60px}
+  .card:has(#intro:not([hidden])) .top{padding-top:12px;min-height:50px}
+  .card:has(#intro:not([hidden])) .band{padding:7px 0}
+  .card:has(#intro:not([hidden])) .band .block{width:36px!important;height:36px!important}
   .alias{
     display:inline-flex;align-items:center;gap:12px;position:relative;
     background:#f7f0e0;padding:8px 20px 8px 12px;
@@ -321,21 +327,28 @@
   @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.04)}100%{transform:scale(1)}}
   .after-lock{font-style:italic;color:var(--mutedbrown);margin:10px 0 0}
 
-  #intro{padding:26px 24px 30px;justify-content:center}
+  #intro{padding:6px 18px 14px;justify-content:flex-start}
   .intro-wrap{text-align:center}
-  .intro-wrap .patch{text-align:left;margin:22px 0 18px}
-  .intro-wrap .tb-q{font-size:21px}
+  .intro-wrap h1{font-size:22px;margin:6px 0 0}
+  .intro-wrap .patch{text-align:left;margin:8px 0 10px;padding:16px 12px 8px}
+  .intro-wrap .tb-q{font-size:18px;line-height:1.3}
+  .intro-wrap .btn{min-height:44px;position:relative;z-index:3}
+  .intro-wrap .dp .deck{margin-bottom:6px}
+  .intro-wrap .date-row{margin-bottom:10px}
+  #intro ~ .robin, .card:has(#intro:not([hidden])) .robin{width:74px;right:-6px;bottom:-8px}
   /* Tie-breaker */
   .tb{padding:24px 18px 18px}
   .tb .tb-q{font-family:var(--display);font-size:19px;color:var(--bark);margin:0}
   .tb .tb-k{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 6px}
-  .dp{margin-top:14px;--c:var(--gold);--cd:#8a6a2a}
-  .date-row{display:flex;gap:6px;align-items:center;margin:0 0 16px}
-  .gap.sm{width:calc((100% - 30px) / 6);height:40px;margin:0}
+  .dp{margin-top:10px;--c:var(--gold);--cd:#8a6a2a;--th:30px}
+  .date-row{display:flex;gap:8px;align-items:center;margin:0 0 12px}
+  .gap.sm{height:var(--th);margin:0}
+  .gap.sm[data-side="month"]{width:calc((100% - 24px) / 4)}
+  .gap.sm[data-side="day"]{width:calc((100% - 42px) / 8)}
   .gap.sm .namecard{position:absolute;left:-1px;top:-2px;width:100%;height:100%}
-  .namecard.sm{font-size:12px;letter-spacing:.06em;height:40px}
+  .namecard.sm{font-size:12px;letter-spacing:.06em;height:var(--th)}
   /* 2017: a placard, screwed on. Bevelled bark plate, two slotted screws, numerals pressed in. */
-  .namecard.fixed{width:auto;padding:0 30px;margin-left:4px;cursor:default;position:relative;
+  .namecard.fixed{width:auto;padding:0 30px;margin:-2px 0 0 4px;cursor:default;position:relative;
     background:linear-gradient(180deg,#5b4d3a,#43392a 55%,#3a3023);border:1px solid #2e2719;
     font-family:var(--display);font-weight:600;font-size:19px;color:#b8892f;letter-spacing:.12em;text-transform:none;
     text-shadow:0 -1px 0 rgba(0,0,0,.7), 0 1px 0 rgba(255,235,190,.35);
@@ -348,9 +361,10 @@
   .dp .slot .namecard{background:var(--ochre);color:var(--bark);border-color:transparent;box-shadow:0 2px 0 #b39c6b}
   .dp .gap.sm .namecard{background:var(--ochre);color:var(--bark);border-color:transparent;box-shadow:0 2px 0 #b39c6b, 0 6px 12px rgba(74,63,47,.18)}
   .dp .dragcard{background:var(--ochre);color:var(--bark)}
-  .dp .deck{display:grid;gap:6px;margin:0 0 10px;justify-content:stretch}
-  .dp .deck.months,.dp .deck.days{grid-template-columns:repeat(6,1fr)}
-  .slot.sm{width:auto;height:40px;border-color:#b39c6b}
+  .dp .deck{display:grid;gap:6px;margin:0 0 8px;justify-content:stretch}
+  .dp .deck.months{grid-template-columns:repeat(4,1fr);gap:6px 8px}
+  .dp .deck.days{grid-template-columns:repeat(8,1fr)}
+  .slot.sm{width:auto;height:var(--th);border-color:#b39c6b}
   .slot.sm .namecard{position:absolute;inset:0;width:100%;height:100%}
   .slot.sm:before{font-size:11px;letter-spacing:.06em}
   .slot.sm.off{opacity:.25;border-style:dotted}
