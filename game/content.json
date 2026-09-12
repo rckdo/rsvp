@@ -1,5 +1,5 @@
 {
-  "version": "1.14",
+  "version": "1.15",
   "reels": {
     "items": [
       "Sausage",
@@ -40,8 +40,9 @@
   },
   "iconBase": "/game/icons/",
   "tiebreak": {
-    "question": "What date in 2017 did Richard and Lorraine get together?",
-    "third": "The date in 2017 Richard and Lorraine got together"
+    "question": "Until today, what date was Richard and Lorraine’s anniversary?",
+    "hint": "It started in 2017. Day and month will do.",
+    "third": "Richard and Lorraine’s anniversary, until today"
   },
   "questions": [
     {
