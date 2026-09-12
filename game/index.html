@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v13.2 (12/09/2026): Date tiles ochre, placed date cards olive, fixed 2017 in bark.
   v13.1 (12/09/2026): Gate text trimmed to heading, question and picker. Date tiles and placed date
           cards the same size on a six-wide grid. Dragged cards no longer scale up.
   v13.0 (12/09/2026): The date works like the names: 2017 is a fixed card, day and month are gaps, the
@@ -330,7 +331,10 @@
   .gap.sm{width:calc((100% - 30px) / 6);height:40px;margin:0}
   .gap.sm .namecard{position:absolute;left:-1px;top:-2px;width:100%;height:100%}
   .namecard.sm{font-size:12px;letter-spacing:.06em;height:40px}
-  .namecard.fixed{width:auto;padding:0 16px;background:var(--ochre);color:var(--bark);box-shadow:0 2px 0 #b39c6b;cursor:default;margin-left:4px}
+  .namecard.fixed{width:auto;padding:0 16px;background:var(--bark);color:var(--cream);border-color:var(--bark);box-shadow:0 2px 0 #2e2719;cursor:default;margin-left:4px}
+  .dp .slot .namecard{background:var(--ochre);color:var(--bark);border-color:transparent;box-shadow:0 2px 0 #b39c6b}
+  .dp .gap.sm .namecard{background:var(--olive);color:var(--cream);border-color:var(--olive);box-shadow:0 2px 0 var(--olive-deep)}
+  .dp .dragcard{background:var(--ochre);color:var(--bark)}
   .dp .deck{display:grid;gap:6px;margin:0 0 10px;justify-content:stretch}
   .dp .deck.months,.dp .deck.days{grid-template-columns:repeat(6,1fr)}
   .slot.sm{width:auto;height:40px;border-color:#b39c6b}
