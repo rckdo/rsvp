@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v11.0 (12/09/2026): Photos from the answer key shown on reveal cards.
   v10.0 (12/09/2026): Backticks in statement text render as code.
   v8.0 (12/09/2026): Cards, not codes, in the wording.
   v6.0 (12/09/2026): Alias shown without the article.
@@ -82,6 +83,7 @@
   .st{padding:10px 0}
   .st + .st{border-top:1px dashed var(--line)}
   .st .txt{margin:0 0 6px;font-size:17px}
+  .photo{display:block;max-width:360px;width:100%;height:auto;margin:8px 0;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
   code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8em;background:var(--paper);padding:2px 5px;word-break:break-all;overflow-wrap:anywhere}
   .st .ans{font-weight:700;color:var(--olive)}
   .bar{display:flex;height:10px;background:var(--paper);border-radius:5px;overflow:hidden;margin:6px 0 4px}
@@ -382,6 +384,8 @@ function stHtml(k, side, showSplit) {
     h += '<div class="lab"><span class="ok">' + NAMES[sp.truth] + ' ' + sp.counts[sp.truth] + '</span><span>' + NAMES[other] + ' ' + sp.counts[other] + ' · no answer ' + sp.none + '</span></div>';
     if (sp.wrong.length) h += '<p class="wrongs">Wrong: ' + sp.wrong.map(pretty).map(esc).join(', ') + '</p>';
   }
+  var img = answers[k] && answers[k][side + 'Img'];
+  if (img) h += '<img class="photo" src="../' + esc(img) + '" alt="">';
   var note = HOST_NOTES[k] && HOST_NOTES[k][side];
   if (note) h += '<p class="note">' + esc(note) + '</p>';
   return h + '</div>';

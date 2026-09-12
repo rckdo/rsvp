@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v11.0 (12/09/2026): Photos at the reveal. An answer-key entry may carry humanImg or dogImg; the
+          picture shows in the flash (which holds a little longer), under the statement in Answers,
+          and on the host page.
   v10.0 (12/09/2026): Statement text may carry `backticks`, rendered as monospace code, for the
           Excel formula on card 10.
   v9.0 (12/09/2026): Each name has its own dashed spot below the sentence; placing one leaves its spot
@@ -271,6 +274,10 @@
   .namecard.mini{width:80px;height:28px;font-size:10px;letter-spacing:.12em;vertical-align:middle;margin-left:8px;transform:rotate(-2deg)}
   .namecard.mini:after{width:16px;height:16px;right:-7px;top:-7px;background-size:9px 9px}
   .said{font-style:italic;font-size:17px;color:var(--mutedbrown);margin:8px 0 2px}
+  .photo{display:block;max-width:100%;height:auto;margin:12px auto 6px;padding:6px 6px 14px;background:#fbf6ea;
+    box-shadow:0 2px 0 var(--ochre-deep), 0 10px 20px rgba(74,63,47,.2);transform:rotate(-1.5deg)}
+  .split .photo{max-width:82%}
+  .ackp .photo{max-height:30vh;width:auto;max-width:86%;margin:12px auto 0;transform:rotate(1.5deg)}
   .namecard.right:after{background-color:var(--olive);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5l2.6 2.6L10 3.5' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
   .namecard.wrong:after{background-color:var(--rust);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 3l6 6M9 3l-6 6' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E")}
   .gap.missed{border-style:solid;border-color:var(--mutedbrown);opacity:.5}
@@ -381,7 +388,7 @@
   section.patch{padding-top:24px}
 
   /* Full-screen reveal flash */
-  #ack{position:fixed;inset:0;z-index:50;background:var(--cream);display:flex;flex-direction:column;justify-content:center;padding:28px 24px;
+  #ack{position:fixed;inset:0;z-index:50;background:var(--cream);display:flex;flex-direction:column;justify-content:center;padding:28px 24px;overflow:hidden;
     transform:translateY(100%);transition:transform .32s var(--ease-out)}
   #ack.show{transform:none}
   #ack .k{font-family:var(--display);font-size:22px;color:var(--bark);text-align:center;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:12px}
@@ -531,6 +538,8 @@ var $ = function (id) { return document.getElementById(id); };
 var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 // statement text: escaped, with `backticks` rendered as code (for the formula)
 var fmt = function (s) { return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>'); };
+// a photo attached to a revealed statement (URL comes with the answer key, so it is unreadable until revealed)
+var photoHtml = function (k, side) { var a = answers[k]; var u = a && a[side + 'Img']; return u ? '<img class="photo" src="' + esc(u) + '" alt="">' : ''; };
 var now = function () { return Date.now() + offset; };
 var slugOf = function (item, role) { return (item + '-' + role).toLowerCase().replace(/[^a-z]+/g, '-'); };
 var prettyAlias = function (slug) {
@@ -1174,7 +1183,7 @@ function renderResults() {
       var pctR = total ? Math.round(counts[truth] / total * 100) : 0, pctW = total ? Math.round(counts[wrongName] / total * 100) : 0;
       var truthCard = '<span class="gap filled"><span class="namecard">' + NAMES[truth] + '</span></span>';
       var said = mine ? '<div class="said">You said<span class="namecard mini ' + (mine === truth ? 'right' : 'wrong') + '">' + NAMES[mine] + '</span></div>' : '';
-      html += '<div class="split" style="' + window.codeVars(qnum(k) - 1) + '"><p>' + fmt(question(k)[side].third).replace('{name}', truthCard) + '</p>' + said +
+      html += '<div class="split" style="' + window.codeVars(qnum(k) - 1) + '"><p>' + fmt(question(k)[side].third).replace('{name}', truthCard) + '</p>' + photoHtml(k, side) + said +
         '<div class="bar"><i style="width:' + pctR + '%"></i><i class="wrong" style="width:' + pctW + '%"></i></div>' +
         '<div class="lab"><span class="ok">' + NAMES[truth] + ' ' + counts[truth] + '</span><span>' + NAMES[wrongName] + ' ' + counts[wrongName] + '</span></div></div>';
     });
@@ -1206,18 +1215,19 @@ function runAck() {
     var truth = a[side], cur = pick(k, side);
     var cls = !cur ? 'missed' : (cur === truth ? 'right' : 'wrong');
     var v = cls === 'right' ? 'Right' : (cls === 'wrong' ? 'Wrong. It was ' + NAMES[truth] : 'Not answered. It was ' + NAMES[truth]);
-    return '<div class="ackp ' + cls + '"><div class="v">' + esc(v) + '</div><div class="s">' + fmt(question(k)[side].third.replace('{name}', NAMES[truth])) + '</div></div>';
+    return '<div class="ackp ' + cls + '"><div class="v">' + esc(v) + '</div><div class="s">' + fmt(question(k)[side].third.replace('{name}', NAMES[truth])) + '</div>' + photoHtml(k, side) + '</div>';
   }).join('');
   var el = $('ack');
   el.innerHTML = '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + 'Card ' + qnum(k) + '</div>' + panels;
   void el.offsetWidth;
   el.classList.add('show');
   try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {}
+  var hasPhoto = !!(a.humanImg || a.dogImg);
   setTimeout(function () {
     el.classList.remove('show');
     showTab('results');
     setTimeout(function () { ackBusy = false; runAck(); }, 380);
-  }, 2200);
+  }, hasPhoto ? 3600 : 2200);
 }
 </script>
 </body>
