@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v13.8 (12/09/2026): Tie-breaker row unnumbered. Closed-hunt wording made plain everywhere, and the
+          gate says so if its write is refused.
   v13.7 (12/09/2026): Gate tightened further for small phones; button above the robin.
   v13.6 (12/09/2026): Gate fits a phone screen: months four across, days eight across, tighter
           tiles and spacing. Placard aligned with the placed cards.
@@ -868,7 +870,7 @@ function showIntro() {
     db.ref(ROOT + '/players/' + alias).update({ tiebreak: { day: d, month: m, at: TS }, lastChange: TS })
       .then(function () { $('intro').hidden = true; enterGame(); })
       .catch(function (e) {
-        if (e && e.code === 'PERMISSION_DENIED') { $('intro').hidden = true; enterGame(); }
+        if (e && e.code === 'PERMISSION_DENIED') { $('intro').hidden = true; enterGame(); toast('The hunt has closed. Answers at the pub.'); }
         else { toast('That didn\u2019t save. Check your signal.'); $('introGo').disabled = false; }
       });
   });
@@ -937,7 +939,7 @@ function tickClock() {
   var rem = config.lockAt - now();
   if (rem <= 0) {
     if (!locked) { locked = true; renderAll(); }
-    el.textContent = 'Locked. Answers at the pub.'; el.className = 'clock locked'; return;
+    el.textContent = 'The hunt has closed. Answers at the pub.'; el.className = 'clock locked'; return;
   }
   locked = false;
   var s = Math.ceil(rem / 1000), m = Math.floor(s / 60);
@@ -960,24 +962,24 @@ function showTab(t) {
 
 /* ---- Writes ---- */
 function saveAnswer(k, side, val) {
-  if (locked) { toast('Too late. Answers at the pub.'); return; }
+  if (locked) { toast('The hunt has closed. Answers at the pub.'); return; }
   var up = {}; up['answers/' + k + '/' + side] = val; up['answers/' + k + '/at'] = TS; up.lastChange = TS;
   db.ref(ROOT + '/players/' + alias).update(up).catch(function (e) {
-    if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast('Too late. Answers at the pub.'); renderAll(); }
+    if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast('The hunt has closed. Answers at the pub.'); renderAll(); }
     else toast('That didn’t save. Check your signal.');
   });
 }
 function saveTiebreak(day, month) {
-  if (locked) { toast('Too late. Answers at the pub.'); return; }
+  if (locked) { toast('The hunt has closed. Answers at the pub.'); return; }
   db.ref(ROOT + '/players/' + alias).update({ tiebreak: { day: day, month: month, at: TS }, lastChange: TS }).catch(function (e) {
-    if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast('Too late. Answers at the pub.'); renderAll(); }
+    if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast('The hunt has closed. Answers at the pub.'); renderAll(); }
     else toast('That didn’t save. Check your signal.');
   });
 }
 /* Name cards: drag one to the gap and it snaps in; a tap places it too. */
 var drag = null;
 function placeCard(k, side, val, cardEl, host) {
-  if (locked) { toast('Too late. Answers at the pub.'); return; }
+  if (locked) { toast('The hunt has closed. Answers at the pub.'); return; }
   if (k === 'tiebreak') { placeDate((host && host.classList.contains('dp')) ? host : (cardEl && cardEl.closest('.dp')), side, val); return; }
   me = me || {}; me.answers = me.answers || {}; me.answers[k] = me.answers[k] || {};
   var prev = me.answers[k][side];
@@ -1111,7 +1113,7 @@ function renderCode() {
   } else if (!qk) {
     html = codeHead('Scan a card') + '<p class="note">Ten are hidden around the venue. Each one opens here.</p>';
   } else if (locked) {
-    html = codeHead('Card ' + qnum(qk), qnum(qk)) + '<p class="note">Locked. Answers at the pub.</p>';
+    html = codeHead('Card ' + qnum(qk), qnum(qk)) + '<p class="note">The hunt has closed. Answers at the pub.</p>';
   } else {
     html = codeHead('Card ' + qnum(qk), qnum(qk));
     if (config.releasedAt) html += '<p class="note">Everything\u2019s open. Answer what you can.</p>';
@@ -1136,7 +1138,7 @@ function renderMine() {
   html += '</div>';
   html += '<div class="ph"><h2>' + head + '</h2></div>';
   if (pending && !locked) html += '<p class="nudge">' + pending + ' still to answer.</p>';
-  if (locked) html += '<p class="note">Locked. Nothing changes now.</p>';
+  if (locked) html += '<p class="note">The hunt has closed.</p>';
   html += '<ol class="rows">';
   var revealed = config.revealed || {};
   allKeys().forEach(function (k) {
@@ -1164,7 +1166,7 @@ function renderMine() {
     });
   });
   if (me) {
-    html += '<li class="row patch gold"><span class="n">21</span><span class="ic">' + iconFallback() + '</span><div class="body tb" style="border:0;padding:0;margin:0"><p>' + esc(content.tiebreak.third) + '</p>' + tiebreakHtml(true) + '</div></li>';
+    html += '<li class="row patch gold"><span class="n"></span><span class="ic">' + iconFallback() + '</span><div class="body tb" style="border:0;padding:0;margin:0"><p>' + esc(content.tiebreak.third) + '</p>' + tiebreakHtml(true) + '</div></li>';
   }
   html += '</ol>';
   p.innerHTML = html;

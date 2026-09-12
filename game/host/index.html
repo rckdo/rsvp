@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v15.1 (12/09/2026): Clock tile reads Closed once the time is up and its main button becomes Unlock.
   v15.0 (12/09/2026): Redesigned. Run and Setup tabs. Three equal control tiles (Clock, Cards, Reveal)
           with one figure and one main button each. Below, the feed and a single table on a two-column
           grid. Setup holds seed, card URLs, key and reset. One spacing scale throughout.
@@ -420,7 +421,10 @@ function revealedKeys() { return keys.filter(function (k) { return config.reveal
 function fail(e) { alert('That didn’t save: ' + (e && e.code ? e.code : e)); }
 
 /* ---- Controls ---- */
-$('bStart').addEventListener('click', function () { cfg().update({ lockAt: now() + 15 * 60000 }).catch(fail); });
+$('bStart').addEventListener('click', function () {
+  if ($('bStart').dataset.mode === 'unlock') { cfg().update({ lockAt: null }).catch(fail); return; }
+  cfg().update({ lockAt: now() + 15 * 60000 }).catch(fail);
+});
 $('bPlus').addEventListener('click', function () { var base = config.lockAt && config.lockAt > now() ? config.lockAt : now(); cfg().update({ lockAt: base + 5 * 60000 }).catch(fail); });
 $('bCancel').addEventListener('click', function () { cfg().update({ lockAt: null }).catch(fail); });
 $('bLockNow').addEventListener('click', function () { if (confirm('Lock the game now? Nobody can answer after this.')) cfg().update({ lockAt: now() - 1000 }).catch(fail); });
@@ -459,10 +463,15 @@ $('bReset').addEventListener('click', function () {
 function renderAll() { renderClock(); renderRelease(); renderReveal(); renderBoard(); }
 function renderClock() {
   var el = $('clockVal'), running = !!config.lockAt, rem = running ? config.lockAt - now() : 0;
+  var lockedNow = running && rem <= 0, b = $('bStart');
   if (!running) { el.textContent = '\u2014'; el.className = 'val'; }
-  else if (rem <= 0) { el.textContent = 'Locked'; el.className = 'val hot'; }
+  else if (lockedNow) { el.textContent = 'Closed'; el.className = 'val hot'; }
   else { var s = Math.ceil(rem / 1000); el.textContent = Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); el.className = 'val' + (rem < 120000 ? ' hot' : ''); }
-  $('bStart').disabled = running && rem > 0; $('bPlus').disabled = !running; $('bCancel').disabled = !running; $('bLockNow').disabled = running && rem <= 0;
+  b.dataset.mode = lockedNow ? 'unlock' : 'start';
+  b.textContent = lockedNow ? 'Unlock' : 'Start 15 min';
+  b.classList.toggle('warn', lockedNow);
+  b.disabled = running && !lockedNow;
+  $('bPlus').disabled = !running; $('bCancel').disabled = !running || lockedNow; $('bLockNow').disabled = lockedNow;
 }
 function renderRelease() {
   var r = !!config.releasedAt;
