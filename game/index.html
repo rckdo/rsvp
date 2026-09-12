@@ -4,6 +4,12 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v2.0 (12/09/2026): Second pass on look and feel after review. The card floats on the invite's
+          sky, glow and motes again with the full quilt band and Mr Robin. Rust for Richard and
+          Lorraine, olive for Eric and Tango, on icons, buttons and picked names. Ochre tab strip,
+          luggage-tag alias, framed tombola with pointers, ten quilt blocks as the found-so-far
+          meter, big ochre numerals behind code headings, medal blocks on the leaderboard.
+          Eyebrow labels and explanatory copy cut.
   v1.0 (12/09/2026): First build from spec v55. Tombola alias reels with two re-spins,
           alias claimed by Firebase transaction and pinned to the header. Codes resolved
           from /game/codes (random five-character codes, never listed). Three tabs: This
@@ -36,15 +42,17 @@
     --paper:#e7e0d2;
     --cream:#efe6d3;
     --ochre:#e0cfa4;
+    --ochre-deep:#c9b585;
     --rust:#a34a2c;
+    --rust-deep:#7e3820;
     --bark:#4a3f2f;
     --ink:#3b382f;
     --mutedbrown:#8a7256;
     --olive:#7a7c47;
+    --olive-deep:#5e6035;
     --gold:#c99a3f;
     --terracotta:#bf6a43;
-    --line:rgba(74,63,47,.22);
-    --line-soft:rgba(74,63,47,.12);
+    --line:rgba(74,63,47,.18);
     --display:'Playfair Display',Georgia,serif;
     --body:'Cormorant Garamond',Georgia,serif;
     --label:'Marcellus',Georgia,serif;
@@ -58,50 +66,60 @@
     color:var(--ink);
     font-family:var(--body);
     font-size:18px;
-    line-height:1.45;
+    line-height:1.4;
     -webkit-font-smoothing:antialiased;
     display:flex;justify-content:center;
-    padding:0 0 24px;
+    padding:14px 12px 30px;
   }
+  /* ---- The invite's environment: warm sky, breathing glow, motes ---- */
   .sky{
     position:fixed;inset:-12%;z-index:0;pointer-events:none;
     background:
       radial-gradient(42% 38% at 26% 22%, rgba(224,188,128,.42), transparent 72%),
       radial-gradient(40% 36% at 78% 74%, rgba(159,124,89,.30), transparent 72%),
       radial-gradient(46% 50% at 62% 40%, rgba(122,124,71,.18), transparent 74%),
+      radial-gradient(38% 34% at 12% 82%, rgba(201,154,63,.20), transparent 72%),
       var(--paper);
     animation:sky-drift 30s ease-in-out infinite alternate;
   }
   @keyframes sky-drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(2.5%,-2%,0) scale(1.08)}}
+  .glow{position:fixed;top:50%;left:50%;width:540px;height:720px;transform:translate(-50%,-50%);z-index:0;pointer-events:none;
+    background:radial-gradient(closest-side, rgba(244,226,188,.55), rgba(244,226,188,0) 76%);filter:blur(24px);animation:breathe 9s ease-in-out infinite}
+  @keyframes breathe{0%,100%{opacity:.5;transform:translate(-50%,-50%) scale(1)}50%{opacity:.8;transform:translate(-50%,-50%) scale(1.06)}}
+  .motes{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .mote{position:absolute;bottom:-40px;border-radius:50%;background:radial-gradient(circle, rgba(255,248,232,.95), rgba(255,248,232,0) 70%);filter:blur(.6px);opacity:0;will-change:transform,opacity;animation:drift linear infinite}
+  @keyframes drift{0%{opacity:0;transform:translateY(0) translateX(0) scale(.7)}12%{opacity:var(--o,.4)}88%{opacity:var(--o,.4)}100%{opacity:0;transform:translateY(-108vh) translateX(26px) scale(1.15)}}
 
-  /* ---- The card: the whole page on a phone ---- */
+  /* ---- The card: the invite, grown into a page ---- */
   .card{
     position:relative;z-index:1;
-    width:100%;max-width:440px;
-    min-height:100dvh;
+    width:100%;max-width:420px;
+    min-height:calc(100dvh - 44px);
     background:var(--cream);
-    box-shadow:0 18px 44px rgba(59,56,47,.18);
+    box-shadow:0 18px 44px rgba(59,56,47,.22);
     display:flex;flex-direction:column;
-    animation:card-in .9s var(--ease-out) both;
+    animation:card-in 1.1s var(--ease-out) both;
   }
-  @media (min-width:480px){ .card{min-height:0;margin:28px 0;} }
-  @keyframes card-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+  @keyframes card-in{from{opacity:0;transform:translateY(24px) scale(.985)}to{opacity:1;transform:none}}
 
-  /* Quilt band, same builder as the invite */
-  .band{background:var(--ochre);display:flex;justify-content:center;align-items:center;gap:5px;padding:9px 0;overflow:hidden;flex:0 0 auto}
-  .band .block{flex:0 0 auto;animation:bloom .5s ease both}
+  .band{background:var(--ochre);display:flex;justify-content:center;align-items:center;gap:6px;padding:11px 0;overflow:hidden;flex:0 0 auto}
+  .band .block{flex:0 0 auto;animation:bloom .6s ease both}
   .band .block .cell{width:100%;height:100%}
   @keyframes bloom{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
 
-  /* Header: alias pinned, countdown line */
-  .top{padding:14px 22px 0;text-align:center;min-height:52px}
+  /* Header: a luggage-tag alias, the clock beneath */
+  .top{padding:18px 22px 0;text-align:center;min-height:54px}
   .alias{
-    display:inline-block;font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
-    color:var(--rust);padding:6px 0 4px;border-bottom:1px solid var(--rust);
+    display:inline-block;position:relative;
+    font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--bark);background:var(--ochre);padding:9px 18px 8px 26px;
+    clip-path:polygon(0 50%, 12px 0, 100% 0, 100% 100%, 12px 100%);
   }
-  .alias.arrive{animation:alias-in .45s var(--ease-out) both}
-  @keyframes alias-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-  .clock{font-family:var(--body);font-style:italic;font-size:17px;color:var(--mutedbrown);margin-top:6px;min-height:22px;transition:color .4s ease}
+  .alias[hidden]{display:none}
+  .alias:before{content:'';position:absolute;left:9px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:var(--cream)}
+  .alias.arrive{animation:alias-in .5s var(--ease-out) both}
+  @keyframes alias-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .clock{font-family:var(--body);font-style:italic;font-size:18px;color:var(--mutedbrown);margin-top:8px;min-height:24px;transition:color .4s ease}
   .clock.soon{color:var(--rust);font-style:normal;font-weight:600}
   .clock.locked{color:var(--bark)}
 
@@ -109,52 +127,61 @@
   .screen[hidden]{display:none}
 
   /* ---- Spin screen ---- */
-  #spin{padding:26px 26px 30px;justify-content:center;text-align:center}
+  #spin{padding:22px 24px 30px;justify-content:center;text-align:center}
   h1,h2,h3{font-family:var(--display);color:var(--bark);margin:0;font-weight:600}
-  h1{font-size:30px;letter-spacing:.04em;line-height:1.15}
-  .lede{font-style:italic;color:var(--mutedbrown);font-size:18px;margin:8px 0 26px}
+  h1{font-size:30px;letter-spacing:.06em;line-height:1.15}
+  .lede{font-style:italic;color:var(--mutedbrown);font-size:19px;margin:6px 0 22px}
   .tombola{
-    margin:0 auto;max-width:300px;
-    background:#f6efdf;border:1px solid var(--line);padding:10px 14px;
-    box-shadow:inset 0 2px 8px rgba(74,63,47,.10);
+    position:relative;margin:0 auto;max-width:280px;
+    background:var(--ochre);padding:12px;
+    box-shadow:0 10px 24px rgba(74,63,47,.16);
   }
+  .tombola .window{background:#f7f0e0;position:relative;box-shadow:inset 0 3px 10px rgba(74,63,47,.16)}
+  .reel-wrap{position:relative}
+  .reel-wrap:before,.reel-wrap:after{
+    content:'';position:absolute;top:50%;width:0;height:0;margin-top:-7px;z-index:2;
+    border-top:7px solid transparent;border-bottom:7px solid transparent;
+  }
+  .reel-wrap:before{left:0;border-left:9px solid var(--rust)}
+  .reel-wrap:after{right:0;border-right:9px solid var(--rust)}
+  .reel-wrap + .reel-wrap{border-top:1px solid var(--line)}
   .reel{height:156px;overflow:hidden;position:relative;
-    -webkit-mask-image:linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
-    mask-image:linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+    -webkit-mask-image:linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+    mask-image:linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
   }
-  .reel + .reel{border-top:1px solid var(--line-soft)}
   .reel .strip{will-change:transform}
   .reel .word{height:52px;line-height:52px;font-family:var(--display);font-size:26px;color:var(--bark);white-space:nowrap}
   .reel.spinning .strip{filter:blur(.6px)}
   .reel .word.hit{color:var(--rust)}
-  .reel-hint{font-family:var(--label);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mutedbrown);margin:16px 0 6px}
-  .spin-actions{display:flex;flex-direction:column;gap:12px;align-items:center;margin-top:22px}
-  .taken{font-style:italic;color:var(--rust);min-height:24px;margin-top:14px}
-  #spin.lockin .tombola,#spin.lockin .spin-actions,#spin.lockin .lede,#spin.lockin h1{animation:lift .4s var(--ease-out) both}
+  .reel-hint{font-family:var(--label);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--rust);margin:18px 0 4px;min-height:18px}
+  .spin-actions{display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:18px}
+  .taken{font-style:italic;color:var(--rust);min-height:24px;margin-top:12px}
+  #spin.lockin .tombola,#spin.lockin .spin-actions,#spin.lockin .lede,#spin.lockin h1,#spin.lockin .reel-hint{animation:lift .4s var(--ease-out) both}
   @keyframes lift{to{opacity:0;transform:translateY(-36px)}}
 
-  /* Buttons: the invite's rust button and its outline sibling */
+  /* Buttons: the invite's rust button, its ochre sibling */
   .btn{
     -webkit-appearance:none;appearance:none;border:1px solid var(--rust);background:var(--rust);color:var(--cream);
     font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
     min-height:46px;padding:10px 24px;cursor:pointer;
-    transition:background .15s ease,color .15s ease,transform .15s ease,opacity .15s ease;
+    transition:background .15s ease,color .15s ease,transform .15s ease,opacity .15s ease,box-shadow .2s ease;
+    box-shadow:0 6px 14px rgba(163,74,44,.22);
   }
-  .btn:active{transform:translateY(1px)}
-  .btn.ghost{background:transparent;color:var(--bark);border-color:var(--bark)}
-  .btn:disabled{opacity:.42;cursor:default;transform:none}
+  .btn:active{transform:translateY(1px);box-shadow:none}
+  .btn.ghost{background:var(--ochre);color:var(--bark);border-color:var(--ochre);box-shadow:none}
+  .btn:disabled{opacity:.42;cursor:default;transform:none;box-shadow:none}
   .btn.wide{width:100%}
 
-  /* ---- Tabs ---- */
-  .tabs{display:flex;margin:14px 22px 0;border-bottom:1px solid var(--line)}
+  /* ---- Tabs: an ochre strip, the active one cut from cream ---- */
+  .tabs{display:flex;margin:16px 22px 0;background:var(--ochre);padding:4px;gap:4px}
   .tab{
-    flex:1;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;
-    font-family:var(--label);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mutedbrown);
-    min-height:46px;padding:10px 4px;cursor:pointer;position:relative;transition:color .15s ease;
+    flex:1;background:transparent;border:0;
+    font-family:var(--label);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--bark);
+    min-height:44px;padding:10px 2px;cursor:pointer;position:relative;transition:background .15s ease,color .15s ease;
   }
-  .tab[aria-selected="true"]{color:var(--rust);border-bottom-color:var(--rust)}
-  .tab .badge{position:absolute;top:8px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--gold)}
-  .panels{view-transition-name:panels;flex:1;padding:22px 22px 110px}
+  .tab[aria-selected="true"]{background:var(--cream);color:var(--rust);box-shadow:0 1px 3px rgba(74,63,47,.12)}
+  .tab .badge{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--rust)}
+  .panels{view-transition-name:panels;flex:1;padding:28px 22px 120px;position:relative}
   .panel[hidden]{display:none}
   .panel.enter{animation:panel-in .22s ease-out both}
   @keyframes panel-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -162,113 +189,128 @@
   ::view-transition-new(panels){animation:panel-in .22s ease-out both}
   @keyframes vt-out{to{opacity:0}}
 
-  .kicker{font-family:var(--label);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mutedbrown);margin:0 0 6px}
-  .head-line{font-family:var(--display);font-size:22px;color:var(--bark);margin:0 0 18px;line-height:1.25}
-  .note{font-style:italic;color:var(--mutedbrown);margin:0 0 16px}
+  /* Panel heading: Playfair with a big ochre numeral behind */
+  .ph{position:relative;margin:0 0 18px;min-height:44px;display:flex;align-items:flex-end;gap:12px}
+  .ph h2{font-size:26px;letter-spacing:.03em;line-height:1.1;position:relative}
+  .ph .num{position:absolute;right:-4px;top:-26px;font-family:var(--display);font-weight:600;font-size:100px;line-height:1;color:var(--ochre);pointer-events:none;user-select:none;z-index:0}
+  .ph h2,.ph small{position:relative;z-index:1}
+  .ph small{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);padding-bottom:5px}
+  .note{font-style:italic;color:var(--mutedbrown);margin:0 0 16px;font-size:19px}
 
-  /* Statement card: icon beside the words, two buttons under */
-  .stmt{padding:18px 0 22px;border-top:1px solid var(--line-soft)}
-  .stmt:first-of-type{border-top:0;padding-top:4px}
+  /* Statement: coloured icon beside the words, two names beneath.
+     Richard and Lorraine wear rust; Eric and Tango wear olive. */
+  .stmt{padding:20px 0 22px;border-top:1px solid var(--line);position:relative}
+  .stmt:first-of-type{border-top:0;padding-top:0}
+  .stmt.human{--c:var(--rust);--cd:var(--rust-deep)}
+  .stmt.dog{--c:var(--olive);--cd:var(--olive-deep)}
   .stmt-row{display:flex;gap:14px;align-items:flex-start}
   .stmt-row.dog{flex-direction:row-reverse}
-  .icon{flex:0 0 48px;width:48px;height:48px;color:var(--bark);display:flex;align-items:center;justify-content:center}
-  .icon svg{width:44px;height:44px;stroke-width:1.5}
+  .icon{flex:0 0 52px;width:52px;height:52px;color:var(--c);display:flex;align-items:center;justify-content:center}
+  .icon svg{width:48px;height:48px;stroke-width:1.5}
   .stmt-row.human .icon{transform:rotate(-8deg)}
   .stmt-row.dog .icon{transform:rotate(8deg)}
-  .icon .fb{width:34px;height:34px}
-  .stmt-text{flex:1;font-size:21px;line-height:1.35;color:var(--ink);margin:0}
-  .stmt-text q{quotes:'\201C' '\201D'}
+  .icon .fb{width:36px;height:36px}
+  .stmt-text{flex:1;font-size:22px;line-height:1.3;color:var(--ink);margin:0}
   .choice{display:flex;gap:10px;margin-top:14px}
-  .choice .btn{flex:1;padding:10px 8px}
-  .choice .btn.pick{background:transparent;color:var(--bark);border-color:var(--bark)}
-  .choice .btn.pick.on{background:var(--rust);border-color:var(--rust);color:var(--cream)}
+  .choice .btn{flex:1;padding:10px 6px}
+  .choice .btn.pick{background:transparent;color:var(--cd);border-color:var(--c);box-shadow:none}
+  .choice .btn.pick.on{background:var(--c);border-color:var(--c);color:var(--cream);box-shadow:0 6px 14px rgba(74,63,47,.18)}
   .choice .btn.pick:disabled{opacity:.55}
-  .after-lock{font-style:italic;color:var(--mutedbrown)}
+  .after-lock{font-style:italic;color:var(--mutedbrown);margin:10px 0 0}
 
-  /* Tie-breaker pickers */
-  .tb{margin-top:8px;padding-top:18px;border-top:1px solid var(--line-soft)}
-  .tb .stmt-text{font-size:19px}
+  /* Tie-breaker */
+  .tb{margin-top:4px;padding-top:20px;border-top:1px solid var(--line)}
+  .tb .tb-q{font-family:var(--display);font-size:19px;color:var(--bark);margin:0}
+  .tb .tb-k{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 6px}
   .pickers{display:flex;gap:10px;margin-top:12px}
-  select{
-    flex:1;min-height:46px;font-family:var(--body);font-size:18px;color:var(--ink);
-    background:#f6efdf;border:1px solid var(--line);padding:6px 10px;border-radius:0;
-  }
-  .tb-saved{font-style:italic;color:var(--olive);margin-top:8px;min-height:22px}
+  select{flex:1;min-height:46px;font-family:var(--body);font-size:18px;color:var(--ink);background:#f7f0e0;border:1px solid var(--ochre-deep);padding:6px 10px;border-radius:0}
+  .tb-saved{font-style:italic;color:var(--olive-deep);margin-top:8px;min-height:22px}
 
-  /* My answers rows */
-  .nudge{font-style:italic;color:var(--rust);margin:-8px 0 14px}
+  /* My answers: ten quilt blocks that fill in as codes are found */
+  .progress{display:flex;gap:6px;margin:0 0 8px}
+  .progress .pb{flex:1 1 0;min-width:0;aspect-ratio:1;display:grid;background:transparent;opacity:.28;transition:opacity .4s ease}
+  .progress .pb.on{opacity:1}
+  .progress .pb .cell{width:100%;height:100%}
+  .nudge{font-style:italic;color:var(--rust);margin:0 0 14px;font-size:19px}
   .rows{list-style:none;margin:0;padding:0}
-  .row{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-top:1px solid var(--line-soft)}
+  .row{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-top:1px solid var(--line);position:relative}
   .row:first-child{border-top:0}
-  .row .n{flex:0 0 26px;font-family:var(--label);font-size:12px;color:var(--mutedbrown);padding-top:5px}
-  .row .ic{flex:0 0 24px;width:24px;height:24px;color:var(--bark);padding-top:2px}
-  .row .ic svg{width:22px;height:22px;stroke-width:1.6}
-  .row .ic .fb{width:18px;height:18px}
+  .row.human{--c:var(--rust);--cd:var(--rust-deep)}
+  .row.dog{--c:var(--olive);--cd:var(--olive-deep)}
+  .row .n{flex:0 0 28px;font-family:var(--label);font-size:12px;color:var(--mutedbrown);padding-top:6px}
+  .row .ic{flex:0 0 26px;width:26px;height:26px;color:var(--c);padding-top:2px}
+  .row .ic svg{width:24px;height:24px;stroke-width:1.6}
+  .row .ic .fb{width:20px;height:20px}
   .row .body{flex:1;min-width:0}
   .row.hidden .body{color:var(--mutedbrown);font-style:italic}
-  .row.hidden .ic{opacity:.35}
-  .row .body p{margin:0;font-size:18px;line-height:1.4}
-  .row .body .who{font-family:var(--label);font-size:15px;letter-spacing:.06em;color:var(--rust)}
+  .row.hidden .ic{opacity:.3}
+  .row .body p{margin:0;font-size:19px;line-height:1.35}
+  .row .body .who{font-family:var(--label);font-size:15px;letter-spacing:.06em;color:var(--cd)}
   .row .choice{margin-top:10px}
   .row .choice .btn{min-height:42px;font-size:12px}
   .row .edit{background:none;border:0;padding:6px 0 0;color:var(--mutedbrown);font-family:var(--label);font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;min-height:32px}
   .row .edit:disabled{opacity:.4;cursor:default}
-  .row.right .who{color:var(--olive)}
+  .row.right .who{color:var(--olive-deep)}
   .row.wrong .who{color:var(--rust);text-decoration:line-through;text-decoration-thickness:1px}
   .row .verdict{font-family:var(--label);font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
-  .row.right .verdict{color:var(--olive)}
+  .row.right .verdict{color:var(--olive-deep)}
   .row.wrong .verdict{color:var(--rust)}
   .row.missed .verdict{color:var(--mutedbrown)}
 
   /* Results */
-  .score{font-family:var(--display);font-size:64px;line-height:1;color:var(--bark);margin:6px 0 2px}
+  .score{font-family:var(--display);font-size:72px;line-height:1;color:var(--rust);margin:2px 0 0}
   .score small{font-size:26px;color:var(--mutedbrown)}
-  .rank-card{text-align:center;padding:10px 0 22px;border-bottom:1px solid var(--line-soft);margin-bottom:18px}
-  .rank-card .rank{font-family:var(--display);font-size:56px;line-height:1;color:var(--rust)}
-  .rank-card .of{font-style:italic;color:var(--mutedbrown);font-size:18px;margin-top:4px}
-  .rank-card .tbres{margin-top:10px;font-size:17px}
+  .rank-card{text-align:center;padding:6px 0 22px;border-bottom:1px solid var(--line);margin-bottom:20px}
+  .rank-card .rank{font-family:var(--display);font-size:64px;line-height:1;color:var(--rust)}
+  .rank-card .of{font-style:italic;color:var(--mutedbrown);font-size:19px;margin-top:4px}
+  .rank-card .tbres{margin-top:10px;font-size:18px}
+  .sec-k{font-family:var(--label);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mutedbrown);margin:0 0 8px;display:flex;align-items:center;gap:10px}
+  .sec-k:after{content:'';flex:1;height:1px;background:var(--line)}
   .board{list-style:none;margin:0 0 26px;padding:0}
-  .board li{display:flex;align-items:baseline;gap:10px;padding:8px 0;border-top:1px solid var(--line-soft)}
+  .board li{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
   .board li:first-child{border-top:0}
-  .board .pos{flex:0 0 34px;font-family:var(--label);font-size:12px;color:var(--mutedbrown)}
-  .board .nm{flex:1;font-size:18px}
+  .board .pos{flex:0 0 30px;height:30px;display:grid;place-items:center;font-family:var(--label);font-size:12px;color:var(--bark);background:var(--ochre)}
+  .board li.p1 .pos{background:var(--gold);color:var(--cream)}
+  .board li.p2 .pos{background:var(--olive);color:var(--cream)}
+  .board li.p3 .pos{background:var(--terracotta);color:var(--cream)}
+  .board .nm{flex:1;font-size:19px}
   .board li.me .nm{color:var(--rust);font-weight:600}
-  .board .pts{font-family:var(--display);font-size:20px;color:var(--bark)}
-  .split{padding:12px 0;border-top:1px solid var(--line-soft)}
-  .split:first-child{border-top:0}
-  .split p{margin:0;font-size:17px}
-  .split .bar{display:flex;height:8px;margin:8px 0 4px;background:#f6efdf;overflow:hidden}
+  .board .pts{font-family:var(--display);font-size:22px;color:var(--bark)}
+  .split{padding:12px 0;border-top:1px solid var(--line)}
+  .split:first-of-type{border-top:0}
+  .split p{margin:0;font-size:18px}
+  .split .bar{display:flex;height:10px;margin:8px 0 4px;background:var(--ochre);overflow:hidden}
   .split .bar i{display:block;height:100%;background:var(--olive);transition:width .6s var(--ease-out)}
   .split .bar i.wrong{background:var(--rust)}
   .split .lab{display:flex;justify-content:space-between;font-family:var(--label);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mutedbrown)}
-  .split .lab .ok{color:var(--olive)}
+  .split .lab .ok{color:var(--olive-deep)}
   section + section{margin-top:26px}
 
   /* Full-screen reveal flash */
   #ack{position:fixed;inset:0;z-index:50;background:var(--cream);display:flex;flex-direction:column;justify-content:center;padding:28px 24px;
     transform:translateY(100%);transition:transform .32s var(--ease-out)}
   #ack.show{transform:none}
-  #ack .k{font-family:var(--label);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mutedbrown);text-align:center;margin-bottom:16px}
-  .ackp{padding:22px 20px;color:var(--cream);text-align:center;margin:0 auto;width:100%;max-width:400px}
+  #ack .k{font-family:var(--display);font-size:22px;color:var(--bark);text-align:center;margin-bottom:18px}
+  .ackp{padding:24px 20px;color:var(--cream);text-align:center;margin:0 auto;width:100%;max-width:400px;box-shadow:0 14px 30px rgba(59,56,47,.2)}
   .ackp + .ackp{margin-top:14px}
   .ackp.right{background:var(--olive)}
   .ackp.wrong{background:var(--rust)}
   .ackp.missed{background:var(--mutedbrown)}
   .ackp .v{font-family:var(--display);font-size:34px;line-height:1.1}
-  .ackp .s{font-size:17px;font-style:italic;margin-top:8px;opacity:.92}
+  .ackp .s{font-size:18px;font-style:italic;margin-top:8px;opacity:.92}
 
   /* Mr Robin, perched on the card's foot */
-  .robin{position:absolute;right:-10px;bottom:-10px;width:104px;pointer-events:none;z-index:2;transform-origin:bottom center;scale:-1 1;
+  .robin{position:absolute;right:-16px;bottom:-12px;width:118px;pointer-events:none;z-index:2;transform-origin:bottom center;scale:-1 1;
     filter:drop-shadow(0 6px 7px rgba(59,56,47,.22));animation:robin-sway 4.6s ease-in-out infinite}
   @keyframes robin-sway{0%,100%{transform:rotate(0)}50%{transform:rotate(-2.5deg)}}
+  @media (max-width:420px){.robin{width:98px;right:-8px}}
 
-  .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;z-index:60;background:var(--bark);color:var(--cream);padding:12px 18px;font-size:16px;max-width:min(92vw,400px);text-align:center;transition:opacity .2s ease,transform .2s ease;pointer-events:none}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;z-index:60;background:var(--bark);color:var(--cream);padding:12px 18px;font-size:17px;max-width:min(92vw,400px);text-align:center;transition:opacity .2s ease,transform .2s ease;pointer-events:none}
   .toast.on{opacity:1;transform:translate(-50%,0)}
-  .center{text-align:center}
-  .sr{position:absolute;left:-9999px}
 
   @media (prefers-reduced-motion:reduce){
-    .sky,.robin,.card,.band .block,.alias.arrive,.panel.enter{animation:none}
+    .sky,.glow,.robin,.card,.band .block,.alias.arrive,.panel.enter{animation:none}
+    .motes{display:none}
     #ack{transition:none}
     .reel.spinning .strip{filter:none}
     ::view-transition-old(panels),::view-transition-new(panels){animation:none}
@@ -277,6 +319,8 @@
 </head>
 <body>
 <div class="sky" aria-hidden="true"></div>
+<div class="glow" aria-hidden="true"></div>
+<div class="motes" id="motes" aria-hidden="true"></div>
 
 <main class="card" id="card">
   <div class="band" id="band" aria-hidden="true"></div>
@@ -288,18 +332,20 @@
 
   <!-- Loading / error -->
   <section id="boot" class="screen" style="padding:40px 26px;text-align:center">
-    <p class="note" id="bootMsg">One moment&hellip;</p>
+    <p class="note" id="bootMsg">One moment.</p>
   </section>
 
   <!-- Name reels -->
   <section id="spin" class="screen" hidden>
     <h1>First, a name</h1>
-    <p class="lede">No real names tonight. Spin, and the reels decide.</p>
+    <p class="lede">No real names tonight. The reels decide.</p>
     <div class="tombola" role="group" aria-label="Name reels">
-      <div class="reel" id="reelItem"><div class="strip"></div></div>
-      <div class="reel" id="reelRole"><div class="strip"></div></div>
+      <div class="window">
+        <div class="reel-wrap"><div class="reel" id="reelItem"><div class="strip"></div></div></div>
+        <div class="reel-wrap"><div class="reel" id="reelRole"><div class="strip"></div></div></div>
+      </div>
     </div>
-    <div class="reel-hint" id="reelHint">Spinning&hellip;</div>
+    <div class="reel-hint" id="reelHint"></div>
     <div class="spin-actions">
       <button class="btn wide" id="btnLock" disabled>Lock it in</button>
       <button class="btn ghost wide" id="btnSpin" disabled>Spin again · 2 left</button>
@@ -417,9 +463,31 @@ function toast(msg) {
     var blk = builders[(i + 1) % builders.length]();
     var wrap = document.createElement('div');
     wrap.className = 'block';
-    Object.assign(wrap.style, blk.wrap, { width: '36px', height: '36px', animationDelay: (0.2 + i * 0.07) + 's' });
+    Object.assign(wrap.style, blk.wrap, { width: '44px', height: '44px', animationDelay: (0.35 + i * 0.09) + 's' });
     blk.cells.forEach(function (bg) { var c = document.createElement('div'); c.className = 'cell'; c.style.background = bg; wrap.appendChild(c); });
     band.appendChild(wrap);
+  }
+  // expose a block builder for the progress row on My answers
+  window.quiltBlock = function (i, px, cls) {
+    var b = builders[i % builders.length](), w = document.createElement('div');
+    w.className = cls || 'pb';
+    Object.assign(w.style, b.wrap, px ? { width: px + 'px', height: px + 'px' } : {});
+    b.cells.forEach(function (bg) { var c = document.createElement('div'); c.className = 'cell'; c.style.background = bg; w.appendChild(c); });
+    return w.outerHTML;
+  };
+  // dust motes drifting up through the light, as on the invite
+  if (!REDUCED) {
+    var motes = $('motes');
+    for (var m = 0; m < 14; m++) {
+      var d = document.createElement('div'); d.className = 'mote';
+      var sz = 2 + Math.random() * 4;
+      d.style.width = d.style.height = sz + 'px';
+      d.style.left = Math.random() * 100 + '%';
+      d.style.setProperty('--o', (0.25 + Math.random() * 0.4).toFixed(2));
+      d.style.animationDuration = (16 + Math.random() * 18) + 's';
+      d.style.animationDelay = (-Math.random() * 30) + 's';
+      motes.appendChild(d);
+    }
   }
 })();
 
@@ -429,7 +497,7 @@ function toast(msg) {
    ===================================================================== */
 function iconUrl(file) { return /^https?:/.test(file) ? file : (content.iconBase || '') + file; }
 function iconFallback() {
-  return '<span class="fb" style="display:block;background:conic-gradient(#4a3f2f 0 45deg,#efe6d3 45deg 135deg,#4a3f2f 135deg 225deg,#efe6d3 225deg 315deg,#4a3f2f 315deg)"></span>';
+  return '<span class="fb" style="display:block;background:conic-gradient(currentColor 0 45deg,#efe6d3 45deg 135deg,currentColor 135deg 225deg,#efe6d3 225deg 315deg,currentColor 315deg)"></span>';
 }
 function icon(file) {
   var url = iconUrl(file);
@@ -734,7 +802,7 @@ function choiceHtml(k, side, disabled) {
 }
 function stmtHtml(k, side) {
   var q = question(k)[side];
-  return '<div class="stmt"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + esc(q.first) + '</p></div>' +
+  return '<div class="stmt ' + side + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + esc(q.first) + '</p></div>' +
     (locked ? '<p class="after-lock">' + (pick(k, side) ? 'You said ' + NAMES[pick(k, side)] + '.' : 'Not answered.') + '</p>' : choiceHtml(k, side, false)) + '</div>';
 }
 var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -749,21 +817,23 @@ function tiebreakHtml(compact) {
     '<div class="tb-saved">' + (tb ? 'Saved: ' + tb.day + ' ' + MONTHS[tb.month - 1] + ' ' + TB_YEAR + '. Change it any time.' : (compact ? '' : 'Closest wins any tie.')) + '</div>';
 }
 
+function codeHead(title, n) {
+  return '<div class="ph">' + (n ? '<span class="num" aria-hidden="true">' + n + '</span>' : '') + '<h2>' + title + '</h2>' + (n ? '<small>of ' + TOTAL_CODES + '</small>' : '') + '</div>';
+}
 function renderCode() {
   var p = $('p-code'), html = '';
   if (codeUnknown) {
-    html = '<p class="kicker">This code</p><h2 class="head-line">That isn’t one of ours</h2><p class="note">Try scanning it again, or find another.</p>';
+    html = codeHead('Not one of ours') + '<p class="note">Try the scan again, or find another.</p>';
   } else if (!qk) {
-    html = '<p class="kicker">Scan a code</p><h2 class="head-line">Ten codes are hidden around the venue</h2><p class="note">Point your camera at one and it opens here. Your answers and progress are on the other tabs.</p>';
+    html = codeHead('Scan a code') + '<p class="note">Ten are hidden around the venue. Each one opens here.</p>';
   } else if (locked) {
-    html = '<p class="kicker">Code ' + qnum(qk) + ' of ' + TOTAL_CODES + '</p><h2 class="head-line">Answers at the pub</h2>' +
-      '<p class="note">The game is locked. Results will appear here when the reveal starts.</p>';
+    html = codeHead('Code ' + qnum(qk), qnum(qk)) + '<p class="note">Locked. Answers at the pub.</p>';
   } else {
-    var header = config.releasedAt ? 'Everything’s open. Answer what you can.' : 'Who said it?';
-    html = '<p class="kicker">Code ' + qnum(qk) + ' of ' + TOTAL_CODES + '</p><h2 class="head-line">' + header + '</h2>' +
-      stmtHtml(qk, 'human') + stmtHtml(qk, 'dog');
+    html = codeHead('Code ' + qnum(qk), qnum(qk));
+    if (config.releasedAt) html += '<p class="note">Everything\u2019s open. Answer what you can.</p>';
+    html += stmtHtml(qk, 'human') + stmtHtml(qk, 'dog');
     if (!(me && me.tiebreak)) {
-      html += '<div class="tb"><p class="kicker">Tie-breaker</p><p class="stmt-text">' + esc(content.tiebreak.question) + '</p>' + tiebreakHtml(false) + '</div>';
+      html += '<div class="tb"><p class="tb-k">Tie-breaker</p><p class="tb-q">' + esc(content.tiebreak.question) + '</p>' + tiebreakHtml(false) + '</div>';
     }
   }
   p.innerHTML = html;
@@ -778,9 +848,12 @@ function renderMine() {
   else head = left + ' more code' + (left === 1 ? '' : 's') + ' to find';
   var pending = 0;
   allKeys().forEach(function (k) { if (isFound(k)) { if (!pick(k, 'human')) pending++; if (!pick(k, 'dog')) pending++; } });
-  var html = '<p class="kicker">My answers</p><h2 class="head-line">' + head + '</h2>';
-  if (pending && !locked) html += '<p class="nudge">' + pending + ' statement' + (pending === 1 ? '' : 's') + ' still to answer.</p>';
-  if (locked) html += '<p class="note">Locked. Nothing can change now.</p>';
+  var html = '<div class="progress" aria-label="' + found + ' of ' + TOTAL_CODES + ' codes found">';
+  allKeys().forEach(function (k, i) { html += window.quiltBlock(i, 0, 'pb' + (isFound(k) ? ' on' : '')); });
+  html += '</div>';
+  html += '<div class="ph"><h2>' + head + '</h2></div>';
+  if (pending && !locked) html += '<p class="nudge">' + pending + ' still to answer.</p>';
+  if (locked) html += '<p class="note">Locked. Nothing changes now.</p>';
   html += '<ol class="rows">';
   var revealed = config.revealed || {};
   allKeys().forEach(function (k) {
@@ -788,11 +861,11 @@ function renderMine() {
       var q = question(k)[side], n = qnum(k);
       var label = n + (side === 'human' ? 'a' : 'b');
       if (!isFound(k)) {
-        html += '<li class="row hidden"><span class="n">' + label + '</span><span class="ic">' + iconFallback() + '</span><div class="body"><p>?</p></div></li>';
+        html += '<li class="row hidden ' + side + '"><span class="n">' + label + '</span><span class="ic">' + iconFallback() + '</span><div class="body"><p>Not found yet</p></div></li>';
         return;
       }
       var cur = pick(k, side);
-      var cls = 'row', verdict = '';
+      var cls = 'row ' + side, verdict = '';
       if (revealed[k] && answers[k]) {
         var truth = answers[k][side];
         if (!cur) { cls += ' missed'; verdict = 'Not answered. It was ' + NAMES[truth] + '.'; }
@@ -803,7 +876,7 @@ function renderMine() {
       if (cur) {
         html += '<p>' + statementText(k, side, cur) + '</p>';
         if (verdict) html += '<div class="verdict">' + esc(verdict) + '</div>';
-        else html += '<button class="edit" data-flip="1" data-q="' + k + '" data-side="' + side + '"' + (locked ? ' disabled' : '') + '>Change to ' + NAMES[side === 'human' ? (cur === 'R' ? 'L' : 'R') : (cur === 'E' ? 'T' : 'E')] + '</button>';
+        else html += '<button class="edit" data-flip="1" data-q="' + k + '" data-side="' + side + '"' + (locked ? ' disabled' : '') + '>Swap to ' + NAMES[side === 'human' ? (cur === 'R' ? 'L' : 'R') : (cur === 'E' ? 'T' : 'E')] + '</button>';
       } else {
         html += '<p>' + esc(q.first) + '</p>';
         if (verdict) html += '<div class="verdict">' + esc(verdict) + '</div>';
@@ -814,7 +887,7 @@ function renderMine() {
     });
   });
   if (me) {
-    html += '<li class="row"><span class="n">21</span><span class="ic">' + iconFallback() + '</span><div class="body tb"><p>' + esc(content.tiebreak.third) + '</p>' + tiebreakHtml(true) + '</div></li>';
+    html += '<li class="row human"><span class="n">21</span><span class="ic">' + iconFallback() + '</span><div class="body tb" style="border:0;padding:0;margin:0"><p>' + esc(content.tiebreak.third) + '</p>' + tiebreakHtml(true) + '</div></li>';
   }
   html += '</ol>';
   p.innerHTML = html;
@@ -875,13 +948,13 @@ function renderResults() {
     }
     html += '</div>';
   }
-  html += '<section><p class="kicker">Your score</p><div class="score"><span id="scoreNum">' + lastScore + '</span> <small>/ ' + (TOTAL_CODES * 2) + '</small></div></section>';
-  html += '<section><p class="kicker">Leaderboard</p><ol class="board">';
+  html += '<section><p class="sec-k">Your score</p><div class="score"><span id="scoreNum">' + lastScore + '</span> <small>/ ' + (TOTAL_CODES * 2) + '</small></div></section>';
+  html += '<section><p class="sec-k">Leaderboard</p><ol class="board">';
   table.forEach(function (r) {
-    html += '<li' + (r.slug === alias ? ' class="me"' : '') + '><span class="pos">' + (r.shared ? '=' : '') + r.pos + '</span><span class="nm">' + esc(prettyAlias(r.slug)) + '</span><span class="pts">' + r.score + '</span></li>';
+    html += '<li class="' + (r.slug === alias ? 'me ' : '') + (r.pos <= 3 ? 'p' + r.pos : '') + '"><span class="pos">' + (r.shared ? '=' : '') + r.pos + '</span><span class="nm">' + esc(prettyAlias(r.slug)) + '</span><span class="pts">' + r.score + '</span></li>';
   });
   html += '</ol></section>';
-  html += '<section><p class="kicker">The room</p>';
+  html += '<section><p class="sec-k">The room</p>';
   var total = Object.keys(players).length;
   keys.slice().reverse().forEach(function (k) {
     ['human', 'dog'].forEach(function (side) {
@@ -893,7 +966,7 @@ function renderResults() {
       var majority = counts[truth] >= counts[wrongName] ? truth : wrongName;
       var line = (counts[truth] + counts[wrongName]) === 0 ? 'Nobody answered this one. It was ' + NAMES[truth] + '.' : counts[majority] + ' of ' + total + ' said ' + NAMES[majority] + '. ' + (majority === truth ? 'Right.' : 'Wrong. It was ' + NAMES[truth] + '.');
       var pctR = total ? Math.round(counts[truth] / total * 100) : 0, pctW = total ? Math.round(counts[wrongName] / total * 100) : 0;
-      html += '<div class="split"><p>' + qnum(k) + (side === 'human' ? 'a' : 'b') + ' · ' + esc(question(k)[side].third.replace('{name}', NAMES[truth])) + '</p>' +
+      html += '<div class="split"><p>' + esc(question(k)[side].third.replace('{name}', NAMES[truth])) + '</p>' +
         '<div class="bar"><i style="width:' + pctR + '%"></i><i class="wrong" style="width:' + pctW + '%"></i></div>' +
         '<div class="lab"><span class="ok">' + NAMES[truth] + ' ' + counts[truth] + '</span><span>' + NAMES[wrongName] + ' ' + counts[wrongName] + '</span></div>' +
         '<p class="note" style="margin:6px 0 0">' + esc(line) + '</p></div>';
