@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v6.0 (12/09/2026): Alias is the bare two-word phrase, no article. Results' per-question block is
+          now Answers: each sentence with the correct name card in its gap, the split bar and counts,
+          and a short You said line.
   v5.0 (12/09/2026): Names are cards. Each sentence carries a gap; the two names sit below as same-size
           cards, and a guest drags one to the gap (or taps it) and it snaps in, slightly askew. The
           other card stays on the table, so swapping is dragging it in. Same on My answers. Third-person
@@ -329,7 +332,9 @@
   .split:first-of-type{border-top:0}
   .split-code{display:flex;align-items:center;gap:8px;font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--cd);margin:16px 0 4px}
   .split-code .qb{width:22px;height:22px}
-  .split p{margin:0;font-size:18px}
+  .split p{margin:0;font-size:18px;line-height:1.6}
+  .split .you{font-family:var(--label);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+  .split .you.right{color:var(--olive-deep)} .split .you.wrong{color:var(--rust)} .split .you.missed{color:var(--mutedbrown)}
   .split .bar{display:flex;height:10px;margin:8px 0 4px;background:var(--ochre);overflow:hidden}
   .split .bar i{display:block;height:100%;background:var(--olive);transition:width .6s var(--ease-out)}
   .split .bar i.wrong{background:var(--rust)}
@@ -480,7 +485,7 @@ var prettyAlias = function (slug) {
   var role = parts.pop();
   var item = parts.join(' ');
   var cap = function (w) { return w.replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }); };
-  return 'The ' + cap(item) + ' ' + cap(role);
+  return cap(item) + ' ' + cap(role);
 };
 function toast(msg) {
   var t = $('toast'); t.textContent = msg; t.classList.add('on');
@@ -710,7 +715,7 @@ function lockIn() {
     return; // taken: abort
   }).then(function (res) {
     if (!res.committed) {
-      $('taken').textContent = 'Someone’s already ' + prettyAlias(slug).replace(/^The/, 'the') + '. Have another go.';
+      $('taken').textContent = prettyAlias(slug) + ' is taken. Have another go.';
       setTimeout(function () { spin(true); }, 900);
       return;
     }
@@ -1065,23 +1070,22 @@ function renderResults() {
     html += '<li class="' + (r.slug === alias ? 'me ' : '') + (r.pos <= 3 ? 'p' + r.pos : '') + '"><span class="pos">' + (r.shared ? '=' : '') + r.pos + '</span><span class="nm">' + esc(prettyAlias(r.slug)) + '</span><span class="pts">' + r.score + '</span></li>';
   });
   html += '</ol></section>';
-  html += '<section class="patch"><p class="sec-k">The room</p>';
+  html += '<section class="patch"><p class="sec-k">Answers</p>';
   var total = Object.keys(players).length;
   keys.slice().reverse().forEach(function (k) {
     html += '<div class="split-code" style="' + window.codeVars(qnum(k) - 1) + '">' + window.codeBlock(qnum(k) - 1, 22) + 'Code ' + qnum(k) + '</div>';
     ['human', 'dog'].forEach(function (side) {
-      var truth = answers[k][side];
+      var truth = answers[k][side], mine = pick(k, side);
       var opts = side === 'human' ? ['R', 'L'] : ['E', 'T'];
       var counts = {}; opts.forEach(function (o) { counts[o] = 0; });
       Object.keys(players).forEach(function (s) { var pl = players[s]; var a = pl.answers && pl.answers[k] && pl.answers[k][side]; if (a && counts[a] !== undefined) counts[a]++; });
       var wrongName = opts.filter(function (o) { return o !== truth; })[0];
-      var majority = counts[truth] >= counts[wrongName] ? truth : wrongName;
-      var line = (counts[truth] + counts[wrongName]) === 0 ? 'Nobody answered this one. It was ' + NAMES[truth] + '.' : counts[majority] + ' of ' + total + ' said ' + NAMES[majority] + '. ' + (majority === truth ? 'Right.' : 'Wrong. It was ' + NAMES[truth] + '.');
       var pctR = total ? Math.round(counts[truth] / total * 100) : 0, pctW = total ? Math.round(counts[wrongName] / total * 100) : 0;
-      html += '<div class="split"><p>' + esc(question(k)[side].third.replace('{name}', NAMES[truth])) + '</p>' +
+      var answerCard = '<span class="gap filled right"><span class="namecard">' + NAMES[truth] + '</span></span>';
+      var you = !mine ? '<span class="you missed">You didn\u2019t answer</span>' : (mine === truth ? '<span class="you right">You said ' + NAMES[mine] + '</span>' : '<span class="you wrong">You said ' + NAMES[mine] + '</span>');
+      html += '<div class="split" style="' + window.codeVars(qnum(k) - 1) + '"><p>' + esc(question(k)[side].third).replace('{name}', answerCard) + '</p>' +
         '<div class="bar"><i style="width:' + pctR + '%"></i><i class="wrong" style="width:' + pctW + '%"></i></div>' +
-        '<div class="lab"><span class="ok">' + NAMES[truth] + ' ' + counts[truth] + '</span><span>' + NAMES[wrongName] + ' ' + counts[wrongName] + '</span></div>' +
-        '<p class="note" style="margin:6px 0 0">' + esc(line) + '</p></div>';
+        '<div class="lab"><span class="ok">' + NAMES[truth] + ' ' + counts[truth] + '</span>' + you + '<span>' + NAMES[wrongName] + ' ' + counts[wrongName] + '</span></div></div>';
     });
   });
   html += '</section>';

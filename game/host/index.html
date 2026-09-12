@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v6.0 (12/09/2026): Alias shown without the article.
   v4.0 (12/09/2026): Each code's quilt block shown on its reveal card, matching the guest page.
   v1.0 (12/09/2026): First build from spec v55. Sits behind the couple's passcode splash
           (Richard's code only). The Firebase host key is taken from ?key= once, kept on
@@ -246,7 +247,7 @@ var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'A
 var HOSTKEY_STORE = 'rl-game-hostkey';
 var $ = function (id) { return document.getElementById(id); };
 var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
-var pretty = function (slug) { var p = slug.split('-'), r = p.pop(); return 'The ' + (p.join(' ') + ' ' + r).replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }); };
+var pretty = function (slug) { var p = slug.split('-'), r = p.pop(); return (p.join(' ') + ' ' + r).replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }); };
 var keys = []; for (var i = 1; i <= TOTAL; i++) keys.push('q' + i);
 
 /* ---- Gate: Richard's passcode ---- */
