@@ -21,7 +21,8 @@
         "$code": {
           ".read": "auth != null",
           ".validate": "newData.isString() && newData.val().matches(/^q([1-9]|10)$/)"
-        }
+        },
+        ".read": "auth != null && root.child('game/host/REPLACE_WITH_HOST_KEY').val() === auth.uid"
       },
       "answers": {
         "$q": {
