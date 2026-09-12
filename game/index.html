@@ -929,8 +929,8 @@ function renderResults() {
   var p = $('p-results');
   var keys = revealedKeys().filter(function (k) { return answers[k]; });
   if (!keys.length) {
-    p.innerHTML = '<p class="kicker">Results</p><h2 class="head-line">Results unlock at the pub</h2>' +
-      '<p class="note">' + esc(prettyAlias(alias)) + '<br>' + foundCount() + ' of ' + TOTAL_CODES + ' codes found · ' + answeredCount(me) + ' of ' + (TOTAL_CODES * 2) + ' answered</p>';
+    p.innerHTML = codeHead('Results at the pub') +
+      '<p class="note">' + foundCount() + ' of ' + TOTAL_CODES + ' found · ' + answeredCount(me) + ' of ' + (TOTAL_CODES * 2) + ' answered</p>';
     lastScore = 0;
     return;
   }
@@ -938,7 +938,7 @@ function renderResults() {
   var mine = table.filter(function (r) { return r.slug === alias; })[0];
   var myScore = mine ? mine.score : 0;
   var done = keys.length === TOTAL_CODES;
-  var html = '<p class="kicker">Results · ' + keys.length + ' of ' + TOTAL_CODES + ' revealed</p>';
+  var html = '<div class="ph"><h2>Results</h2><small>' + keys.length + ' of ' + TOTAL_CODES + ' revealed</small></div>';
   if (done && mine) {
     html += '<div class="rank-card"><div class="rank">' + (mine.shared ? '=' : '') + ordinal(mine.pos) + '</div><div class="of">of ' + table.length + '</div>';
     var d = tbDistance(me);
