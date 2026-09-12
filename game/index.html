@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v15.4 (12/09/2026): Hint line under the first card removed.
   v15.3 (12/09/2026): 'It was' shows the true name as an olive card, on the stage and on My answers.
           Results' Answers block runs in card order.
   v15.2 (12/09/2026): Stale-tab guard: reloads itself when a newer version is live and the tab comes
@@ -1206,7 +1207,6 @@ function renderCode() {
     html = codeHead('Card ' + qnum(qk), qnum(qk));
     if (config.releasedAt) html += '<p class="note">Everything\u2019s open. Answer what you can.</p>';
     html += stmtHtml(qk, 'human');
-    if (answeredCount(me) === 0) html += '<p class="deck-hint">Drag or tap a name into the gap</p>';
     html += stmtHtml(qk, 'dog');
   }
   p.innerHTML = html;
