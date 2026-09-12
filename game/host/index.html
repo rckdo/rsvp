@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v14.1 (12/09/2026): Key failure message shows Firebase's reason.
   v14.0 (12/09/2026): Card URLs are links. Key box accepts the whole host link. Note about in-app browsers.
   v13.0 (12/09/2026): Cards section: the ten URLs (from Firebase, or the copy kept when the seed was
           written) and a link to the printable card sheet.
@@ -326,9 +327,10 @@ function claim() {
   db.ref(ROOT + '/host/' + hostKey).set(uid).then(function () {
     $('keySection').hidden = true; $('dash').hidden = false;
     subscribe();
-  }).catch(function () {
-    try { localStorage.removeItem(HOSTKEY_STORE); } catch (e) {}
-    $('keySection').hidden = false; $('keyErr').textContent = 'That key isn’t right. Check it and try again.';
+  }).catch(function (e) {
+    try { localStorage.removeItem(HOSTKEY_STORE); } catch (x) {}
+    $('keySection').hidden = false;
+    $('keyErr').textContent = 'Firebase refused the host key (' + (e && e.code ? e.code : e) + '). Key used: ' + String(hostKey).slice(0, 6) + '… as user ' + (uid ? uid.slice(0, 6) : 'none') + '.';
   });
 }
 var codesKnown = null;
