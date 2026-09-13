@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v21.6 (13/09/2026): The host page's gallery pick (config.media) decides each statement's photo or clip;
+          "none" clears one. Prefetch follows whatever is picked.
   v21.5 (13/09/2026): The room line's track stays on screen from the sentences beat; only the fill and the
           count arrive with the answer. The note is held blank until then.
   v21.4 (13/09/2026): A card the host steps back from and reveals again fetches its answers again, instead
@@ -884,7 +886,10 @@ var fmt = function (s) { return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 /* Photos at the reveal. content.json's media map (q3: { human: "media/x.jpg" } or { src, full }) wins;
    an answer-key humanImg/dogImg still works. Paths are relative to /game/. */
 var mediaOf = function (k, side) {
-  var m = content && content.media && content.media[k] && content.media[k][side];
+  // The host page's gallery pick (config.media) wins; "none" clears; then content.json; then the answer key.
+  var m = config.media && config.media[k] && config.media[k][side];
+  if (m === 'none') return null;
+  if (!m) m = content && content.media && content.media[k] && content.media[k][side];
   if (!m) { var a = answers[k]; m = a && a[side + 'Img']; }
   if (!m) return null;
   if (typeof m === 'string') return { src: m, full: m };
@@ -906,9 +911,9 @@ function startSeep() {
 /* Every photo is fetched quietly, one at a time, as soon as the hunt closes, so the reveal never waits. */
 var prefetched = false;
 function prefetchMedia() {
-  if (prefetched || !content || !content.media) return; prefetched = true;
+  if (prefetched || !content) return; prefetched = true;
   var list = [];
-  Object.keys(content.media).forEach(function (k) { ['human', 'dog'].forEach(function (s) { var m = mediaOf(k, s); if (m) { if (m.src) list.push(m.src); if (m.full !== m.src) list.push(m.full); } }); });
+  allKeys().forEach(function (k) { ['human', 'dog'].forEach(function (s) { var m = mediaOf(k, s); if (m) { if (m.src) list.push(m.src); if (m.full !== m.src) list.push(m.full); } }); });
   var i = 0;
   (function next() {
     if (i >= list.length) return;
