@@ -6,7 +6,7 @@ Guests pick who said each. Answers are revealed at the pub from the host page.
 
 | File | What it is |
 |---|---|
-| `index.html` | Guest page. Alias reels, This code / My answers / Results tabs. |
+| `index.html` | Guest page. Name reels, the tie-breaker gate, a full-screen takeover per scanned card, then My answers / Results tabs. |
 | `content.json` | Reels, statements, icon URLs. Contains no answers. |
 | `host/index.html` | Host page for the pub. Behind Richard's passcode. |
 | `firebase-rules.json` | Full Realtime Database rules for the project (tracker and RSVP rules included). Paste as is. |
