@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v19.1 (13/09/2026): Row 21's revealed date no longer gets rebuilt as an empty picker. Results is purely the
+          statistics: the rank card carries a one-line tie-breaker distance, and the date with what
+          you said lives only on My answers.
   v19.0 (13/09/2026): One grammar for the reveal. After a card is revealed its gap holds the true name and
           the sticker says how you did: tick, cross, or a blank for no answer; only a wrong answer
           adds "You said" with your card struck through. Revealed cards show in full whether found
@@ -408,7 +411,7 @@
   .tbres .k{font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);margin:12px 0 8px}
   .tbres .dp{margin:0}
   .tbres .date-row{margin:0}
-  .rank-card .tbres .date-row{justify-content:center}
+  .rank-card .tbres-line{margin-top:12px;font-style:italic;font-size:19px;color:var(--mutedbrown)}
   .tbres .gap.sm[data-side="day"]{width:54px}
   .tbres .gap.sm[data-side="month"]{width:86px}
   .tbres .dist{font-style:italic;font-size:19px;color:var(--rust);margin:10px 0 0}
@@ -1473,7 +1476,7 @@ function renderMine() {
   }
   html += '</ol>';
   p.innerHTML = html;
-  p.querySelectorAll('.dp').forEach(renderDP);
+  p.querySelectorAll('.dp:not(.shown)').forEach(renderDP);
   $('mineBadge').hidden = !nudge;
 }
 
@@ -1523,7 +1526,8 @@ function renderResults() {
   var html = '<div class="ph"><h2>Results</h2><small>' + keys.length + ' of ' + TOTAL_CODES + ' revealed</small></div>';
   if (done && mine) {
     html += '<div class="patch gold rank-card"><div class="rank">' + (mine.shared ? '=' : '') + ordinal(mine.pos) + '</div><div class="of">of ' + table.length + '</div>';
-    if (answers.tiebreak) html += tbResultHtml();
+    // The statistic only; the date itself and what you said live on My answers, row 21.
+    if (answers.tiebreak) { var d = tbDistance(me); html += '<div class="tbres-line">Tie-breaker: ' + (d === null ? 'no answer' : (d === 0 ? 'spot on' : d + ' day' + (d === 1 ? '' : 's') + ' out')) + '</div>'; }
     html += '</div>';
   }
   html += '<section class="patch"><p class="sec-k">Your score</p><div class="score"><span id="scoreNum">' + lastScore + '</span> <small>/ ' + (TOTAL_CODES * 2) + '</small></div></section>';
