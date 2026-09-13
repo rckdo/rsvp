@@ -57,8 +57,9 @@ A short clip is a `video` entry with a `poster` frame:
 "q5": { "dog": { "video": "media/q5-eric.mp4", "poster": "media/q5-eric.jpg" } }
 ```
 
-It plays silently, looping, in the print frame at the reveal; a tap pauses it, another resumes it.
-Nothing opens full screen, so size the frame for what it shows. The
+It plays silently, looping, in the print frame at the reveal; a tap on the picture pauses it, and the
+speaker in the polaroid's foot turns its sound on (one clip at a time). Keep the audio track in the file
+for anything worth hearing. Nothing opens full screen, so size the frame for what it shows. The
 polaroid's window is square unless the entry sets `"aspect": "3/4"` (or any ratio),
 which suits a portrait clip.
 Keep clips short (under 15 seconds), 720p H.264 MP4, under 4MB. They sit in the repo
