@@ -8,7 +8,8 @@
           to play (a name, one question, ten cards, who said what, most right wins) and a QR to the
           game's front door (/game/, no code). Previewed on the page; a third print button lays two
           A5 copies on one landscape A4 with a dashed cut line. Its cream ground and the QR are images,
-          so it prints with "background graphics" off.
+          so it prints with "background graphics" off. A line under the QR says how to scan: open the
+          camera, point, tap the link.
   v1.5 (13/09/2026): Two print buttons. "One card per page" is the 4 x 6 photo-paper run as before.
           "All on one A4 sheet" lays the ten small on a single landscape A4 (five across, two
           down, each about 53 x 80 mm with a hairline cut guide) for an ordinary printer. The page
@@ -83,8 +84,9 @@
   .leaf ol{text-align:left;margin:0;padding:0 0 0 4.4cqw;font-size:3.3cqw;line-height:1.38;color:#4a3f2f}
   .leaf li{margin:0 0 1.9cqw;padding-left:.6cqw}
   .leaf li::marker{font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:#a34a2c}
-  .leaf .qr{width:27cqw;height:27cqw;display:block;margin:auto 0 0;box-shadow:0 2px 0 #e0cfa4, 0 6px 14px rgba(74,63,47,.18)}
-  .leaf .scan{font-family:'Marcellus',serif;letter-spacing:.16em;text-transform:uppercase;font-size:2.7cqw;color:#8a7256;margin:2.6cqw 0 0}
+  .leaf .qr{width:25cqw;height:25cqw;display:block;margin:auto 0 0;box-shadow:0 2px 0 #e0cfa4, 0 6px 14px rgba(74,63,47,.18)}
+  .leaf .scan{font-family:'Marcellus',serif;letter-spacing:.16em;text-transform:uppercase;font-size:2.7cqw;color:#8a7256;margin:2.4cqw 0 0}
+  .leaf .how{font-size:2.9cqw;line-height:1.35;color:#8a7256;margin:1.4cqw 0 0;max-width:70cqw}
   @media print{
     #instr{display:none}
     body{background:#fff}
@@ -341,7 +343,7 @@ function drawInstr() {
   var home = BASE.replace(/\?c=$/, ''), band = bandImage(), qr = qrImage(home), bg = pixel(CREAM);
   var leaf = '<div class="leaf"><img class="bg" src="' + bg + '" alt=""><div class="inner"><img class="band" src="' + band + '" alt="">' +
     '<h3>Find the cards</h3><p class="kicker">A treasure hunt for the day</p><ol>' + HOW.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ol>' +
-    '<img class="qr" src="' + qr + '" alt="QR code to the game"><p class="scan">Scan to play</p></div></div>';
+    '<img class="qr" src="' + qr + '" alt="QR code to the game"><p class="scan">Scan to play</p><p class="how">Open your phone&#8217;s camera, point it at the square and tap the link that appears.</p></div></div>';
   box.innerHTML = leaf + leaf;
 }
 $('bPrint').addEventListener('click', function () { printAs('single'); });
