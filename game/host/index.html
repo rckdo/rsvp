@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v19.0 (13/09/2026): The date is a beat of its own: after card 10's answers, Reveal the date spins the
+          reels on every phone; Back and Finish work around it. Presenter shows the date, who
+          answered and the three closest.
   v18.6 (13/09/2026): Icon picker offers 80 Lucide icons.
   v18.5 (13/09/2026): A reveal note per statement (150 characters) on Setup, shown with the answer on the
           phones, in the feed and the presenter. Reset keeps it.
@@ -526,31 +529,36 @@ $('bUnrelease').addEventListener('click', function () { cfg().update({ releasedA
 /* Reveal, in three beats per card: show the sentences, reveal the answers, move on. */
 function stageInfo() {
   var st = config.stage || {}, n = revealedKeys().length;
+  // Beats: show card, reveal answers, ... then the date (the tie-breaker's reels), then finish.
+  if (st.card === 'tiebreak') return { mode: 'finish' };
   if (st.card && st.step === 'question') return { mode: 'answer', card: st.card };
-  var next = n + 1;
-  if (st.card && st.step === 'answer') { return next > TOTAL ? { mode: 'finish' } : { mode: 'show', card: 'q' + next }; }
-  return next > TOTAL ? { mode: 'done' } : { mode: 'show', card: 'q' + next };
+  var next = n + 1, dateDone = !!(config.revealed && config.revealed.tiebreak);
+  if (st.card && st.step === 'answer') { return next > TOTAL ? (dateDone ? { mode: 'finish' } : { mode: 'date' }) : { mode: 'show', card: 'q' + next }; }
+  return next > TOTAL ? (dateDone ? { mode: 'done' } : { mode: 'date' }) : { mode: 'show', card: 'q' + next };
 }
 $('bNext').addEventListener('click', function () {
   var si = stageInfo(), up = {};
   if (si.mode === 'show') { up.stage = { card: si.card, step: 'question' }; }
   else if (si.mode === 'answer') { up['revealed/' + si.card] = true; up['stage/step'] = 'answer'; }
+  else if (si.mode === 'date') { up.stage = { card: 'tiebreak', step: 'answer' }; up['revealed/tiebreak'] = true; }
   else if (si.mode === 'finish') { up.stage = null; }
   else return;
   cfg().update(up).catch(fail);
 });
 $('bAll').addEventListener('click', function () {
-  if (!confirm('Reveal all ten cards at once? Phones go straight to Results.')) return;
-  var up = { stage: null }; keys.forEach(function (k) { up['revealed/' + k] = true; }); cfg().update(up).catch(fail);
+  if (!confirm('Reveal all ten cards and the date at once? Phones go straight to Results.')) return;
+  var up = { stage: null, 'revealed/tiebreak': true }; keys.forEach(function (k) { up['revealed/' + k] = true; }); cfg().update(up).catch(fail);
 });
 $('bHide').addEventListener('click', function () { if (confirm('Hide all results? Phones go back to the placeholder.')) cfg().update({ revealed: null, stage: null }).catch(fail); });
 $('bScreen').addEventListener('click', function () { cfg().update({ stage: null }).catch(fail); });
 /* Back: the same beats in reverse. Answers -> sentences (answers hidden again), sentences -> previous
    card's answers, nothing on screen -> the last revealed card's answers. */
 $('bBack').addEventListener('click', function () {
-  var st = config.stage || {}, n = revealedKeys().length, up = {};
-  if (st.card && st.step === 'answer') { up['revealed/' + st.card] = null; up['stage/step'] = 'question'; }
+  var st = config.stage || {}, n = revealedKeys().length, up = {}, dateDone = !!(config.revealed && config.revealed.tiebreak);
+  if (st.card === 'tiebreak') { up['revealed/tiebreak'] = null; up.stage = { card: 'q' + TOTAL, step: 'answer' }; }
+  else if (st.card && st.step === 'answer') { up['revealed/' + st.card] = null; up['stage/step'] = 'question'; }
   else if (st.card && st.step === 'question') { var prev = parseInt(st.card.slice(1), 10) - 1; up.stage = prev >= 1 ? { card: 'q' + prev, step: 'answer' } : null; }
+  else if (dateDone) { up.stage = { card: 'tiebreak', step: 'answer' }; }
   else if (n > 0) { up.stage = { card: 'q' + n, step: 'answer' }; }
   else return;
   cfg().update(up).catch(fail);
@@ -735,7 +743,7 @@ function renderReveal() {
   slugs.forEach(function (s) { var p = players[s]; found += p.found ? Object.keys(p.found).length : 0; keys.forEach(function (k) { if (p.answers && p.answers[k]) { if (p.answers[k].human) ans++; if (p.answers[k].dog) ans++; } }); });
   $('revealVal').innerHTML = n + '<small>of ' + TOTAL + '</small>';
   $('feedState').textContent = slugs.length + ' players \u00b7 ' + found + ' found \u00b7 ' + ans + ' answered';
-  var si = stageInfo(), ph = phase(), lab = { show: 'Show card ' + (si.card ? si.card.slice(1) : ''), answer: 'Reveal answers', finish: 'Finish', done: 'All revealed' }[si.mode];
+  var si = stageInfo(), ph = phase(), lab = { show: 'Show card ' + (si.card ? si.card.slice(1) : ''), answer: 'Reveal answers', date: 'Reveal the date', finish: 'Finish', done: 'All revealed' }[si.mode];
   $('bNext').disabled = si.mode === 'done' || ph === 'open'; $('bNext').textContent = ph === 'open' ? 'Close the hunt first' : lab;
   $('bAll').disabled = n >= TOTAL || ph === 'open'; $('bHide').disabled = ph !== 'revealing'; $('bScreen').disabled = !(config.stage && config.stage.card);
   $('bBack').disabled = ph !== 'revealing';
@@ -763,23 +771,37 @@ function renderPresent() {
   if (ph === 'open') {
     nowLab = 'hunt still open'; nowH = '<p class="pempty">Phones are still answering. Close the hunt to start the reveal.</p>';
     nextLab = ''; nextH = ''; nextBtn = 'Lock now'; nextCls = 'btn warn';
+  } else if (st.card === 'tiebreak') {
+    nowLab = 'the date showing';
+    nowH = '<div class="ptitle">The date<small>tie-breaker</small></div>' + dateBlock();
+    nextLab = 'results'; nextH = '<p class="pempty">Every phone drops to Results and its rank.</p>'; nextBtn = 'Finish';
   } else if (st.card) {
     var k = st.card, answerStep = st.step === 'answer';
     nowLab = answerStep ? 'answers showing' : 'sentences showing';
     nowH = '<div class="ptitle">' + CODE_STYLE[cur - 1] + 'Card ' + cur + '<small>' + (answerStep ? 'answers' : 'question') + '</small></div>' + cardBlock(k, answerStep);
     if (si.mode === 'answer') { nextLab = 'the answers for card ' + cur; nextH = '<div class="ptitle">' + CODE_STYLE[cur - 1] + 'Card ' + cur + '<small>answers</small></div>' + cardBlock(k, true); nextBtn = 'Reveal answers'; }
     else if (si.mode === 'show') { var nn = parseInt(si.card.slice(1), 10); nextLab = 'card ' + nn; nextH = '<div class="ptitle">' + CODE_STYLE[nn - 1] + 'Card ' + nn + '<small>question</small></div>' + cardBlock(si.card, false); nextBtn = 'Show card ' + nn; }
+    else if (si.mode === 'date') { nextLab = 'the date'; nextH = '<div class="ptitle">The date<small>tie-breaker</small></div><p class="pempty">The reels spin on every phone and land on the date, then each phone says how far out it was.</p>' + dateBlock(); nextBtn = 'Reveal the date'; }
     else { nextLab = 'results'; nextH = '<p class="pempty">Every phone drops to Results and its rank.</p>'; nextBtn = 'Finish'; }
   } else {
     nowLab = n === 0 ? 'nothing yet' : (n >= TOTAL ? 'results' : 'results so far');
     nowH = '<p class="pempty">' + (n === 0 ? 'Phones show the closed hunt. Nothing revealed.' : 'Phones show Results with ' + n + ' of ' + TOTAL + ' revealed.') + '</p>';
     if (si.mode === 'show') { var n2 = parseInt(si.card.slice(1), 10); nextLab = 'card ' + n2; nextH = '<div class="ptitle">' + CODE_STYLE[n2 - 1] + 'Card ' + n2 + '<small>question</small></div>' + cardBlock(si.card, false); nextBtn = 'Show card ' + n2; }
+    else if (si.mode === 'date') { nextLab = 'the date'; nextH = '<div class="ptitle">The date<small>tie-breaker</small></div>' + dateBlock(); nextBtn = 'Reveal the date'; }
     else { nextLab = ''; nextH = '<p class="pempty">All ten revealed.</p>'; nextBtn = 'All revealed'; }
   }
   $('pNowLab').textContent = nowLab; $('pNow').innerHTML = nowH;
   $('pNextLab').textContent = nextLab; $('pNext').innerHTML = nextH;
   var nb = $('pNextBtn'); nb.textContent = nextBtn; nb.className = nextCls; nb.disabled = (ph !== 'open' && si.mode === 'done');
   $('pBack').disabled = ph !== 'revealing';
+}
+/* The tie-breaker for the presenter: the date, who answered, and the three closest. */
+function dateBlock() {
+  var a = answers.tiebreak; if (!a) return '<p class="pempty">Tie-breaker not seeded.</p>';
+  var rows = Object.keys(players).map(function (s) { var d = tbDistance(players[s]); return { s: s, d: d }; }).filter(function (r) { return r.d !== null; }).sort(function (x, y) { return x.d - y.d; });
+  var h = '<div class="st"><p class="txt">' + a.day + ' ' + MONTHS[a.month - 1] + ' ' + TB_YEAR + '</p><div class="ans">' + rows.length + ' of ' + Object.keys(players).length + ' answered</div>';
+  if (rows.length) h += '<p class="wrongs" style="color:var(--forest)">Closest: ' + rows.slice(0, 3).map(function (r) { return esc(pretty(r.s)) + ' (' + (r.d === 0 ? 'spot on' : r.d + 'd') + ')'; }).join(', ') + '</p>';
+  return h + '</div>';
 }
 $('pNextBtn').addEventListener('click', function () { if (phase() === 'open') $('bLockNow').click(); else $('bNext').click(); });
 $('pBack').addEventListener('click', function () { $('bBack').click(); });

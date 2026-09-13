@@ -4,6 +4,10 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v21.0 (13/09/2026): The date is the eleventh reveal: the name generator's reels spin and land on the day
+          and month, then the phone says what you said and how far out you were. The rank card no
+          longer carries the tie-breaker or "of N"; a shared place reads "joint" there and "3=" on
+          the leaderboard, with the next place skipped.
   v20.6 (13/09/2026): The reveal in two beats. Sentences beat: the gap is blank and "You said" shows your
           card, plain. Answers beat: the true name flies into the gap and a tick or cross stamps
           onto your card.
@@ -431,7 +435,6 @@
   .tbres .k{font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);margin:12px 0 8px}
   .tbres .dp{margin:0}
   .tbres .date-row{margin:0}
-  .rank-card .tbres-line{margin-top:12px;font-style:italic;font-size:19px;color:var(--mutedbrown)}
   .tbres .gap.sm[data-side="day"]{width:54px}
   .tbres .gap.sm[data-side="month"]{width:86px}
   .tbres .dist{font-style:italic;font-size:19px;color:var(--rust);margin:10px 0 0}
@@ -638,6 +641,19 @@
   .stage-view.answer .gap .namecard.truth{animation:flyin .75s cubic-bezier(.2,1.25,.3,1) both}
   .stage-view.answer .stage-stmt.dog .namecard.truth{animation-delay:.3s}
   @keyframes flyin{from{opacity:0;transform:translate(140px,-70px) rotate(14deg) scale(1.2)}55%{opacity:1}to{opacity:1;transform:rotate(-3deg)}}
+  /* The date beat: the reels, the placard, then what you said once they land */
+  .stage-view.date .tb-reels{margin:6px auto 14px}
+  .stage-view.date .tb-year{display:flex;justify-content:center;margin:0 0 18px}
+  .stage-view.date .tb-year .namecard.fixed{margin:0;padding:0 34px;height:38px;font-size:22px}
+  .stage-view.date .tb-out{text-align:center}
+  .stage-view.date .tb-out .k2{font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);margin:0 0 8px}
+  .stage-view.date .tb-out .dp{margin:0}
+  .stage-view.date .tb-out .date-row{justify-content:center;margin:0}
+  .stage-view.date .tb-out .gap.sm[data-side="day"]{width:54px}
+  .stage-view.date .tb-out .gap.sm[data-side="month"]{width:86px}
+  .stage-view.date .tb-out .dist{font-family:var(--display);font-weight:600;font-size:30px;color:var(--rust);margin:14px 0 0}
+  .stage-view.date .tb-out .dist.right{color:var(--olive-deep)}
+  .stage-view.date .tb-out.in{animation:fadeup .5s var(--ease-out) both}
   .stage-view.answer .said .namecard.mini:after{animation:sticker .45s cubic-bezier(.2,1.4,.4,1) .6s both}
   .stage-view.answer .stage-stmt.dog .said .namecard.mini:after{animation-delay:.9s}
   @keyframes sticker{from{opacity:0;transform:scale(2.6) rotate(-25deg)}to{opacity:1;transform:none}}
@@ -1276,13 +1292,14 @@ function onConfig() {
 function renderStage() {
   var st = config.stage, el = $('ack');
   var key = st && st.card ? st.card + '/' + st.step : '';
-  if (!st || !st.card || !question(st.card)) {
+  var isDate = st && st.card === 'tiebreak';
+  if (!st || !st.card || (!isDate && !question(st.card))) {
     if (lastStage) { lastStage = ''; el.classList.remove('show'); if (revealedKeys().length) showTab('results'); }
     return;
   }
-  var k = st.card, answerStep = st.step === 'answer', ready = !answerStep || !!answers[k];
-  var html = '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + 'Card ' + qnum(k) + '</div>';
-  ['human', 'dog'].forEach(function (side) {
+  var k = st.card, answerStep = st.step === 'answer', ready = isDate ? !!answers.tiebreak : (!answerStep || !!answers[k]);
+  var html = isDate ? dateStageHtml(ready) : '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + 'Card ' + qnum(k) + '</div>';
+  if (!isDate) ['human', 'dog'].forEach(function (side) {
     var q = question(k)[side];
     html += '<div class="patch stmt stage-stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + stageSentenceHtml(k, side, answerStep && ready) + '</p></div>';
     html += stageSaidHtml(k, side, answerStep && ready);
@@ -1292,9 +1309,9 @@ function renderStage() {
     }
     html += '</div>';
   });
-  if (answerStep && !ready) html += '<p class="waiting">One moment.</p>';
+  if (answerStep && !ready && !isDate) html += '<p class="waiting">One moment.</p>';
   var view = document.createElement('div');
-  view.className = 'stage-view' + (answerStep ? ' answer' : '');
+  view.className = 'stage-view' + (answerStep && !isDate ? ' answer' : '') + (isDate ? ' date' : '');
   view.dataset.ready = (answerStep && ready) ? '1' : '0';
   view.innerHTML = html;
   var old = el.querySelector('.stage-view');
@@ -1302,6 +1319,7 @@ function renderStage() {
     // Same beat, fresh data: swap quietly, and not at all if nothing can have changed.
     if (old && old.dataset.ready === view.dataset.ready && old.dataset.ready === '1') return;
     if (old) old.replaceWith(view); else el.appendChild(view);
+    if (isDate && ready) spinDate(view);
     return;
   }
   var prevCard = lastStage.split('/')[0];
@@ -1315,8 +1333,37 @@ function renderStage() {
   else { view.classList.add('enter'); el.appendChild(view); }
   lastStage = key;
   if (!el.classList.contains('show')) { void el.offsetWidth; el.classList.add('show'); }
-  if (answerStep) { try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {} }
+  if (answerStep && !isDate) { try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {} }
   el.scrollTop = 0;
+  if (isDate && ready) spinDate(view);
+}
+/* The eleventh reveal: the date, on the name generator's reels. They spin, land on the day and the
+   month, and only then does the phone say how far out you were. */
+function dateStageHtml(ready) {
+  var h = '<div class="k">The date</div>' +
+    '<div class="tombolas tb-reels" role="group" aria-label="The date">' +
+    '<div class="tombola"><p class="lab">Day</p><div class="window"><div class="reel-wrap"><div class="reel" id="tbDay"><div class="strip"></div></div></div></div></div>' +
+    '<div class="tombola"><p class="lab">Month</p><div class="window"><div class="reel-wrap"><div class="reel" id="tbMonth"><div class="strip"></div></div></div></div></div></div>' +
+    '<div class="tb-year"><span class="namecard sm fixed">' + TB_YEAR + '</span></div>';
+  if (!ready) return h + '<p class="waiting">One moment.</p>';
+  var tb = me && me.tiebreak, d = tbDistance(me);
+  h += '<div class="tb-out" hidden>';
+  if (tb) h += '<p class="k2">You said</p>' + dateCards(tb.day, tb.month, d === 0 ? 'right' : '') + '<p class="dist' + (d === 0 ? ' right' : '') + '">' + (d === 0 ? 'Spot on' : d + ' day' + (d === 1 ? '' : 's') + ' out') + '</p>';
+  h += '</div>';
+  return h;
+}
+function spinDate(view) {
+  var a = answers.tiebreak; if (!a || !view.querySelector('#tbDay')) return;
+  var days = []; for (var i = 1; i <= 31; i++) days.push(String(i));
+  var months = MONTHS.map(function (m) { return m.slice(0, 3).toUpperCase(); });
+  var dayReel = buildReel('tbDay', days), monthReel = buildReel('tbMonth', months);
+  var land = function () {
+    var out = view.querySelector('.tb-out'); if (out) { out.hidden = false; out.classList.add('in'); }
+    try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {}
+  };
+  setTimeout(function () {
+    Promise.all([spinReel(dayReel, a.day - 1, 3200, 0, 1), spinReel(monthReel, a.month - 1, 3800, 180, -1)]).then(land);
+  }, REDUCED ? 0 : 500);
 }
 /* The stage's two beats. Sentences beat: the gap is blank and "You said" shows your card, plain.
    Answers beat: the true name flies into the gap and a tick or cross stamps onto your card. */
@@ -1711,15 +1758,13 @@ function renderResults() {
   var done = keys.length === TOTAL_CODES;
   var html = '<div class="ph"><h2>Results</h2><small>' + keys.length + ' of ' + TOTAL_CODES + ' revealed</small></div>';
   if (done && mine) {
-    html += '<div class="patch gold rank-card"><div class="rank">' + (mine.shared ? '=' : '') + ordinal(mine.pos) + '</div><div class="of">of ' + table.length + '</div>';
-    // The statistic only; the date itself and what you said live on My answers, row 21.
-    if (answers.tiebreak) { var d = tbDistance(me); html += '<div class="tbres-line">Tie-breaker: ' + (d === null ? 'no answer' : (d === 0 ? 'spot on' : d + ' day' + (d === 1 ? '' : 's') + ' out')) + '</div>'; }
+    html += '<div class="patch gold rank-card"><div class="rank">' + ordinal(mine.pos) + '</div>' + (mine.shared ? '<div class="of">joint</div>' : '');
     html += '</div>';
   }
   html += '<section class="patch"><p class="sec-k">Your score</p><div class="score"><span id="scoreNum">' + lastScore + '</span> <small>/ ' + (TOTAL_CODES * 2) + '</small></div></section>';
   html += '<section class="patch"><p class="sec-k">Leaderboard</p><ol class="board">';
   table.forEach(function (r) {
-    html += '<li class="' + (r.slug === alias ? 'me ' : '') + (r.pos <= 3 ? 'p' + r.pos : '') + '"><span class="pos">' + (r.shared ? '=' : '') + r.pos + '</span><span class="nm">' + esc(prettyAlias(r.slug)) + '</span><span class="pts">' + r.score + '</span></li>';
+    html += '<li class="' + (r.slug === alias ? 'me ' : '') + (r.pos <= 3 ? 'p' + r.pos : '') + '"><span class="pos">' + r.pos + (r.shared ? '=' : '') + '</span><span class="nm">' + esc(prettyAlias(r.slug)) + '</span><span class="pts">' + r.score + '</span></li>';
   });
   html += '</ol></section>';
   p.innerHTML = html;
