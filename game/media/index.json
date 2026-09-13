@@ -1,5 +1,6 @@
 {
   "items": [
-    "media/q5a.jpg"
+    "media/q5a.jpg",
+    { "video": "media/q7a.mp4", "poster": "media/q7a.jpg", "aspect": "3/4" }
   ]
 }
