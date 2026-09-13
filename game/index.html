@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v18.2 (13/09/2026): The closed state is a sign: a bark plank screwed on askew reading HUNT CLOSED in
+          pressed gold, hung where the countdown was and on a scan after the close.
   v18.1 (13/09/2026): My answers lists the unfound cards first as one batch, then the answered cards.
   v18.0 (13/09/2026): A scanned card takes over the screen until both names are placed and pinned, then
           slides up and away to My answers, scrolled to that card with a flash. A card already
@@ -231,7 +233,22 @@
   .clock .bar i{display:block;height:100%;background:var(--olive);transition:width 1s linear,background .4s ease}
   .clock.soon .cd,.clock.soon .cd b{color:var(--rust)}
   .clock.soon .bar i{background:var(--rust)}
-  .clock.locked{font-family:var(--body);font-style:italic;font-size:18px;color:var(--bark);text-align:center}
+  .clock.locked{text-align:center}
+  /* The closed sign: a bark plank screwed on askew, the words pressed into it in gold. */
+  .sign{display:flex;justify-content:center;margin:14px 0 2px}
+  .sign .board{position:relative;display:inline-block;padding:16px 46px 15px;transform:rotate(-2deg);transform-origin:50% 0;
+    background:linear-gradient(180deg,#5b4d3a,#43392a 55%,#3a3023);border:1px solid #2e2719;
+    font-family:var(--display);font-weight:700;font-size:28px;line-height:1;letter-spacing:.16em;text-transform:uppercase;color:#c99a3f;white-space:nowrap;
+    text-shadow:0 -1px 0 rgba(0,0,0,.75), 0 1px 0 rgba(255,235,190,.35);
+    box-shadow:inset 0 1px 0 rgba(255,240,210,.22), inset 0 -1px 0 rgba(0,0,0,.45), 0 3px 0 #2e2719, 0 12px 22px rgba(74,63,47,.3);
+    animation:hang 1.1s cubic-bezier(.2,1.4,.4,1) both}
+  .sign .board:before,.sign .board:after{content:'';position:absolute;top:9px;width:12px;height:12px;border-radius:50%;
+    background:linear-gradient(40deg,transparent 42%,#3a3023 42% 58%,transparent 58%), radial-gradient(circle at 35% 35%,#e6d7b1,#a8956e 60%,#6e5f43);
+    box-shadow:0 1px 1px rgba(0,0,0,.5), inset 0 0 0 1px rgba(0,0,0,.25)}
+  .sign .board:before{left:10px}
+  .sign .board:after{right:10px;transform:rotate(65deg)}
+  @keyframes hang{from{transform:rotate(-7deg) translateY(-6px);opacity:0}to{transform:rotate(-2deg) translateY(0);opacity:1}}
+  #sheet .sign{margin-top:22px}
 
   .screen{flex:1;display:flex;flex-direction:column}
   .screen[hidden]{display:none}
@@ -572,7 +589,7 @@
   .toast.on{opacity:1;transform:translate(-50%,0)}
 
   @media (prefers-reduced-motion:reduce){
-    .sky,.glow,.robin,.card,.band .block,.alias.arrive,.panel.enter{animation:none}
+    .sky,.glow,.robin,.card,.band .block,.alias.arrive,.panel.enter,.sign .board{animation:none}
     .motes{display:none}
     #ack{transition:none}
     .reel.spinning .strip{filter:none}
@@ -1139,13 +1156,14 @@ function loadAnswers(keys, fresh) {
 
 /* ---- Countdown ---- */
 var FULL = 15 * 60000;
+function signHtml() { return '<div class="sign" role="status"><span class="board">Hunt closed</span></div>'; }
 function tickClock() {
   var el = $('clock');
   if (!config.lockAt) { if (locked) { locked = false; renderAll(); } if (el.dataset.mode !== 'off') { el.dataset.mode = 'off'; el.innerHTML = ''; el.className = 'clock'; } return; }
   var rem = config.lockAt - now();
   if (rem <= 0) {
     if (!locked) { locked = true; renderAll(); }
-    if (el.dataset.mode !== 'closed') { el.dataset.mode = 'closed'; el.textContent = 'The hunt has closed.'; el.className = 'clock locked'; }
+    if (el.dataset.mode !== 'closed') { el.dataset.mode = 'closed'; el.innerHTML = signHtml(); el.className = 'clock locked'; }
     return;
   }
   if (locked) { locked = false; renderAll(); }
@@ -1347,7 +1365,7 @@ function openSheet() {
 function renderSheet() {
   if (!sheetOpen || sheetLeaving) return;
   var n = qnum(qk), html = codeHead('Card ' + n, n) + stmtHtml(qk, 'human') + stmtHtml(qk, 'dog');
-  if (locked) { html += '<p class="note">The hunt has closed.</p>'; if (!sheetTimer) sheetTimer = setTimeout(leaveSheet, 1800); }
+  if (locked) { html += signHtml(); if (!sheetTimer) sheetTimer = setTimeout(leaveSheet, 2200); }
   else if (cardDone(qk) && !sheetTimer) sheetTimer = setTimeout(leaveSheet, REDUCED ? 200 : 750);
   $('sheet').innerHTML = html;
 }
@@ -1371,7 +1389,7 @@ function renderMine() {
   var p = $('p-mine');
   var found = foundCount(), left = TOTAL_CODES - found;
   var head;
-  if (locked) head = 'The hunt has closed';
+  if (locked) head = found + ' of ' + TOTAL_CODES + ' found';
   else if (config.releasedAt) head = 'Everything’s open';
   else if (left === 0) head = 'All ten found';
   else head = left + ' more card' + (left === 1 ? '' : 's') + ' to find';
