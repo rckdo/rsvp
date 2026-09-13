@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v18.1 (13/09/2026): Feed and presenter lead with "14 of 22 got it" per statement, the other name and
+          no-answer counts beneath.
   v18.0 (12/09/2026): Host key removed. The passcode splash is the only gate. Firebase rules let any
           signed-in phone write the host nodes; this page, behind EGGS, is the only thing that does.
   v17.6 (12/09/2026): Run tab is the clock and the cards only, two large tiles and the table. Everything
@@ -137,7 +139,7 @@
   .bar i{display:block;height:100%;background:var(--olive);transition:width .5s ease}
   .bar i.w{background:var(--rust)}
   .st .lab{grid-column:1 / -1;display:flex;justify-content:space-between;font-size:12px;color:var(--sage);font-variant-numeric:tabular-nums}
-  .st .lab .ok{color:var(--olive);font-weight:700}
+  .st .hit{grid-column:1 / -1;font-size:19px;font-weight:700;color:var(--forest);font-variant-numeric:tabular-nums;margin-top:2px}
   .st .wrongs{grid-column:1 / -1;font-size:13px;color:var(--rust);margin:0}
   .st .note{grid-column:1 / -1;font-size:13px;color:var(--gold);font-style:italic;margin:0}
   .st .photo{grid-column:1 / -1;display:block;max-width:320px;width:100%;height:auto;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
@@ -629,7 +631,8 @@ function stHtml(k, side, showSplit) {
   if (showSplit && sp.truth) {
     var pr = total ? sp.counts[sp.truth] / total * 100 : 0, pw = total ? sp.counts[other] / total * 100 : 0;
     h += '<div class="bar"><i style="width:' + pr + '%"></i><i class="w" style="width:' + pw + '%"></i></div>';
-    h += '<div class="lab"><span class="ok">' + NAMES[sp.truth] + ' ' + sp.counts[sp.truth] + '</span><span>' + NAMES[other] + ' ' + sp.counts[other] + ' · no answer ' + sp.none + '</span></div>';
+    h += '<div class="hit">' + sp.counts[sp.truth] + ' of ' + total + ' got it</div>';
+    h += '<div class="lab"><span>' + NAMES[other] + ' ' + sp.counts[other] + '</span><span>no answer ' + sp.none + '</span></div>';
     if (sp.wrong.length) h += '<p class="wrongs">Wrong: ' + sp.wrong.map(pretty).map(esc).join(', ') + '</p>';
   }
   var img = answers[k] && answers[k][side + 'Img'];
