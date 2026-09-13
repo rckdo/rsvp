@@ -4,6 +4,11 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v1.6 (13/09/2026): An instruction card for the tables: the quilt band, "Find the cards", five lines on how
+          to play (a name, one question, ten cards, who said what, most right wins) and a QR to the
+          game's front door (/game/, no code). Previewed on the page; a third print button lays two
+          A5 copies on one landscape A4 with a dashed cut line. Its cream ground and the QR are images,
+          so it prints with "background graphics" off.
   v1.5 (13/09/2026): Two print buttons. "One card per page" is the 4 x 6 photo-paper run as before.
           "All on one A4 sheet" lays the ten small on a single landscape A4 (five across, two
           down, each about 53 x 80 mm with a hairline cut guide) for an ordinary printer. The page
@@ -62,7 +67,26 @@
   #pin{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;font-size:26px}
   .splash-err{font-size:13px;color:#a3512f;margin-top:14px;min-height:20px}
   .err{color:var(--rust);font-size:14px;margin:8px 0}
+  /* The instruction card: an A5 leaf in the invite's cream, sized by its own width so it reads the same on a
+     phone preview and on paper. */
+  #instr{margin:34px 0 0}
+  #instr h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:26px;margin:0 0 4px;color:var(--forest)}
+  #instr .sub{color:var(--sage);font-size:14px;margin:0 0 14px}
+  .leaves{display:flex;gap:18px;flex-wrap:wrap}
+  .leaf{position:relative;container-type:inline-size;width:100%;max-width:400px;aspect-ratio:148/210;color:#4a3f2f;box-shadow:0 6px 16px rgba(0,0,0,.12);overflow:hidden;font-family:'Karla',system-ui,sans-serif}
+  .leaf + .leaf{display:none}
+  .leaf .bg{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0}
+  .leaf .inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;height:100%;box-sizing:border-box;padding:0 9cqw 5.5cqw}
+  .leaf .band{width:100%;display:block;margin:0 -9cqw;width:calc(100% + 18cqw)}
+  .leaf h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:10cqw;line-height:1;margin:5.5cqw 0 0;color:#4a3f2f}
+  .leaf .kicker{font-family:'Marcellus',serif;letter-spacing:.16em;text-transform:uppercase;font-size:2.7cqw;color:#8a7256;margin:2.2cqw 0 4.2cqw}
+  .leaf ol{text-align:left;margin:0;padding:0 0 0 4.4cqw;font-size:3.3cqw;line-height:1.38;color:#4a3f2f}
+  .leaf li{margin:0 0 1.9cqw;padding-left:.6cqw}
+  .leaf li::marker{font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:#a34a2c}
+  .leaf .qr{width:27cqw;height:27cqw;display:block;margin:auto 0 0;box-shadow:0 2px 0 #e0cfa4, 0 6px 14px rgba(74,63,47,.18)}
+  .leaf .scan{font-family:'Marcellus',serif;letter-spacing:.16em;text-transform:uppercase;font-size:2.7cqw;color:#8a7256;margin:2.6cqw 0 0}
   @media print{
+    #instr{display:none}
     body{background:#fff}
     .wrap{max-width:none;padding:0}
     header,.btns,.state,.err,.cardbox .row,#splash{display:none!important}
@@ -74,6 +98,13 @@
     body.a4 .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4mm;align-content:start}
     body.a4 .cardbox{break-after:auto;page-break-after:auto;border:.2mm solid #c6cdbe;padding:0;line-height:0}
     body.a4 .cardbox canvas{width:100%;height:auto}
+    /* The instruction card: two A5 leaves on one landscape A4, a dashed line between for cutting. */
+    body.instr .grid{display:none}
+    body.instr #instr{display:block;margin:0}
+    body.instr #instr h2,body.instr #instr .sub{display:none}
+    body.instr .leaves{display:flex;gap:0;flex-wrap:nowrap}
+    body.instr .leaf{width:148.5mm;height:210mm;max-width:none;aspect-ratio:auto;box-shadow:none;flex:none}
+    body.instr .leaf + .leaf{display:block;border-left:.2mm dashed #c6cdbe;box-sizing:border-box}
   }
 </style>
 </head>
@@ -96,9 +127,14 @@
     <a href="/game/host/">Host page</a>
   </header>
   <p class="state" id="state">Loading.</p>
-  <div class="btns"><button id="bPrint">Print: one card per page (4 × 6)</button><button id="bPrintA4">Print: all on one A4 sheet</button><button class="ghost" id="bRedraw">Redraw</button></div>
+  <div class="btns"><button id="bPrint">Print: one card per page (4 × 6)</button><button id="bPrintA4">Print: all on one A4 sheet</button><button id="bPrintInstr">Print: instruction card (A5, two per A4)</button><button class="ghost" id="bRedraw">Redraw</button></div>
   <div class="err" id="err"></div>
   <div class="grid" id="grid"></div>
+  <section id="instr">
+    <h2>Instruction card</h2>
+    <p class="sub">For the tables. A5, two per A4. Scanning it opens the game's front door: a name, the one question, then the list.</p>
+    <div class="leaves" id="leaves"></div>
+  </section>
 </div>
 
 <script src="qrcode.js"></script>
@@ -170,6 +206,7 @@ function boot() {
     PAIRS.forEach(function (p, i) { var m = cfg.motifs && cfg.motifs['q' + (i + 1)]; if (m) { if (HST[m.shape] || m.shape === 'nine' || m.shape === 'hourglass') p[0] = m.shape; if (COLOURS[m.colour]) p[1] = m.colour; } });
     content.questions.forEach(function (q, i) { var ic = cfg.icons && cfg.icons['q' + (i + 1)]; if (ic) ['human', 'dog'].forEach(function (s) { if (ic[s]) q[s].icon = ic[s]; }); });
     if (!codes) { try { codes = JSON.parse(localStorage.getItem('rl-game-codes') || 'null'); } catch (e) {} }
+    drawInstr();
     if (!codes) { $('state').textContent = ''; $('err').textContent = 'No codes on this phone. Open the host page, paste the seed and write it, then come back.'; return; }
     return loadIcons().then(drawAll);
   }).catch(function (e) { $('err').textContent = 'Could not load: ' + e; });
@@ -267,14 +304,48 @@ function drawAll() {
 function printAs(mode) {
   var old = $('pageStyle'); if (old) old.remove();
   var s = document.createElement('style'); s.id = 'pageStyle';
-  s.textContent = mode === 'a4' ? '@page{size:A4 landscape;margin:8mm}' : '@page{size:4in 6in;margin:0}';
+  s.textContent = mode === 'a4' ? '@page{size:A4 landscape;margin:8mm}' : mode === 'instr' ? '@page{size:A4 landscape;margin:0}' : '@page{size:4in 6in;margin:0}';
   document.head.appendChild(s);
-  document.body.classList.toggle('a4', mode === 'a4');
-  var done = function () { window.removeEventListener('afterprint', done); document.body.classList.remove('a4'); };
+  document.body.classList.toggle('a4', mode === 'a4'); document.body.classList.toggle('instr', mode === 'instr');
+  var done = function () { window.removeEventListener('afterprint', done); document.body.classList.remove('a4'); document.body.classList.remove('instr'); };
   window.addEventListener('afterprint', done);
   window.print();
 }
+/* The instruction card. Its cream ground, the band and the QR are images, so it prints whether or not the
+   printer is told to include background graphics. Two identical leaves; the screen shows one. */
+var HOW = [
+  'Scan the code below to start. The phone hands you a name. Spin it again if you like, up to four times.',
+  'One quick question before you go. It settles any ties at the end.',
+  'Ten cards are hidden around the venue. Find one, scan it.',
+  'Each card has two things said in the first person: one by a human, one by a dog. Richard or Lorraine? Eric or Tango? Pick who said what.',
+  'Most right wins. The answers come out at the pub.'
+];
+function pixel(colour) { var c = document.createElement('canvas'); c.width = 2; c.height = 2; var x = c.getContext('2d'); x.fillStyle = colour; x.fillRect(0, 0, 2, 2); return c.toDataURL(); }
+function bandImage() {
+  var c = document.createElement('canvas'); c.width = 1200; c.height = 150; var ctx = c.getContext('2d');
+  ctx.fillStyle = OCHRE; ctx.fillRect(0, 0, 1200, 150);
+  var bs = 104, gap = 14, bx = (1200 - (7 * bs + 6 * gap)) / 2;
+  BAND.forEach(function (b, i) { drawBlock(ctx, b[0], b[1], bx + i * (bs + gap), 23, bs); });
+  return c.toDataURL('image/png');
+}
+function qrImage(text) {
+  var qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+  var mc = qr.getModuleCount(), px = 12, pad = 36, size = mc * px + pad * 2;
+  var c = document.createElement('canvas'); c.width = size; c.height = size; var ctx = c.getContext('2d');
+  ctx.fillStyle = CARD; ctx.fillRect(0, 0, size, size); ctx.fillStyle = BARK;
+  for (var r = 0; r < mc; r++) for (var k = 0; k < mc; k++) if (qr.isDark(r, k)) ctx.fillRect(pad + k * px, pad + r * px, px, px);
+  return c.toDataURL('image/png');
+}
+function drawInstr() {
+  var box = $('leaves'); if (!box || box.children.length) return;
+  var home = BASE.replace(/\?c=$/, ''), band = bandImage(), qr = qrImage(home), bg = pixel(CREAM);
+  var leaf = '<div class="leaf"><img class="bg" src="' + bg + '" alt=""><div class="inner"><img class="band" src="' + band + '" alt="">' +
+    '<h3>Find the cards</h3><p class="kicker">A treasure hunt for the day</p><ol>' + HOW.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ol>' +
+    '<img class="qr" src="' + qr + '" alt="QR code to the game"><p class="scan">Scan to play</p></div></div>';
+  box.innerHTML = leaf + leaf;
+}
 $('bPrint').addEventListener('click', function () { printAs('single'); });
+$('bPrintInstr').addEventListener('click', function () { printAs('instr'); });
 $('bPrintA4').addEventListener('click', function () { printAs('a4'); });
 $('bRedraw').addEventListener('click', function () { if (codes) drawAll(); });
 </script>
