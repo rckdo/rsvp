@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v20.1 (13/09/2026): Clips as well as photos: a media entry with video (and a poster) plays silently in the
+          print frame, tap for full screen with sound. Clips are prefetched like photos.
   v20.0 (13/09/2026): Photos from content.json's media map (kept in /game/media, condensed). Fetched quietly
           one at a time once the hunt closes, so the reveal never waits. A photo is a print that fades
           in; tap for the full-screen lightbox, tap or Escape to close. Shown on the reveal and on
@@ -430,7 +432,13 @@
   button.photo{-webkit-appearance:none;appearance:none;border:0;cursor:zoom-in;display:block;max-width:86%;margin:14px auto 4px;padding:6px 6px 14px;background:#fbf6ea;
     box-shadow:0 2px 0 var(--ochre-deep), 0 10px 20px rgba(74,63,47,.2);transform:rotate(-1.5deg);opacity:0;transition:opacity .5s ease}
   .photo.in{opacity:1}
-  .photo img{display:block;max-width:100%;max-height:34vh;width:auto;height:auto}
+  .photo img,.photo video{display:block;max-width:100%;max-height:34vh;width:auto;height:auto;background:#3a3023}
+  .photo.video:after{content:'';position:absolute;right:12px;bottom:20px;width:0;height:0;border-left:12px solid rgba(251,246,234,.9);border-top:7px solid transparent;border-bottom:7px solid transparent;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+  button.photo{position:relative}
+  #lightbox video{max-width:100%;max-height:100%;background:#000;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+  #lightbox [hidden]{display:none}
+  .lb-close{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;width:48px;height:48px;border:0;border-radius:50%;background:rgba(251,246,234,.92);color:var(--bark);font-size:30px;line-height:1;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+  .lb-close:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
   .photo.small{max-width:58%;margin:12px 0 0;transform:rotate(1deg)}
   .photo.small img{max-height:26vh}
   #lightbox{position:fixed;inset:0;z-index:60;background:rgba(30,24,16,.94);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
@@ -703,7 +711,7 @@
 <div id="ack" aria-live="assertive"></div>
 <!-- The scanned card takes the screen until both names are placed, then slides away to My answers -->
 <div id="sheet" hidden role="region" aria-label="This card"></div>
-<div id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo. Tap to close." tabindex="-1"><img alt=""></div>
+<div id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo" tabindex="-1"><button type="button" class="lb-close" aria-label="Close">&times;</button><img alt=""><video controls playsinline hidden></video></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -781,10 +789,16 @@ var mediaOf = function (k, side) {
   var m = content && content.media && content.media[k] && content.media[k][side];
   if (!m) { var a = answers[k]; m = a && a[side + 'Img']; }
   if (!m) return null;
-  return typeof m === 'string' ? { src: m, full: m } : { src: m.src, full: m.full || m.src };
+  if (typeof m === 'string') return { src: m, full: m };
+  if (m.video) return { video: m.video, src: m.poster || '', full: m.video };
+  return { src: m.src, full: m.full || m.src };
 };
+/* A print in a cream frame. A clip plays silently in the frame; tap for full screen with sound. */
 var photoHtml = function (k, side, small) {
   var m = mediaOf(k, side); if (!m) return '';
+  if (m.video) {
+    return '<button type="button" class="photo video' + (small ? ' small' : '') + '" data-video="' + esc(m.video) + '" aria-label="Play the clip"><video src="' + esc(m.video) + '"' + (m.src ? ' poster="' + esc(m.src) + '"' : '') + ' muted playsinline loop autoplay preload="auto" onloadeddata="this.parentNode.classList.add(\'in\')" onerror="this.parentNode.classList.add(\'in\')"></video></button>';
+  }
   return '<button type="button" class="photo' + (small ? ' small' : '') + '" data-full="' + esc(m.full) + '" aria-label="Open the photo"><img src="' + esc(m.src) + '" alt="" decoding="async" onload="this.parentNode.classList.add(\'in\')"></button>';
 };
 /* Every photo is fetched quietly, one at a time, as soon as the hunt closes, so the reveal never waits. */
@@ -792,15 +806,29 @@ var prefetched = false;
 function prefetchMedia() {
   if (prefetched || !content || !content.media) return; prefetched = true;
   var list = [];
-  Object.keys(content.media).forEach(function (k) { ['human', 'dog'].forEach(function (s) { var m = mediaOf(k, s); if (m) { list.push(m.src); if (m.full !== m.src) list.push(m.full); } }); });
+  Object.keys(content.media).forEach(function (k) { ['human', 'dog'].forEach(function (s) { var m = mediaOf(k, s); if (m) { if (m.src) list.push(m.src); if (m.full !== m.src) list.push(m.full); } }); });
   var i = 0;
-  (function next() { if (i >= list.length) return; var im = new Image(); im.onload = im.onerror = function () { setTimeout(next, 120); }; im.src = list[i++]; })();
+  (function next() {
+    if (i >= list.length) return;
+    var u = list[i++], done = function () { setTimeout(next, 120); };
+    if (/\.(mp4|webm|mov|m4v)(\?|$)/i.test(u)) { fetch(u).then(function (r) { return r.blob(); }).then(done, done); }
+    else { var im = new Image(); im.onload = im.onerror = done; im.src = u; }
+  })();
 }
-function closeLightbox() { var lb = $('lightbox'); if (lb.hidden) return; lb.hidden = true; lb.querySelector('img').src = ''; }
+function closeLightbox() {
+  var lb = $('lightbox'); if (lb.hidden) return;
+  lb.hidden = true; lb.querySelector('img').src = '';
+  var v = lb.querySelector('video'); v.pause(); v.removeAttribute('src'); v.load();
+}
 document.addEventListener('click', function (ev) {
   var b = ev.target.closest('button.photo');
-  if (b) { var lb = $('lightbox'); lb.querySelector('img').src = b.dataset.full; lb.hidden = false; lb.focus(); return; }
-  if (ev.target.closest('#lightbox')) closeLightbox();
+  if (b) {
+    var lb = $('lightbox'), im = lb.querySelector('img'), v = lb.querySelector('video');
+    if (b.dataset.video) { im.hidden = true; v.hidden = false; v.src = b.dataset.video; v.muted = false; lb.hidden = false; v.play().catch(function () {}); }
+    else { v.hidden = true; im.hidden = false; im.src = b.dataset.full; lb.hidden = false; }
+    lb.focus(); return;
+  }
+  if (ev.target.closest('.lb-close') || (ev.target.closest('#lightbox') && !ev.target.closest('#lightbox video'))) closeLightbox();
 });
 document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') closeLightbox(); });
 var now = function () { return Date.now() + offset; };
