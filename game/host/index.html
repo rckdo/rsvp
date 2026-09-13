@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v18.3 (13/09/2026): Clips from the media map play in the feed and presenter with controls.
   v18.2 (13/09/2026): Photos come from content.json's media map, same as the phones.
   v18.1 (13/09/2026): Feed and presenter lead with "14 of 22 got it" per statement, the other name and
           no-answer counts beneath.
@@ -637,8 +638,9 @@ function stHtml(k, side, showSplit) {
     if (sp.wrong.length) h += '<p class="wrongs">Wrong: ' + sp.wrong.map(pretty).map(esc).join(', ') + '</p>';
   }
   var m = content.media && content.media[k] && content.media[k][side];
-  var img = m ? (typeof m === 'string' ? m : m.src) : (answers[k] && answers[k][side + 'Img']);
-  if (img) h += '<img class="photo" src="../' + esc(img) + '" alt="">';
+  var img = m ? (typeof m === 'string' ? m : (m.video ? null : m.src)) : (answers[k] && answers[k][side + 'Img']);
+  if (m && m.video) h += '<video class="photo" src="../' + esc(m.video) + '"' + (m.poster ? ' poster="../' + esc(m.poster) + '"' : '') + ' controls muted playsinline preload="metadata"></video>';
+  else if (img) h += '<img class="photo" src="../' + esc(img) + '" alt="">';
   var note = HOST_NOTES[k] && HOST_NOTES[k][side];
   if (note) h += '<p class="note">' + esc(note) + '</p>';
   return h + '</div>';
