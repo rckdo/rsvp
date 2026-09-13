@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v20.2 (13/09/2026): The reveal reads plainly: the true name sits in the sentence as a plain card, and
+          beneath it "You said" with your card ticked or crossed. No answer, no line.
   v20.1 (13/09/2026): Clips as well as photos: a media entry with video (and a poster) plays silently in the
           print frame, tap for full screen with sound. Clips are prefetched like photos.
   v20.0 (13/09/2026): Photos from content.json's media map (kept in /game/media, condensed). Fetched quietly
@@ -408,13 +410,12 @@
   .namecard.sm.pinned:before{width:7px;height:7px;left:50%;margin-left:-3.5px;top:-3px}
   @keyframes drop{from{transform:rotate(-3deg) scale(1.2);opacity:.5}to{transform:rotate(-3deg) scale(1);opacity:1}}
   /* After the reveal the card in the gap is the true name; only the sticker changes. */
-  .namecard.blank:after{background-color:var(--cream);box-shadow:inset 0 0 0 2px var(--mutedbrown), 0 1px 3px rgba(74,63,47,.25)}
-  .namecard.right:after,.namecard.wrong:after,.namecard.blank:after{content:'';position:absolute;right:-9px;top:-9px;width:20px;height:20px;border-radius:50%;
+  .namecard.right:after,.namecard.wrong:after{content:'';position:absolute;right:-9px;top:-9px;width:20px;height:20px;border-radius:50%;
     box-shadow:0 1px 3px rgba(74,63,47,.35);background-size:11px 11px;background-position:center;background-repeat:no-repeat}
   .namecard.mini{width:88px;height:30px;font-size:12px;letter-spacing:.12em;vertical-align:middle;margin-left:8px;transform:rotate(-2deg)}
   .namecard.mini:after{width:16px;height:16px;right:-7px;top:-7px;background-size:9px 9px}
   .said{font-style:italic;font-size:18px;color:var(--mutedbrown);margin:10px 0 0;display:flex;align-items:center}
-  .namecard.mini.struck{color:var(--mutedbrown);text-decoration:line-through;text-decoration-color:var(--rust);text-decoration-thickness:2px;box-shadow:0 2px 0 var(--ochre-deep)}
+  .namecard.mini.right,.namecard.mini.wrong{box-shadow:0 2px 0 var(--ochre-deep)}
   /* The tie-breaker result: the true date as cards, then yours */
   .tbres{margin-top:14px}
   .tbres .k{font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);margin:12px 0 8px}
@@ -1410,7 +1411,7 @@ function renderAll() { if (!content || !$('app') || $('app').hidden) return; set
 
 var justPlaced = null, justBack = null, pending = {};
 /* Before the reveal the gap holds what you placed. After it, the gap always holds the true name, and
-   the sticker on it says how you did: tick, cross, or a blank for no answer. */
+   "You said" beneath carries your card, ticked or crossed; no answer means no line. */
 function verdict(k, side) {
   if (!(config.revealed && config.revealed[k] && answers[k])) return null;
   var cur = pick(k, side), truth = answers[k][side];
@@ -1418,14 +1419,16 @@ function verdict(k, side) {
 }
 function gapHtml(k, side) {
   var cur = pick(k, side), v = verdict(k, side), inner = '';
-  if (v) inner = '<span class="namecard truth ' + v + '" aria-label="' + NAMES[answers[k][side]] + '. ' + (v === 'right' ? 'You had it.' : v === 'wrong' ? 'You said ' + NAMES[cur] + '.' : 'No answer.') + '">' + NAMES[answers[k][side]] + '</span>';
+  if (v) inner = '<span class="namecard truth">' + NAMES[answers[k][side]] + '</span>';
   else if (cur) inner = '<span class="namecard' + (justPlaced === k + side ? ' just' : '') + (pending[k + side] ? '' : ' pinned') + '">' + NAMES[cur] + '</span>';
   return '<span class="gap' + (inner ? ' filled' : '') + (v ? ' ' + v : '') + '" data-q="' + k + '" data-side="' + side + '">' + inner + '</span>';
 }
-/* Only when you were wrong: the card you played, small and struck through. */
+/* After the reveal: the sentence reads true and plain; beneath it, the card you played, ticked or
+   crossed. If you didn't answer there is no line at all. */
 function saidHtml(k, side) {
-  if (verdict(k, side) !== 'wrong') return '';
-  return '<p class="said">You said<span class="namecard mini struck">' + NAMES[pick(k, side)] + '</span></p>';
+  var v = verdict(k, side);
+  if (!v || v === 'blank') return '';
+  return '<p class="said">You said<span class="namecard mini ' + v + '" aria-label="' + NAMES[pick(k, side)] + ', ' + (v === 'right' ? 'right' : 'wrong') + '">' + NAMES[pick(k, side)] + '</span></p>';
 }
 function sentenceHtml(k, side) {
   return fmt(question(k)[side].third).replace('{name}', gapHtml(k, side));
@@ -1456,7 +1459,7 @@ function dateCards(day, month, cls) {
 function tbResultHtml() {
   var a = answers.tiebreak, tb = me && me.tiebreak, d = tbDistance(me);
   var html = '<div class="tbres"><p class="k">The date was</p>' + dateCards(a.day, a.month, 'truth');
-  if (!tb) return html + '<p class="k">You said</p><p class="dist blank">No answer</p></div>';
+  if (!tb) return html + '</div>';
   html += '<p class="k">You said</p>' + dateCards(tb.day, tb.month, d === 0 ? 'right' : '');
   html += '<p class="dist' + (d === 0 ? ' right' : '') + '">' + (d === 0 ? 'Spot on' : d + ' day' + (d === 1 ? '' : 's') + ' out') + '</p></div>';
   return html;
