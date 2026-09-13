@@ -39,7 +39,9 @@
     ]
   },
   "iconBase": "/game/icons/",
-  "media": {},
+  "media": {
+    "q5": { "human": "media/q5a.jpg" }
+  },
   "tiebreak": {
     "question": "Until today, what date was Richard and Lorraine’s anniversary?",
     "third": "Richard and Lorraine’s anniversary, until today"
