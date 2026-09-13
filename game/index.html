@@ -4,6 +4,11 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v18.0 (13/09/2026): A scanned card takes over the screen until both names are placed and pinned, then
+          slides up and away to My answers, scrolled to that card with a flash. A card already
+          answered goes straight to its rows. After the close, the sentences show for a beat, then
+          the list. The This card tab is gone: two tabs, My answers and Results. An unknown card
+          is a toast.
   v17.3 (13/09/2026): Heavier type. Cormorant now loads at 600 and 700 and the body sits at 600 (it was
           rendering at 500 with thin hairlines); grey antialiasing off; Marcellus labels get a
           hairline stroke since the face has one weight.
@@ -529,9 +534,17 @@
   section.patch{padding-top:24px}
 
   /* Full-screen reveal flash */
-  #ack{position:fixed;inset:0;z-index:50;background:var(--cream);display:flex;flex-direction:column;justify-content:flex-start;padding:24px 20px 40px;overflow:auto;-webkit-overflow-scrolling:touch;
+  #ack,#sheet{position:fixed;inset:0;z-index:50;background:var(--cream);display:flex;flex-direction:column;justify-content:flex-start;padding:24px 20px 40px;overflow:auto;-webkit-overflow-scrolling:touch;
     transform:translateY(100%);transition:transform .32s var(--ease-out)}
   #ack.show{transform:none}
+  /* The scanned card's takeover: sits below the reveal, slides up and away once both names are pinned. */
+  #sheet{z-index:40;transform:none;transition:transform .5s cubic-bezier(.4,0,.2,1)}
+  #sheet[hidden]{display:none}
+  #sheet.leave{transform:translateY(-104%)}
+  #sheet .stmt{margin-bottom:14px}
+  #sheet .note{text-align:center;margin-top:12px}
+  .row.flash{animation:rowflash 1.6s ease-out both}
+  @keyframes rowflash{0%{box-shadow:0 0 0 4px var(--c,var(--gold)), 0 6px 14px rgba(74,63,47,.18)}100%{box-shadow:0 0 0 0 transparent, 0 6px 14px rgba(74,63,47,.18)}}
   #ack .k{font-family:var(--display);font-weight:600;font-size:26px;color:var(--bark);text-align:center;margin:8px 0 18px;display:flex;align-items:center;justify-content:center;gap:12px}
   #ack .k .qb{width:36px;height:36px;box-shadow:0 3px 8px rgba(74,63,47,.18)}
   #ack .stage-stmt{padding:24px 18px 18px}
@@ -622,13 +635,11 @@
   <!-- The game -->
   <section id="app" class="screen" hidden>
     <nav class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="code" aria-selected="true" id="tabCode">This card</button>
-      <button class="tab" role="tab" data-tab="mine" aria-selected="false" id="tabMine">My answers<span class="badge" id="mineBadge" hidden></span></button>
+      <button class="tab" role="tab" data-tab="mine" aria-selected="true" id="tabMine">My answers<span class="badge" id="mineBadge" hidden></span></button>
       <button class="tab" role="tab" data-tab="results" aria-selected="false" id="tabResults">Results<span class="lock" aria-hidden="true"></span></button>
     </nav>
     <div class="panels">
-      <div class="panel" id="p-code" role="tabpanel"></div>
-      <div class="panel" id="p-mine" role="tabpanel" hidden></div>
+      <div class="panel" id="p-mine" role="tabpanel"></div>
       <div class="panel" id="p-results" role="tabpanel" hidden></div>
     </div>
   </section>
@@ -637,6 +648,8 @@
 </main>
 
 <div id="ack" aria-live="assertive"></div>
+<!-- The scanned card takes the screen until both names are placed, then slides away to My answers -->
+<div id="sheet" hidden></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -697,7 +710,7 @@ var players = {};        // /game/players
 var answers = {};        // revealed answer key, by qk
 var seenRevealed = null; // set of qk already acknowledged
 var locked = false;
-var tab = 'code';
+var tab = 'mine';
 var iconCache = {};
 var ackQueue = [];
 var ackBusy = false;
@@ -1023,22 +1036,30 @@ function showIntro() {
 /* =====================================================================
    The game proper
    ===================================================================== */
+var appReady = false;
 function enterGame() {
-  $('boot').hidden = true; $('spin').hidden = true; $('app').hidden = false;
+  $('spin').hidden = true;
   var pill = $('aliasPill'); $('aliasName').textContent = prettyAlias(alias); pill.hidden = false; pill.classList.add('arrive');
   document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () { showTab(b.dataset.tab); }); });
+  // Hold on the boot line until the first player snapshot, so a scan opens straight onto its card.
+  $('bootMsg').textContent = 'One moment.'; $('boot').hidden = false;
+  if (codeUnknown) toast('Not one of ours.');
 
   db.ref(ROOT + '/config').on('value', function (s) { config = s.val() || {}; onConfig(); });
   db.ref(ROOT + '/players').on('value', function (s) { players = s.val() || {}; me = players[alias] || null; onPlayer(); });
 
   if (qk) recordFound();
-  if (!qk) { tab = 'mine'; }
-  setTabUI();
-  renderAll();
+  tab = 'mine';
   setInterval(tickClock, 500);
 }
 var healing = false;
 function onPlayer() {
+  if (!appReady) {
+    appReady = true;
+    $('boot').hidden = true; $('app').hidden = false;
+    tickClock(); setTabUI();
+    if (qk) openSheet();
+  }
   // After a host reset the alias node is gone: quietly re-claim it so the phone keeps working.
   if (me === null && !healing && (!config.epoch || storedEpoch() === config.epoch)) {
     healing = true;
@@ -1139,7 +1160,7 @@ function setTabUI() {
   var resultsOn = revealedKeys().length > 0;
   $('tabResults').classList.toggle('off', !resultsOn);
   document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false'); });
-  ['code', 'mine', 'results'].forEach(function (t) { $('p-' + t).hidden = t !== tab; });
+  ['mine', 'results'].forEach(function (t) { $('p-' + t).hidden = t !== tab; });
 }
 function showTab(t) {
   if (t === tab) return;
@@ -1269,7 +1290,7 @@ function placeDate(dp, side, val) {
 /* =====================================================================
    Rendering
    ===================================================================== */
-function renderAll() { if (!content || !$('app') || $('app').hidden) return; setTabUI(); renderCode(); renderMine(); renderResults(); }
+function renderAll() { if (!content || !$('app') || $('app').hidden) return; setTabUI(); renderMine(); renderResults(); renderSheet(); }
 
 var justPlaced = null, justBack = null, pending = {};
 function gapHtml(k, side) {
@@ -1309,20 +1330,39 @@ function codeHead(title, n) {
   if (!n) return '<div class="ph"><h2>' + title + '</h2></div>';
   return '<div class="ph" style="' + window.codeVars(n - 1) + '"><span class="num" aria-hidden="true">' + n + '</span>' + window.codeBlock(n - 1, 40) + '<h2>' + title + '</h2><small>of ' + TOTAL_CODES + '</small></div>';
 }
-function renderCode() {
-  var p = $('p-code'), html = '';
-  if (codeUnknown) {
-    html = codeHead('Not one of ours');
-  } else if (!qk) {
-    html = codeHead('Scan a card');
-  } else if (locked) {
-    html = codeHead('Card ' + qnum(qk), qnum(qk)) + '<p class="note">The hunt has closed.</p>';
-  } else {
-    html = codeHead('Card ' + qnum(qk), qnum(qk));
-    html += stmtHtml(qk, 'human');
-    html += stmtHtml(qk, 'dog');
-  }
-  p.innerHTML = html;
+/* The takeover. A scanned card fills the screen until both names are placed and pinned, then it
+   slides up and away to My answers, scrolled to that card's rows. A card already answered goes
+   straight to its rows. After the hunt has closed the sentences show for a beat, then the list. */
+var sheetOpen = false, sheetLeaving = false, sheetTimer = null, flashKey = null;
+function cardDone(k) { return !!(pick(k, 'human') && pick(k, 'dog') && !pending[k + 'human'] && !pending[k + 'dog']); }
+function openSheet() {
+  if (!qk || codeUnknown) return;
+  if (cardDone(qk)) { flashRow(qk); return; }
+  sheetOpen = true; sheetLeaving = false; sheetTimer = null;
+  var el = $('sheet'); el.classList.remove('leave'); el.hidden = false; el.scrollTop = 0;
+  renderSheet();
+}
+function renderSheet() {
+  if (!sheetOpen || sheetLeaving) return;
+  var n = qnum(qk), html = codeHead('Card ' + n, n) + stmtHtml(qk, 'human') + stmtHtml(qk, 'dog');
+  if (locked) { html += '<p class="note">The hunt has closed.</p>'; if (!sheetTimer) sheetTimer = setTimeout(leaveSheet, 1800); }
+  else if (cardDone(qk) && !sheetTimer) sheetTimer = setTimeout(leaveSheet, REDUCED ? 200 : 750);
+  $('sheet').innerHTML = html;
+}
+function leaveSheet() {
+  sheetTimer = null; if (!sheetOpen) return;
+  sheetLeaving = true;
+  tab = 'mine'; setTabUI(); flashRow(qk);
+  var el = $('sheet');
+  if (REDUCED) { sheetOpen = false; sheetLeaving = false; el.hidden = true; return; }
+  el.classList.add('leave');
+  setTimeout(function () { sheetOpen = false; sheetLeaving = false; el.hidden = true; el.classList.remove('leave'); }, 520);
+}
+function flashRow(k) {
+  flashKey = k; renderMine();
+  var row = document.querySelector('#p-mine .row[data-q="' + k + '"]');
+  if (row) row.scrollIntoView({ block: 'center', behavior: 'auto' });
+  setTimeout(function () { if (flashKey === k) { flashKey = null; renderMine(); } }, 1800);
 }
 
 function renderMine() {
@@ -1347,7 +1387,7 @@ function renderMine() {
     if (!isFound(k)) {
       var nn = qnum(k);
       var clue = config.clues && config.clues[k];
-      html += '<li class="row hidden" style="' + window.codeVars(nn - 1) + '"><span class="n">' + nn + '</span>' + window.codeBlock(nn - 1, 30) + '<div class="body"><p>' + (clue ? esc(clue) : 'Not found yet') + '</p></div></li>';
+      html += '<li class="row hidden" data-q="' + k + '" style="' + window.codeVars(nn - 1) + '"><span class="n">' + nn + '</span>' + window.codeBlock(nn - 1, 30) + '<div class="body"><p>' + (clue ? esc(clue) : 'Not found yet') + '</p></div></li>';
       return;
     }
     ['human', 'dog'].forEach(function (side) {
@@ -1361,7 +1401,8 @@ function renderMine() {
         else if (cur === truth) { cls += ' right'; verdict = ''; }
         else { cls += ' wrong'; verdict = '<span class="itwas" style="margin:6px 0 0">It was<span class="namecard mini truth">' + NAMES[truth] + '</span></span>'; }
       }
-      html += '<li class="' + cls + '" style="' + window.codeVars(n - 1) + '"><span class="n">' + label + '</span><span class="ic">' + icon(q.icon) + '</span><div class="body">';
+      if (flashKey === k) cls += ' flash';
+      html += '<li class="' + cls + '" data-q="' + k + '" style="' + window.codeVars(n - 1) + '"><span class="n">' + label + '</span><span class="ic">' + icon(q.icon) + '</span><div class="body">';
       html += '<p>' + sentenceHtml(k, side) + '</p>';
       if (revealed[k] && answers[k]) { if (verdict) html += verdict; }
       else if (locked && !cur) html += '<div class="verdict">Not answered</div>';
