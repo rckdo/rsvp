@@ -9,7 +9,8 @@
           game's front door (/game/, no code). Previewed on the page; a third print button lays two
           A5 copies on one landscape A4 with a dashed cut line. Its cream ground and the QR are images,
           so it prints with "background graphics" off. A line under the QR says how to scan: open the
-          camera, point, tap the link.
+          camera, point, tap the link. Copy cut to the bone; the fourth line says what the game is: a
+          blank per sentence, which of us is it.
   v1.5 (13/09/2026): Two print buttons. "One card per page" is the 4 x 6 photo-paper run as before.
           "All on one A4 sheet" lays the ten small on a single landscape A4 (five across, two
           down, each about 53 x 80 mm with a hairline cut guide) for an ordinary printer. The page
@@ -316,11 +317,11 @@ function printAs(mode) {
 /* The instruction card. Its cream ground, the band and the QR are images, so it prints whether or not the
    printer is told to include background graphics. Two identical leaves; the screen shows one. */
 var HOW = [
-  'Scan the code below to start. The phone hands you a name. Spin it again if you like, up to four times.',
-  'One quick question before you go. It settles any ties at the end.',
-  'Ten cards are hidden around the venue. Find one, scan it.',
-  'Each card has two things said in the first person: one by a human, one by a dog. Richard or Lorraine? Eric or Tango? Pick who said what.',
-  'Most right wins. The answers come out at the pub.'
+  'Scan the code below. You\'ll be given a name.',
+  'Answer one question. It settles any ties.',
+  'Ten cards are hidden around the venue. Find them, scan them.',
+  'Each card has two blanks: one human, one dog. Richard or Lorraine? Eric or Tango? Fill them in.',
+  'Most right wins. Answers at the pub.'
 ];
 function pixel(colour) { var c = document.createElement('canvas'); c.width = 2; c.height = 2; var x = c.getContext('2d'); x.fillStyle = colour; x.fillRect(0, 0, 2, 2); return c.toDataURL(); }
 function bandImage() {
