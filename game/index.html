@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v19.2 (13/09/2026): The reveal says how the room did: "14 of 22 got it" with a hairline bar under each
+          statement, on the answer step only.
   v19.1 (13/09/2026): Row 21's revealed date no longer gets rebuilt as an empty picker. Results is purely the
           statistics: the rank card carries a one-line tie-breaker distance, and the date with what
           you said lives only on My answers.
@@ -586,7 +588,10 @@
   #ack .k .qb{width:36px;height:36px;box-shadow:0 3px 8px rgba(74,63,47,.18)}
   #ack .stage-stmt{padding:24px 18px 18px}
   #ack .stage-stmt .stmt-text{font-size:22px}
-  #ack .itwas{margin-top:14px}
+  /* The room, on the reveal only: a hairline bar and one line */
+  .room{position:relative;margin:14px 0 0;padding-top:12px;font-style:italic;font-size:17px;color:var(--mutedbrown)}
+  .room:before{content:'';position:absolute;left:0;right:0;top:0;height:4px;background:var(--ochre);border-radius:2px}
+  .room i{position:absolute;left:0;top:0;height:4px;background:var(--olive);border-radius:2px;transition:width .8s var(--ease-out)}
   #ack .waiting{font-style:italic;color:var(--mutedbrown);text-align:center;margin-top:16px}
   #ack .stage-stmt .photo{margin-top:14px}
   .ackp{padding:24px 20px;color:var(--cream);text-align:center;margin:0 auto;width:100%;max-width:400px;box-shadow:0 14px 30px rgba(59,56,47,.2)}
@@ -1146,7 +1151,10 @@ function renderStage() {
   ['human', 'dog'].forEach(function (side) {
     var q = question(k)[side], mine = pick(k, side);
     html += '<div class="patch stmt stage-stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + sentenceHtml(k, side) + '</p></div>';
-    if (answerStep && ready) html += saidHtml(k, side) + photoHtml(k, side);
+    if (answerStep && ready) {
+      var rc = roomCount(k, side), pc = rc.t ? Math.round(rc.n / rc.t * 100) : 0;
+      html += saidHtml(k, side) + '<p class="room"><i style="width:' + pc + '%"></i><span>' + rc.n + ' of ' + rc.t + ' got it</span></p>' + photoHtml(k, side);
+    }
     html += '</div>';
   });
   if (answerStep && !ready) html += '<p class="waiting">One moment.</p>';
@@ -1157,6 +1165,12 @@ function renderStage() {
     if (answerStep) { try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {} }
     el.scrollTop = 0;
   }
+}
+/* How the room did on one statement: everyone with a name counts, answered or not. */
+function roomCount(k, side) {
+  var truth = answers[k] && answers[k][side], n = 0, t = 0;
+  Object.keys(players).forEach(function (s) { t++; var p = players[s]; if (p.answers && p.answers[k] && p.answers[k][side] === truth) n++; });
+  return { n: n, t: t };
 }
 function loadAnswers(keys, fresh) {
   var want = keys.filter(function (k) { return !answers[k]; });
