@@ -4,6 +4,7 @@
     { "video": "media/q7a.mp4", "poster": "media/q7a.jpg", "aspect": "3/4" },
     { "video": "media/q1b.mp4", "poster": "media/q1b.jpg", "aspect": "3/4" },
     { "video": "media/q7b.mp4", "poster": "media/q7b.jpg", "aspect": "3/4" },
-    { "src": "media/q8a.jpg", "aspect": "3/4" }
+    { "src": "media/q8a.jpg", "aspect": "3/4" },
+    { "src": "media/q4a.jpg", "aspect": "3/4" }
   ]
 }
