@@ -43,12 +43,11 @@ codes, answers and the host claim in place.
 Photos and clips live in `media/`. Every file is listed in `media/index.json` (the
 gallery), and the host page's Setup tab assigns one to each statement from that gallery;
 the pick is saved to `config.media` and applies at once. `content.json`'s `media` map is
-the fallback underneath, keyed by card and side: either a single path, or `src` plus a
-larger `full` for the lightbox:
+the fallback underneath, keyed by card and side: a path, or an object with `src`:
 
 ```json
 "media": {
-  "q3": { "human": "media/q3-lorraine.jpg", "dog": { "src": "media/q3-eric.jpg", "full": "media/q3-eric-full.jpg" } }
+  "q3": { "human": "media/q3-lorraine.jpg", "dog": { "src": "media/q3-eric.jpg", "aspect": "3/4" } }
 }
 ```
 
@@ -58,7 +57,8 @@ A short clip is a `video` entry with a `poster` frame:
 "q5": { "dog": { "video": "media/q5-eric.mp4", "poster": "media/q5-eric.jpg" } }
 ```
 
-It plays silently in the print frame at the reveal; tap for full screen with sound. The
+It plays silently, looping, in the print frame at the reveal; a tap pauses it, another resumes it.
+Nothing opens full screen, so size the frame for what it shows. The
 polaroid's window is square unless the entry sets `"aspect": "3/4"` (or any ratio),
 which suits a portrait clip.
 Keep clips short (under 15 seconds), 720p H.264 MP4, under 4MB. They sit in the repo
@@ -67,7 +67,7 @@ like the photos; no separate hosting.
 Condense photos before committing: 1400px on the long edge, JPEG around 80 quality,
 under 250KB. Every phone fetches every photo quietly, one at a time, as soon as the hunt
 closes, so the reveal never waits on a download. A photo shows on the reveal takeover
-and on My answers afterwards; tap for full screen. The file names are public (Pages
+and on My answers afterwards; there is no tap action on a photo. The file names are public (Pages
 serves everything), which only matters if a guest goes looking before the reveal.
 
 ## Editing statements, icons or motifs

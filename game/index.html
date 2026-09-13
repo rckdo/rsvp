@@ -4,6 +4,10 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v21.8 (13/09/2026): Nothing opens. A photo is a plain print with no tap action; a clip plays in its frame
+          and a tap pauses it, another resumes it (a small play mark shows while paused). The
+          lightbox is gone. The page beneath the reveal and the scanned-card takeover is locked
+          while they are up, so a drag from the bottom no longer scrolls what is behind them.
   v21.7 (13/09/2026): A media entry may set its window's aspect (e.g. "3/4" for a portrait clip); the
           polaroid's window follows it, square by default.
   v21.6 (13/09/2026): The host page's gallery pick (config.media) decides each statement's photo or clip;
@@ -459,25 +463,19 @@
   .tbres .dist.blank{color:var(--mutedbrown);margin-top:0}
   .dp .gap.sm .namecard.sm.right:after,.dp .gap.sm .namecard.sm.truth:after{width:16px;height:16px;right:-7px;top:-7px;background-size:9px 9px}
   .dp .gap.sm .namecard.sm.truth:after{content:none}
-  /* A photo is a print: cream border, deeper foot, laid slightly askew. Fades in as it loads; tap to open. */
   /* A polaroid: cream frame, deeper foot, a square milk window that holds the picture. The frame and the
      blank window are laid out before any image arrives, so nothing moves when it does. */
-  button.photo{-webkit-appearance:none;appearance:none;border:0;cursor:zoom-in;display:block;width:min(300px,84%);margin:14px auto 4px;padding:8px 8px 28px;background:#fbf6ea;
+  .photo{-webkit-appearance:none;appearance:none;border:0;cursor:default;display:block;width:min(300px,84%);margin:14px auto 4px;padding:8px 8px 28px;background:#fbf6ea;position:relative;
     box-shadow:0 2px 0 var(--ochre-deep), 0 10px 20px rgba(74,63,47,.2);transform:rotate(-1.5deg);overflow:hidden}
   .dev{display:block;aspect-ratio:1;background:#e3d9c3;overflow:hidden}
   .print{display:block;width:100%;height:100%}
   .photo img,.photo video{display:block;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s ease}
   .photo.in img,.photo.in video{opacity:1}
-  .photo.video:after{content:'';position:absolute;right:12px;bottom:20px;width:0;height:0;border-left:12px solid rgba(251,246,234,.9);border-top:7px solid transparent;border-bottom:7px solid transparent;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
-  button.photo{position:relative}
-  #lightbox video{max-width:100%;max-height:100%;background:#000;box-shadow:0 20px 50px rgba(0,0,0,.5)}
-  #lightbox [hidden]{display:none}
-  .lb-close{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;width:48px;height:48px;border:0;border-radius:50%;background:rgba(251,246,234,.92);color:var(--bark);font-size:30px;line-height:1;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.4)}
-  .lb-close:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+  /* A clip: tap pauses, tap resumes. A small play mark sits in the foot only while it is paused. */
+  button.photo.video{cursor:pointer}
+  button.photo.video:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+  .photo.video.paused:after{content:'';position:absolute;right:12px;bottom:8px;width:0;height:0;border-left:12px solid var(--bark);border-top:7px solid transparent;border-bottom:7px solid transparent;opacity:.8}
   .photo.small{width:min(200px,58%);margin:12px 0 0;padding:6px 6px 20px;transform:rotate(1deg)}
-  #lightbox{position:fixed;inset:0;z-index:60;background:rgba(30,24,16,.94);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
-  #lightbox[hidden]{display:none}
-  #lightbox img{max-width:100%;max-height:100%;object-fit:contain;background:#fbf6ea;padding:6px 6px 14px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
   .namecard.right:after{background-color:var(--olive);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5l2.6 2.6L10 3.5' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
   .namecard.wrong:after{background-color:var(--rust);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 3l6 6M9 3l-6 6' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E")}
   .gap.filled.missed{opacity:.75}
@@ -629,6 +627,10 @@
   #ack,#sheet{position:fixed;inset:0;z-index:50;background:var(--cream);display:flex;flex-direction:column;justify-content:flex-start;padding:24px 20px 40px;overflow:auto;-webkit-overflow-scrolling:touch;
     transform:translateY(100%);transition:transform .32s var(--ease-out)}
   #ack.show{transform:none}
+  #ack,#sheet{overscroll-behavior:contain}
+  /* While a takeover is up the page beneath is pinned, so a drag past the takeover's end cannot scroll it. */
+  html.pinned,html.pinned body{overflow:hidden;height:100%}
+  html.pinned body{position:fixed;left:0;right:0}
   /* The scanned card's takeover: sits below the reveal, slides up and away once both names are pinned. */
   #sheet{z-index:40;transform:none;transition:transform .5s cubic-bezier(.4,0,.2,1)}
   #sheet[hidden]{display:none}
@@ -813,7 +815,6 @@
 <div id="sheet" hidden role="region" aria-label="This card"></div>
 <!-- The seep filter: ripples the developing print's edge, then settles (scale animates to 0 on cue) -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="seep" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.016 0.021" numOctaves="2" seed="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="0" xChannelSelector="R" yChannelSelector="G"><animate id="seepAnim" attributeName="scale" values="44;44;0;0" keyTimes="0;0.45;0.78;1" dur="2.6s" begin="indefinite" fill="freeze"/></feDisplacementMap></filter></svg>
-<div id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo" tabindex="-1"><button type="button" class="lb-close" aria-label="Close">&times;</button><img alt=""><video controls playsinline hidden></video></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -894,18 +895,18 @@ var mediaOf = function (k, side) {
   if (!m) m = content && content.media && content.media[k] && content.media[k][side];
   if (!m) { var a = answers[k]; m = a && a[side + 'Img']; }
   if (!m) return null;
-  if (typeof m === 'string') return { src: m, full: m, aspect: '1' };
+  if (typeof m === 'string') return { src: m, aspect: '1' };
   var aspect = m.aspect || '1';
-  if (m.video) return { video: m.video, src: m.poster || '', full: m.video, aspect: aspect };
-  return { src: m.src, full: m.full || m.src, aspect: aspect };
+  if (m.video) return { video: m.video, src: m.poster || '', aspect: aspect };
+  return { src: m.src, aspect: aspect };
 };
-/* A print in a cream frame. A clip plays silently in the frame; tap for full screen with sound. */
+/* A print in a cream frame. A photo has no tap action. A clip plays silently in the frame; tap pauses, tap resumes. */
 var photoHtml = function (k, side, small) {
   var m = mediaOf(k, side); if (!m) return '';
   if (m.video) {
-    return '<button type="button" class="photo video' + (small ? ' small' : '') + '" data-video="' + esc(m.video) + '" aria-label="Play the clip"><span class="dev" style="aspect-ratio:' + esc(m.aspect) + '"><span class="print"><video src="' + esc(m.video) + '"' + (m.src ? ' poster="' + esc(m.src) + '"' : '') + ' muted playsinline loop autoplay preload="auto" onloadeddata="this.closest(\'.photo\').classList.add(\'in\')" onerror="this.closest(\'.photo\').classList.add(\'in\')"></video></span></span></button>';
+    return '<button type="button" class="photo video' + (small ? ' small' : '') + '" aria-label="Pause the clip" aria-pressed="false"><span class="dev" style="aspect-ratio:' + esc(m.aspect) + '"><span class="print"><video src="' + esc(m.video) + '"' + (m.src ? ' poster="' + esc(m.src) + '"' : '') + ' muted playsinline loop autoplay preload="auto" onloadeddata="clipIn(this)" onerror="clipIn(this)" onplaying="clipState(this)" onpause="clipState(this)"></video></span></span></button>';
   }
-  return '<button type="button" class="photo' + (small ? ' small' : '') + '" data-full="' + esc(m.full) + '" aria-label="Open the photo"><span class="dev" style="aspect-ratio:' + esc(m.aspect) + '"><span class="print"><img src="' + esc(m.src) + '" alt="" decoding="async" onload="this.closest(\'.photo\').classList.add(\'in\')"></span></span></button>';
+  return '<span class="photo' + (small ? ' small' : '') + '"><span class="dev" style="aspect-ratio:' + esc(m.aspect) + '"><span class="print"><img src="' + esc(m.src) + '" alt="" decoding="async" onload="this.closest(\'.photo\').classList.add(\'in\')"></span></span></span>';
 };
 /* The seep: the turbulence that ripples the developing print's edge, settling as the picture comes up. */
 function startSeep() {
@@ -916,7 +917,7 @@ var prefetched = false;
 function prefetchMedia() {
   if (prefetched || !content) return; prefetched = true;
   var list = [];
-  allKeys().forEach(function (k) { ['human', 'dog'].forEach(function (s) { var m = mediaOf(k, s); if (m) { if (m.src) list.push(m.src); if (m.full !== m.src) list.push(m.full); } }); });
+  allKeys().forEach(function (k) { ['human', 'dog'].forEach(function (s) { var m = mediaOf(k, s); if (m) { if (m.src) list.push(m.src); if (m.video) list.push(m.video); } }); });
   var i = 0;
   (function next() {
     if (i >= list.length) return;
@@ -925,22 +926,28 @@ function prefetchMedia() {
     else { var im = new Image(); im.onload = im.onerror = done; im.src = u; }
   })();
 }
-function closeLightbox() {
-  var lb = $('lightbox'); if (lb.hidden) return;
-  lb.hidden = true; lb.querySelector('img').src = '';
-  var v = lb.querySelector('video'); v.pause(); v.removeAttribute('src'); v.load();
+/* A clip's frame mirrors the video's own state: the play mark and label follow its playing/pause events, so a
+   blocked autoplay (Low Power Mode) shows the mark too. A tap pauses; another resumes. Photos have no tap action. */
+function clipState(v) {
+  var b = v.closest('.photo'); if (!b) return;
+  b.classList.toggle('paused', v.paused);
+  b.setAttribute('aria-label', v.paused ? 'Play the clip' : 'Pause the clip'); b.setAttribute('aria-pressed', v.paused ? 'true' : 'false');
 }
+function clipIn(v) { var b = v.closest('.photo'); if (b) b.classList.add('in'); setTimeout(function () { clipState(v); }, 700); }
 document.addEventListener('click', function (ev) {
-  var b = ev.target.closest('button.photo');
-  if (b) {
-    var lb = $('lightbox'), im = lb.querySelector('img'), v = lb.querySelector('video');
-    if (b.dataset.video) { im.hidden = true; v.hidden = false; v.src = b.dataset.video; v.muted = false; lb.hidden = false; v.play().catch(function () {}); }
-    else { v.hidden = true; im.hidden = false; im.src = b.dataset.full; lb.hidden = false; }
-    lb.focus(); return;
-  }
-  if (ev.target.closest('.lb-close') || (ev.target.closest('#lightbox') && !ev.target.closest('#lightbox video'))) closeLightbox();
+  var b = ev.target.closest('button.photo.video'); if (!b) return;
+  var v = b.querySelector('video'); if (!v) return;
+  if (v.paused) v.play().then(function () { clipState(v); }, function () { clipState(v); }); else v.pause();
 });
-document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') closeLightbox(); });
+/* Pins the page beneath a takeover and restores its scroll position after. */
+var pinnedY = 0;
+function pinPage(on) {
+  var root = document.documentElement, was = root.classList.contains('pinned');
+  if (on === was) return;
+  if (on) { pinnedY = window.scrollY || 0; document.body.style.top = -pinnedY + 'px'; root.classList.add('pinned'); }
+  else { root.classList.remove('pinned'); document.body.style.top = ''; window.scrollTo(0, pinnedY); }
+}
+function refreshPin() { pinPage($('ack').classList.contains('show') || (!$('sheet').hidden && !$('sheet').classList.contains('leave'))); }
 var now = function () { return Date.now() + offset; };
 var slugOf = function (item, role) { return (item + '-' + role).toLowerCase().replace(/[^a-z]+/g, '-'); };
 var prettyAlias = function (slug) {
@@ -1338,7 +1345,7 @@ function renderStage() {
   var key = st && st.card ? st.card + '/' + st.step : '';
   var isDate = st && st.card === 'tiebreak';
   if (!st || !st.card || (!isDate && !question(st.card))) {
-    if (lastStage) { lastStage = ''; el.classList.remove('show'); if (revealedKeys().length) showTab('results'); }
+    if (lastStage) { lastStage = ''; el.classList.remove('show'); refreshPin(); if (revealedKeys().length) showTab('results'); }
     return;
   }
   var k = st.card, answerStep = st.step === 'answer', ready = isDate ? !!answers.tiebreak : (!answerStep || !!answers[k]);
@@ -1380,7 +1387,7 @@ function renderStage() {
   } else if (old) old.replaceWith(view);
   else { view.classList.add('enter'); el.appendChild(view); }
   lastStage = key;
-  if (!el.classList.contains('show')) { void el.offsetWidth; el.classList.add('show'); }
+  if (!el.classList.contains('show')) { void el.offsetWidth; el.classList.add('show'); refreshPin(); }
   if (answerStep && !isDate) { try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {} }
   el.scrollTop = 0;
   if (isDate && ready) spinDate(view);
@@ -1684,7 +1691,7 @@ function openSheet() {
   if (!qk || codeUnknown) return;
   if (cardDone(qk)) { flashRow(qk); return; }
   sheetOpen = true; sheetLeaving = false; sheetTimer = null;
-  var el = $('sheet'); el.classList.remove('leave'); el.hidden = false; el.scrollTop = 0; el.setAttribute('aria-label', 'Card ' + qnum(qk));
+  var el = $('sheet'); el.classList.remove('leave'); el.hidden = false; el.scrollTop = 0; el.setAttribute('aria-label', 'Card ' + qnum(qk)); refreshPin();
   renderSheet();
 }
 function renderSheet() {
@@ -1699,8 +1706,8 @@ function leaveSheet() {
   sheetLeaving = true;
   tab = 'mine'; setTabUI(); flashRow(qk);
   var el = $('sheet');
-  if (REDUCED) { sheetOpen = false; sheetLeaving = false; el.hidden = true; return; }
-  el.classList.add('leave');
+  if (REDUCED) { sheetOpen = false; sheetLeaving = false; el.hidden = true; refreshPin(); return; }
+  el.classList.add('leave'); refreshPin();
   setTimeout(function () { sheetOpen = false; sheetLeaving = false; el.hidden = true; el.classList.remove('leave'); }, 520);
 }
 function flashRow(k) {
