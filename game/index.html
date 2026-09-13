@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v21.2 (13/09/2026): The polaroid's second half is quick: the bloom takes its time to the halfway point,
+          then floods the print and settles in under a second.
   v21.1 (13/09/2026): The print develops like a polaroid: an uneven, liquid bloom from the middle, its edge
           rippled by a turbulence filter that settles as the picture comes up.
   v21.0 (13/09/2026): The date is the eleventh reveal: the name generator's reels spin and land on the day
@@ -678,17 +680,18 @@
     mask-image:radial-gradient(ellipse at 50% 50%,#000 30%,transparent 62%),radial-gradient(ellipse at 36% 62%,#000 28%,transparent 60%),radial-gradient(ellipse at 66% 36%,#000 26%,transparent 60%),radial-gradient(ellipse at 42% 28%,#000 24%,transparent 58%),radial-gradient(ellipse at 62% 72%,#000 26%,transparent 60%);
     -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
     -webkit-mask-position:50% 50%,36% 62%,66% 36%,42% 28%,62% 72%;mask-position:50% 50%,36% 62%,66% 36%,42% 28%,62% 72%;
-    animation:seepin 3.4s cubic-bezier(.35,.1,.25,1) 1.8s both}
+    animation:seepin 2.6s cubic-bezier(.4,.05,.2,1) 1.8s both}
   @keyframes seepin{
     0%{opacity:0;-webkit-mask-size:0% 0%,0% 0%,0% 0%,0% 0%,0% 0%;mask-size:0% 0%,0% 0%,0% 0%,0% 0%,0% 0%}
     8%{opacity:1}
-    45%{-webkit-mask-size:150% 130%,70% 90%,110% 80%,40% 60%,90% 110%;mask-size:150% 130%,70% 90%,110% 80%,40% 60%,90% 110%}
+    50%{-webkit-mask-size:150% 130%,70% 90%,110% 80%,40% 60%,90% 110%;mask-size:150% 130%,70% 90%,110% 80%,40% 60%,90% 110%}
+    72%{-webkit-mask-size:360% 360%,300% 300%,320% 320%,280% 280%,300% 300%;mask-size:360% 360%,300% 300%,320% 320%,280% 280%,300% 300%}
     100%{opacity:1;-webkit-mask-size:420% 420%,360% 360%,380% 380%,340% 340%,360% 360%;mask-size:420% 420%,360% 360%,380% 380%,340% 340%,360% 360%}}
-  .stage-view.answer .photo.in .print img,.stage-view.answer .photo.in .print video{animation:tone 3.4s ease-out 1.8s both}
-  @keyframes tone{from{filter:brightness(2.1) contrast(.3) saturate(0)}60%{filter:brightness(1.15) contrast(.85) saturate(.7)}to{filter:none}}
+  .stage-view.answer .photo.in .print img,.stage-view.answer .photo.in .print video{animation:tone 2.6s ease-out 1.8s both}
+  @keyframes tone{from{filter:brightness(2.1) contrast(.3) saturate(0)}50%{filter:brightness(1.2) contrast(.8) saturate(.6)}75%{filter:none}to{filter:none}}
   .stage-view.answer .photo.in:before{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
     background:radial-gradient(circle,rgba(255,205,130,.8) 0%,rgba(255,140,80,.4) 38%,transparent 68%);mix-blend-mode:screen;
-    opacity:0;animation:leak 2.6s ease-out 1.8s both}
+    opacity:0;animation:leak 2.1s ease-out 1.8s both}
   @keyframes leak{0%{opacity:0;transform:scale(.25)}30%{opacity:1}100%{opacity:0;transform:scale(2.4)}}
   .ackp{padding:24px 20px;color:var(--cream);text-align:center;margin:0 auto;width:100%;max-width:400px;box-shadow:0 14px 30px rgba(59,56,47,.2)}
   .ackp + .ackp{margin-top:14px}
@@ -792,7 +795,7 @@
 <!-- The scanned card takes the screen until both names are placed, then slides away to My answers -->
 <div id="sheet" hidden role="region" aria-label="This card"></div>
 <!-- The seep filter: ripples the developing print's edge, then settles (scale animates to 0 on cue) -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="seep" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.016 0.021" numOctaves="2" seed="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="0" xChannelSelector="R" yChannelSelector="G"><animate id="seepAnim" attributeName="scale" values="44;44;0" keyTimes="0;0.45;1" dur="3.4s" begin="indefinite" fill="freeze"/></feDisplacementMap></filter></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="seep" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.016 0.021" numOctaves="2" seed="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="0" xChannelSelector="R" yChannelSelector="G"><animate id="seepAnim" attributeName="scale" values="44;44;0;0" keyTimes="0;0.45;0.78;1" dur="2.6s" begin="indefinite" fill="freeze"/></feDisplacementMap></filter></svg>
 <div id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo" tabindex="-1"><button type="button" class="lb-close" aria-label="Close">&times;</button><img alt=""><video controls playsinline hidden></video></div>
 <div class="toast" id="toast" role="status"></div>
 
