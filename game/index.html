@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v20.6 (13/09/2026): The reveal in two beats. Sentences beat: the gap is blank and "You said" shows your
+          card, plain. Answers beat: the true name flies into the gap and a tick or cross stamps
+          onto your card.
   v20.5 (13/09/2026): A host note of up to 150 characters can appear with each answer on the reveal and on
           My answers afterwards (config.notes).
   v20.4 (13/09/2026): The reveal moves. A new card slides in as the old slides away (backwards when the
@@ -635,8 +638,9 @@
   .stage-view.answer .gap .namecard.truth{animation:flyin .75s cubic-bezier(.2,1.25,.3,1) both}
   .stage-view.answer .stage-stmt.dog .namecard.truth{animation-delay:.3s}
   @keyframes flyin{from{opacity:0;transform:translate(140px,-70px) rotate(14deg) scale(1.2)}55%{opacity:1}to{opacity:1;transform:rotate(-3deg)}}
-  .stage-view.answer .said{animation:fadeup .45s .75s both}
-  .stage-view.answer .stage-stmt.dog .said{animation-delay:.95s}
+  .stage-view.answer .said .namecard.mini:after{animation:sticker .45s cubic-bezier(.2,1.4,.4,1) .6s both}
+  .stage-view.answer .stage-stmt.dog .said .namecard.mini:after{animation-delay:.9s}
+  @keyframes sticker{from{opacity:0;transform:scale(2.6) rotate(-25deg)}to{opacity:1;transform:none}}
   .rnote{font-size:18px;line-height:1.45;color:var(--bark);margin:10px 0 0}
   .stage-view.answer .rnote{animation:fadeup .45s .95s both}
   .stage-view.answer .room{animation:fadeup .45s 1.05s both}
@@ -645,12 +649,21 @@
   @keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   .stage-view.answer .photo{opacity:1;overflow:hidden;animation:fadeup .5s 1.5s both}
   .stage-view.answer .photo img,.stage-view.answer .photo video{opacity:0}
-  .stage-view.answer .photo.in img,.stage-view.answer .photo.in video{animation:develop 2.2s ease-out 1.8s both}
-  @keyframes develop{from{opacity:0;filter:brightness(2.4) contrast(.3) saturate(0) blur(3px)}35%{opacity:1}to{opacity:1;filter:none}}
-  .stage-view.answer .photo.in:before{content:'';position:absolute;inset:-10%;pointer-events:none;z-index:1;
-    background:linear-gradient(105deg,transparent 30%,rgba(255,205,130,.75) 46%,rgba(255,120,70,.45) 54%,transparent 72%);mix-blend-mode:screen;
-    transform:translateX(-110%);animation:leak 1.7s ease-in-out 2s both}
-  @keyframes leak{to{transform:translateX(110%)}}
+  /* The print develops from the middle outwards: a soft circle of image seeps out through milk, a warm
+     glow blooms at the centre and thins away as the picture comes up. */
+  .stage-view.answer .photo.in img,.stage-view.answer .photo.in video{
+    -webkit-mask-image:radial-gradient(circle,#000 35%,transparent 70%);mask-image:radial-gradient(circle,#000 35%,transparent 70%);
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;
+    animation:develop 2.8s ease-out 1.8s both}
+  @keyframes develop{
+    0%{opacity:0;-webkit-mask-size:0% 0%;mask-size:0% 0%;filter:brightness(2.2) contrast(.25) saturate(0) blur(4px)}
+    12%{opacity:1}
+    70%{-webkit-mask-size:260% 260%;mask-size:260% 260%}
+    100%{opacity:1;-webkit-mask-size:420% 420%;mask-size:420% 420%;filter:none}}
+  .stage-view.answer .photo.in:before{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
+    background:radial-gradient(circle,rgba(255,205,130,.8) 0%,rgba(255,140,80,.4) 38%,transparent 68%);mix-blend-mode:screen;
+    opacity:0;animation:leak 2.6s ease-out 1.8s both}
+  @keyframes leak{0%{opacity:0;transform:scale(.25)}30%{opacity:1}100%{opacity:0;transform:scale(2.4)}}
   .ackp{padding:24px 20px;color:var(--cream);text-align:center;margin:0 auto;width:100%;max-width:400px;box-shadow:0 14px 30px rgba(59,56,47,.2)}
   .ackp + .ackp{margin-top:14px}
   .ackp.right{background:var(--olive)}
@@ -1270,11 +1283,12 @@ function renderStage() {
   var k = st.card, answerStep = st.step === 'answer', ready = !answerStep || !!answers[k];
   var html = '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + 'Card ' + qnum(k) + '</div>';
   ['human', 'dog'].forEach(function (side) {
-    var q = question(k)[side], mine = pick(k, side);
-    html += '<div class="patch stmt stage-stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + sentenceHtml(k, side) + '</p></div>';
+    var q = question(k)[side];
+    html += '<div class="patch stmt stage-stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + stageSentenceHtml(k, side, answerStep && ready) + '</p></div>';
+    html += stageSaidHtml(k, side, answerStep && ready);
     if (answerStep && ready) {
       var rc = roomCount(k, side), pc = rc.t ? Math.round(rc.n / rc.t * 100) : 0;
-      html += saidHtml(k, side) + noteHtml(k, side) + '<p class="room"><i style="width:' + pc + '%"></i><span>' + rc.n + ' of ' + rc.t + ' got it</span></p>' + photoHtml(k, side);
+      html += noteHtml(k, side) + '<p class="room"><i style="width:' + pc + '%"></i><span>' + rc.n + ' of ' + rc.t + ' got it</span></p>' + photoHtml(k, side);
     }
     html += '</div>';
   });
@@ -1303,6 +1317,18 @@ function renderStage() {
   if (!el.classList.contains('show')) { void el.offsetWidth; el.classList.add('show'); }
   if (answerStep) { try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {} }
   el.scrollTop = 0;
+}
+/* The stage's two beats. Sentences beat: the gap is blank and "You said" shows your card, plain.
+   Answers beat: the true name flies into the gap and a tick or cross stamps onto your card. */
+function stageSentenceHtml(k, side, revealed) {
+  var truth = revealed && answers[k] && answers[k][side];
+  var inner = truth ? '<span class="namecard truth">' + NAMES[truth] + '</span>' : '';
+  return fmt(question(k)[side].third).replace('{name}', '<span class="gap' + (inner ? ' filled' : '') + '" data-q="' + k + '" data-side="' + side + '">' + inner + '</span>');
+}
+function stageSaidHtml(k, side, revealed) {
+  var cur = pick(k, side); if (!cur) return '';
+  var v = revealed ? verdict(k, side) : null;
+  return '<p class="said">You said<span class="namecard mini' + (v && v !== 'blank' ? ' ' + v : '') + '"' + (v ? ' aria-label="' + NAMES[cur] + ', ' + v + '"' : '') + '>' + NAMES[cur] + '</span></p>';
 }
 /* How the room did on one statement: everyone with a name counts, answered or not. */
 function roomCount(k, side) {
