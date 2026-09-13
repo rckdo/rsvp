@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v18.1 (13/09/2026): My answers lists the unfound cards first as one batch, then the answered cards.
   v18.0 (13/09/2026): A scanned card takes over the screen until both names are placed and pinned, then
           slides up and away to My answers, scrolled to that card with a flash. A card already
           answered goes straight to its rows. After the close, the sentences show for a beat, then
@@ -478,6 +479,7 @@
   .row.hidden .qb{flex:0 0 30px;width:30px;height:30px;margin:0}
   .row.hidden:before{display:none}
   .row.hidden + .row.hidden{border-top:1px solid var(--line)}
+  .row.hidden + .row:not(.hidden){margin-top:22px}
   .row .n{flex:0 0 28px;font-family:var(--label);font-size:13px;color:var(--mutedbrown);padding-top:6px}
   .row .ic{flex:0 0 26px;width:26px;height:26px;color:var(--c);padding-top:2px}
   .row .ic svg{width:24px;height:24px;stroke-width:1.6}
@@ -1383,13 +1385,15 @@ function renderMine() {
 
   html += '<ol class="rows">';
   var revealed = config.revealed || {};
+  // Unfound cards first, as one batch of single rows; then every found card's two statements.
   allKeys().forEach(function (k) {
-    if (!isFound(k)) {
-      var nn = qnum(k);
-      var clue = config.clues && config.clues[k];
-      html += '<li class="row hidden" data-q="' + k + '" style="' + window.codeVars(nn - 1) + '"><span class="n">' + nn + '</span>' + window.codeBlock(nn - 1, 30) + '<div class="body"><p>' + (clue ? esc(clue) : 'Not found yet') + '</p></div></li>';
-      return;
-    }
+    if (isFound(k)) return;
+    var nn = qnum(k);
+    var clue = config.clues && config.clues[k];
+    html += '<li class="row hidden" data-q="' + k + '" style="' + window.codeVars(nn - 1) + '"><span class="n">' + nn + '</span>' + window.codeBlock(nn - 1, 30) + '<div class="body"><p>' + (clue ? esc(clue) : 'Not found yet') + '</p></div></li>';
+  });
+  allKeys().forEach(function (k) {
+    if (!isFound(k)) return;
     ['human', 'dog'].forEach(function (side) {
       var q = question(k)[side], n = qnum(k);
       var label = n + (side === 'human' ? 'a' : 'b');
