@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v20.5 (13/09/2026): A host note of up to 150 characters can appear with each answer on the reveal and on
+          My answers afterwards (config.notes).
   v20.4 (13/09/2026): The reveal moves. A new card slides in as the old slides away (backwards when the
           host steps back). On the answer beat the true name flies in and settles, You said rises,
           the room bar grows, then the photo develops like a print with a warm leak sweeping across.
@@ -635,6 +637,8 @@
   @keyframes flyin{from{opacity:0;transform:translate(140px,-70px) rotate(14deg) scale(1.2)}55%{opacity:1}to{opacity:1;transform:rotate(-3deg)}}
   .stage-view.answer .said{animation:fadeup .45s .75s both}
   .stage-view.answer .stage-stmt.dog .said{animation-delay:.95s}
+  .rnote{font-size:18px;line-height:1.45;color:var(--bark);margin:10px 0 0}
+  .stage-view.answer .rnote{animation:fadeup .45s .95s both}
   .stage-view.answer .room{animation:fadeup .45s 1.05s both}
   .stage-view.answer .room i{transform-origin:left;animation:grow .9s 1.25s both}
   @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
@@ -1270,7 +1274,7 @@ function renderStage() {
     html += '<div class="patch stmt stage-stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + sentenceHtml(k, side) + '</p></div>';
     if (answerStep && ready) {
       var rc = roomCount(k, side), pc = rc.t ? Math.round(rc.n / rc.t * 100) : 0;
-      html += saidHtml(k, side) + '<p class="room"><i style="width:' + pc + '%"></i><span>' + rc.n + ' of ' + rc.t + ' got it</span></p>' + photoHtml(k, side);
+      html += saidHtml(k, side) + noteHtml(k, side) + '<p class="room"><i style="width:' + pc + '%"></i><span>' + rc.n + ' of ' + rc.t + ' got it</span></p>' + photoHtml(k, side);
     }
     html += '</div>';
   });
@@ -1496,6 +1500,11 @@ function saidHtml(k, side) {
   if (!v || v === 'blank') return '';
   return '<p class="said">You said<span class="namecard mini ' + v + '" aria-label="' + NAMES[pick(k, side)] + ', ' + (v === 'right' ? 'right' : 'wrong') + '">' + NAMES[pick(k, side)] + '</span></p>';
 }
+/* The host's line of context for the answer, if there is one (config.notes, 150 characters). */
+function noteHtml(k, side) {
+  var n = config.notes && config.notes[k] && config.notes[k][side];
+  return n ? '<p class="rnote">' + esc(String(n).slice(0, 150)) + '</p>' : '';
+}
 function sentenceHtml(k, side) {
   return fmt(question(k)[side].third).replace('{name}', gapHtml(k, side));
 }
@@ -1616,7 +1625,7 @@ function renderMine() {
       if (flashKey === k) cls += ' flash';
       html += '<li class="' + cls + '" data-q="' + k + '" style="' + window.codeVars(n - 1) + '"><span class="n">' + label + '</span><span class="ic">' + icon(q.icon) + '</span><div class="body">';
       html += '<p>' + sentenceHtml(k, side) + '</p>';
-      if (v) html += saidHtml(k, side) + photoHtml(k, side, true);
+      if (v) html += saidHtml(k, side) + noteHtml(k, side) + photoHtml(k, side, true);
       else if (locked && !cur) html += '<div class="verdict">Not answered</div>';
       else html += deckHtml(k, side);
       html += '</div></li>';
