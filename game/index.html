@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v22.2 (13/09/2026): Scrolling My answers no longer picks a card by accident: a vertical swipe that starts on a
+          name card scrolls the page instead of dragging the card. Taps and sideways drags still place.
   v22.1 (13/09/2026): The line that carries the name slot no longer sits further from the next line than the
           rest of the sentence: the slot keeps its size but no longer stretches its line box.
   v22.0 (13/09/2026): The date in two beats, like the cards. First beat: the reels sit on 1 January and
@@ -515,6 +517,9 @@
   .deck-hint{font-family:var(--label);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);text-align:center;margin:10px 0 0}
   .dragcard{position:fixed;z-index:80;pointer-events:none;margin:0;transform:rotate(-4deg);box-shadow:0 14px 26px rgba(74,63,47,.32)}
   .row .deck{justify-content:flex-start;margin-top:12px}
+  /* On My answers a finger landing on a name card is usually starting a scroll, so vertical swipes go to the
+     page; a tap still places, a sideways drag still drags. The takeover keeps full drag, nothing to scroll there. */
+  #p-mine .deck .namecard{touch-action:pan-y}
   .choice{display:flex;gap:12px;margin-top:16px}
   .choice .btn{flex:1;padding:10px 6px}
   .choice .btn.pick{background:var(--cream);color:var(--cd);box-shadow:0 4px 0 var(--ochre-deep), 0 8px 16px rgba(74,63,47,.12)}
