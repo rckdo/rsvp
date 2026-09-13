@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v21.7 (13/09/2026): A media entry may set its window's aspect (e.g. "3/4" for a portrait clip); the
+          polaroid's window follows it, square by default.
   v21.6 (13/09/2026): The host page's gallery pick (config.media) decides each statement's photo or clip;
           "none" clears one. Prefetch follows whatever is picked.
   v21.5 (13/09/2026): The room line's track stays on screen from the sentences beat; only the fill and the
@@ -892,17 +894,18 @@ var mediaOf = function (k, side) {
   if (!m) m = content && content.media && content.media[k] && content.media[k][side];
   if (!m) { var a = answers[k]; m = a && a[side + 'Img']; }
   if (!m) return null;
-  if (typeof m === 'string') return { src: m, full: m };
-  if (m.video) return { video: m.video, src: m.poster || '', full: m.video };
-  return { src: m.src, full: m.full || m.src };
+  if (typeof m === 'string') return { src: m, full: m, aspect: '1' };
+  var aspect = m.aspect || '1';
+  if (m.video) return { video: m.video, src: m.poster || '', full: m.video, aspect: aspect };
+  return { src: m.src, full: m.full || m.src, aspect: aspect };
 };
 /* A print in a cream frame. A clip plays silently in the frame; tap for full screen with sound. */
 var photoHtml = function (k, side, small) {
   var m = mediaOf(k, side); if (!m) return '';
   if (m.video) {
-    return '<button type="button" class="photo video' + (small ? ' small' : '') + '" data-video="' + esc(m.video) + '" aria-label="Play the clip"><span class="dev"><span class="print"><video src="' + esc(m.video) + '"' + (m.src ? ' poster="' + esc(m.src) + '"' : '') + ' muted playsinline loop autoplay preload="auto" onloadeddata="this.closest(\'.photo\').classList.add(\'in\')" onerror="this.closest(\'.photo\').classList.add(\'in\')"></video></span></span></button>';
+    return '<button type="button" class="photo video' + (small ? ' small' : '') + '" data-video="' + esc(m.video) + '" aria-label="Play the clip"><span class="dev" style="aspect-ratio:' + esc(m.aspect) + '"><span class="print"><video src="' + esc(m.video) + '"' + (m.src ? ' poster="' + esc(m.src) + '"' : '') + ' muted playsinline loop autoplay preload="auto" onloadeddata="this.closest(\'.photo\').classList.add(\'in\')" onerror="this.closest(\'.photo\').classList.add(\'in\')"></video></span></span></button>';
   }
-  return '<button type="button" class="photo' + (small ? ' small' : '') + '" data-full="' + esc(m.full) + '" aria-label="Open the photo"><span class="dev"><span class="print"><img src="' + esc(m.src) + '" alt="" decoding="async" onload="this.closest(\'.photo\').classList.add(\'in\')"></span></span></button>';
+  return '<button type="button" class="photo' + (small ? ' small' : '') + '" data-full="' + esc(m.full) + '" aria-label="Open the photo"><span class="dev" style="aspect-ratio:' + esc(m.aspect) + '"><span class="print"><img src="' + esc(m.src) + '" alt="" decoding="async" onload="this.closest(\'.photo\').classList.add(\'in\')"></span></span></button>';
 };
 /* The seep: the turbulence that ripples the developing print's edge, settling as the picture comes up. */
 function startSeep() {
