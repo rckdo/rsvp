@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v21.9 (13/09/2026): Sound, opt in. A clip still starts silent; a small speaker in the polaroid's foot turns
+          its sound on and off (one clip at a time, the others fall silent). The picture itself still
+          pauses and resumes on a tap; the play mark moved to the foot's left.
   v21.8 (13/09/2026): Nothing opens. A photo is a plain print with no tap action; a clip plays in its frame
           and a tap pauses it, another resumes it (a small play mark shows while paused). The
           lightbox is gone. The page beneath the reveal and the scanned-card takeover is locked
@@ -471,10 +474,21 @@
   .print{display:block;width:100%;height:100%}
   .photo img,.photo video{display:block;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s ease}
   .photo.in img,.photo.in video{opacity:1}
-  /* A clip: tap pauses, tap resumes. A small play mark sits in the foot only while it is paused. */
-  button.photo.video{cursor:pointer}
-  button.photo.video:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
-  .photo.video.paused:after{content:'';position:absolute;right:12px;bottom:8px;width:0;height:0;border-left:12px solid var(--bark);border-top:7px solid transparent;border-bottom:7px solid transparent;opacity:.8}
+  /* A clip: the picture is a button (tap pauses, tap resumes) and a speaker sits in the foot's right corner
+     (tap for sound). A small play mark sits at the foot's left only while the clip is paused. */
+  .photo .tap{-webkit-appearance:none;appearance:none;border:0;padding:0;margin:0;background:none;display:block;width:100%;cursor:pointer;font:inherit;color:inherit}
+  .photo .tap:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+  .photo.video.paused:after{content:'';position:absolute;left:12px;bottom:8px;width:0;height:0;border-left:12px solid var(--bark);border-top:7px solid transparent;border-bottom:7px solid transparent;opacity:.8}
+  .photo .snd{-webkit-appearance:none;appearance:none;position:absolute;right:4px;bottom:0;width:44px;height:28px;border:0;padding:0;margin:0;background:none;cursor:pointer;color:var(--bark);opacity:.75;display:flex;align-items:center;justify-content:center}
+  .photo .snd svg{width:20px;height:20px;display:block}
+  .photo .snd .on{display:none}
+  .photo.video.sound .snd .on{display:block}
+  .photo.video.sound .snd .off{display:none}
+  .photo.video.sound .snd{opacity:1;color:var(--rust)}
+  .photo .snd:focus-visible{outline:3px solid var(--gold);outline-offset:-2px;border-radius:6px}
+  .photo.small .snd{height:20px;width:36px;right:2px}
+  .photo.small .snd svg{width:16px;height:16px}
+  .photo.small.paused:after{left:8px;bottom:5px;border-left-width:9px;border-top-width:5px;border-bottom-width:5px}
   .photo.small{width:min(200px,58%);margin:12px 0 0;padding:6px 6px 20px;transform:rotate(1deg)}
   .namecard.right:after{background-color:var(--olive);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5l2.6 2.6L10 3.5' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
   .namecard.wrong:after{background-color:var(--rust);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 3l6 6M9 3l-6 6' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E")}
@@ -904,7 +918,7 @@ var mediaOf = function (k, side) {
 var photoHtml = function (k, side, small) {
   var m = mediaOf(k, side); if (!m) return '';
   if (m.video) {
-    return '<button type="button" class="photo video' + (small ? ' small' : '') + '" aria-label="Pause the clip" aria-pressed="false"><span class="dev" style="aspect-ratio:' + esc(m.aspect) + '"><span class="print"><video src="' + esc(m.video) + '"' + (m.src ? ' poster="' + esc(m.src) + '"' : '') + ' muted playsinline loop autoplay preload="auto" onloadeddata="clipIn(this)" onerror="clipIn(this)" onplaying="clipState(this)" onpause="clipState(this)"></video></span></span></button>';
+    return '<span class="photo video' + (small ? ' small' : '') + '"><button type="button" class="tap" aria-label="Pause the clip" aria-pressed="false"><span class="dev" style="aspect-ratio:' + esc(m.aspect) + '"><span class="print"><video src="' + esc(m.video) + '"' + (m.src ? ' poster="' + esc(m.src) + '"' : '') + ' muted playsinline loop autoplay preload="auto" onloadeddata="clipIn(this)" onerror="clipIn(this)" onplaying="clipState(this)" onpause="clipState(this)" onvolumechange="clipState(this)"></video></span></span></button><button type="button" class="snd" aria-label="Turn sound on" aria-pressed="false">' + SND_OFF + SND_ON + '</button></span>';
   }
   return '<span class="photo' + (small ? ' small' : '') + '"><span class="dev" style="aspect-ratio:' + esc(m.aspect) + '"><span class="print"><img src="' + esc(m.src) + '" alt="" decoding="async" onload="this.closest(\'.photo\').classList.add(\'in\')"></span></span></span>';
 };
@@ -926,17 +940,30 @@ function prefetchMedia() {
     else { var im = new Image(); im.onload = im.onerror = done; im.src = u; }
   })();
 }
-/* A clip's frame mirrors the video's own state: the play mark and label follow its playing/pause events, so a
-   blocked autoplay (Low Power Mode) shows the mark too. A tap pauses; another resumes. Photos have no tap action. */
+/* A clip's frame mirrors the video's own state: the play mark, the speaker and the labels follow its
+   playing/pause/volumechange events, so a blocked autoplay (Low Power Mode) shows the mark too. Tap the
+   picture to pause or resume; tap the speaker for sound (one clip at a time). Photos have no tap action. */
+var SND_OFF = '<svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
+var SND_ON = '<svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/></svg>';
 function clipState(v) {
   var b = v.closest('.photo'); if (!b) return;
   b.classList.toggle('paused', v.paused);
-  b.setAttribute('aria-label', v.paused ? 'Play the clip' : 'Pause the clip'); b.setAttribute('aria-pressed', v.paused ? 'true' : 'false');
+  var t = b.querySelector('.tap'); if (t) { t.setAttribute('aria-label', v.paused ? 'Play the clip' : 'Pause the clip'); t.setAttribute('aria-pressed', v.paused ? 'true' : 'false'); }
+  b.classList.toggle('sound', !v.muted);
+  var s = b.querySelector('.snd'); if (s) { s.setAttribute('aria-label', v.muted ? 'Turn sound on' : 'Turn sound off'); s.setAttribute('aria-pressed', v.muted ? 'false' : 'true'); }
 }
 function clipIn(v) { var b = v.closest('.photo'); if (b) b.classList.add('in'); setTimeout(function () { clipState(v); }, 700); }
 document.addEventListener('click', function (ev) {
-  var b = ev.target.closest('button.photo.video'); if (!b) return;
+  var b = ev.target.closest('.photo.video'); if (!b) return;
   var v = b.querySelector('video'); if (!v) return;
+  if (ev.target.closest('.snd')) {
+    var on = v.muted;
+    if (on) document.querySelectorAll('.photo.video video').forEach(function (o) { if (o !== v && !o.muted) { o.muted = true; clipState(o); } });
+    v.muted = !on;
+    if (on && v.paused) v.play().catch(function () {});
+    clipState(v); return;
+  }
+  if (!ev.target.closest('.tap')) return;
   if (v.paused) v.play().then(function () { clipState(v); }, function () { clipState(v); }); else v.pause();
 });
 /* Pins the page beneath a takeover and restores its scroll position after. */
