@@ -40,8 +40,11 @@ codes, answers and the host claim in place.
 
 ## Photos at the reveal
 
-Photos live in `media/` and are named in `content.json` under `media`, keyed by card and
-side. Either a single path, or `src` plus a larger `full` for the lightbox:
+Photos and clips live in `media/`. Every file is listed in `media/index.json` (the
+gallery), and the host page's Setup tab assigns one to each statement from that gallery;
+the pick is saved to `config.media` and applies at once. `content.json`'s `media` map is
+the fallback underneath, keyed by card and side: either a single path, or `src` plus a
+larger `full` for the lightbox:
 
 ```json
 "media": {
