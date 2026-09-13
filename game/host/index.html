@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v18.2 (13/09/2026): Photos come from content.json's media map, same as the phones.
   v18.1 (13/09/2026): Feed and presenter lead with "14 of 22 got it" per statement, the other name and
           no-answer counts beneath.
   v18.0 (12/09/2026): Host key removed. The passcode splash is the only gate. Firebase rules let any
@@ -635,7 +636,8 @@ function stHtml(k, side, showSplit) {
     h += '<div class="lab"><span>' + NAMES[other] + ' ' + sp.counts[other] + '</span><span>no answer ' + sp.none + '</span></div>';
     if (sp.wrong.length) h += '<p class="wrongs">Wrong: ' + sp.wrong.map(pretty).map(esc).join(', ') + '</p>';
   }
-  var img = answers[k] && answers[k][side + 'Img'];
+  var m = content.media && content.media[k] && content.media[k][side];
+  var img = m ? (typeof m === 'string' ? m : m.src) : (answers[k] && answers[k][side + 'Img']);
   if (img) h += '<img class="photo" src="../' + esc(img) + '" alt="">';
   var note = HOST_NOTES[k] && HOST_NOTES[k][side];
   if (note) h += '<p class="note">' + esc(note) + '</p>';

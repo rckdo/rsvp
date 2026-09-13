@@ -4,6 +4,11 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v20.0 (13/09/2026): Photos from content.json's media map (kept in /game/media, condensed). Fetched quietly
+          one at a time once the hunt closes, so the reveal never waits. A photo is a print that fades
+          in; tap for the full-screen lightbox, tap or Escape to close. Shown on the reveal and on
+          My answers after it. Accessibility pass: revealed cards carry a spoken verdict, the
+          takeover is a labelled region, the struck card's type is 12px.
   v19.2 (13/09/2026): The reveal says how the room did: "14 of 22 got it" with a hairline bar under each
           statement, on the answer step only.
   v19.1 (13/09/2026): Row 21's revealed date no longer gets rebuilt as an empty picker. Results is purely the
@@ -404,7 +409,7 @@
   .namecard.blank:after{background-color:var(--cream);box-shadow:inset 0 0 0 2px var(--mutedbrown), 0 1px 3px rgba(74,63,47,.25)}
   .namecard.right:after,.namecard.wrong:after,.namecard.blank:after{content:'';position:absolute;right:-9px;top:-9px;width:20px;height:20px;border-radius:50%;
     box-shadow:0 1px 3px rgba(74,63,47,.35);background-size:11px 11px;background-position:center;background-repeat:no-repeat}
-  .namecard.mini{width:84px;height:30px;font-size:11px;letter-spacing:.12em;vertical-align:middle;margin-left:8px;transform:rotate(-2deg)}
+  .namecard.mini{width:88px;height:30px;font-size:12px;letter-spacing:.12em;vertical-align:middle;margin-left:8px;transform:rotate(-2deg)}
   .namecard.mini:after{width:16px;height:16px;right:-7px;top:-7px;background-size:9px 9px}
   .said{font-style:italic;font-size:18px;color:var(--mutedbrown);margin:10px 0 0;display:flex;align-items:center}
   .namecard.mini.struck{color:var(--mutedbrown);text-decoration:line-through;text-decoration-color:var(--rust);text-decoration-thickness:2px;box-shadow:0 2px 0 var(--ochre-deep)}
@@ -421,10 +426,16 @@
   .tbres .dist.blank{color:var(--mutedbrown);margin-top:0}
   .dp .gap.sm .namecard.sm.right:after,.dp .gap.sm .namecard.sm.truth:after{width:16px;height:16px;right:-7px;top:-7px;background-size:9px 9px}
   .dp .gap.sm .namecard.sm.truth:after{content:none}
-  .photo{display:block;max-width:100%;height:auto;margin:12px auto 6px;padding:6px 6px 14px;background:#fbf6ea;
-    box-shadow:0 2px 0 var(--ochre-deep), 0 10px 20px rgba(74,63,47,.2);transform:rotate(-1.5deg)}
-  .split .photo{max-width:82%}
-  .ackp .photo{max-height:30vh;width:auto;max-width:86%;margin:12px auto 0;transform:rotate(1.5deg)}
+  /* A photo is a print: cream border, deeper foot, laid slightly askew. Fades in as it loads; tap to open. */
+  button.photo{-webkit-appearance:none;appearance:none;border:0;cursor:zoom-in;display:block;max-width:86%;margin:14px auto 4px;padding:6px 6px 14px;background:#fbf6ea;
+    box-shadow:0 2px 0 var(--ochre-deep), 0 10px 20px rgba(74,63,47,.2);transform:rotate(-1.5deg);opacity:0;transition:opacity .5s ease}
+  .photo.in{opacity:1}
+  .photo img{display:block;max-width:100%;max-height:34vh;width:auto;height:auto}
+  .photo.small{max-width:58%;margin:12px 0 0;transform:rotate(1deg)}
+  .photo.small img{max-height:26vh}
+  #lightbox{position:fixed;inset:0;z-index:60;background:rgba(30,24,16,.94);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
+  #lightbox[hidden]{display:none}
+  #lightbox img{max-width:100%;max-height:100%;object-fit:contain;background:#fbf6ea;padding:6px 6px 14px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
   .namecard.right:after{background-color:var(--olive);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5l2.6 2.6L10 3.5' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
   .namecard.wrong:after{background-color:var(--rust);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 3l6 6M9 3l-6 6' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E")}
   .gap.filled.missed{opacity:.75}
@@ -691,7 +702,8 @@
 
 <div id="ack" aria-live="assertive"></div>
 <!-- The scanned card takes the screen until both names are placed, then slides away to My answers -->
-<div id="sheet" hidden></div>
+<div id="sheet" hidden role="region" aria-label="This card"></div>
+<div id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo. Tap to close." tabindex="-1"><img alt=""></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -763,7 +775,34 @@ var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { ret
 // statement text: escaped, with `backticks` rendered as code (for the formula)
 var fmt = function (s) { return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>'); };
 // a photo attached to a revealed statement (URL comes with the answer key, so it is unreadable until revealed)
-var photoHtml = function (k, side) { var a = answers[k]; var u = a && a[side + 'Img']; return u ? '<img class="photo" src="' + esc(u) + '" alt="">' : ''; };
+/* Photos at the reveal. content.json's media map (q3: { human: "media/x.jpg" } or { src, full }) wins;
+   an answer-key humanImg/dogImg still works. Paths are relative to /game/. */
+var mediaOf = function (k, side) {
+  var m = content && content.media && content.media[k] && content.media[k][side];
+  if (!m) { var a = answers[k]; m = a && a[side + 'Img']; }
+  if (!m) return null;
+  return typeof m === 'string' ? { src: m, full: m } : { src: m.src, full: m.full || m.src };
+};
+var photoHtml = function (k, side, small) {
+  var m = mediaOf(k, side); if (!m) return '';
+  return '<button type="button" class="photo' + (small ? ' small' : '') + '" data-full="' + esc(m.full) + '" aria-label="Open the photo"><img src="' + esc(m.src) + '" alt="" decoding="async" onload="this.parentNode.classList.add(\'in\')"></button>';
+};
+/* Every photo is fetched quietly, one at a time, as soon as the hunt closes, so the reveal never waits. */
+var prefetched = false;
+function prefetchMedia() {
+  if (prefetched || !content || !content.media) return; prefetched = true;
+  var list = [];
+  Object.keys(content.media).forEach(function (k) { ['human', 'dog'].forEach(function (s) { var m = mediaOf(k, s); if (m) { list.push(m.src); if (m.full !== m.src) list.push(m.full); } }); });
+  var i = 0;
+  (function next() { if (i >= list.length) return; var im = new Image(); im.onload = im.onerror = function () { setTimeout(next, 120); }; im.src = list[i++]; })();
+}
+function closeLightbox() { var lb = $('lightbox'); if (lb.hidden) return; lb.hidden = true; lb.querySelector('img').src = ''; }
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest('button.photo');
+  if (b) { var lb = $('lightbox'); lb.querySelector('img').src = b.dataset.full; lb.hidden = false; lb.focus(); return; }
+  if (ev.target.closest('#lightbox')) closeLightbox();
+});
+document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') closeLightbox(); });
 var now = function () { return Date.now() + offset; };
 var slugOf = function (item, role) { return (item + '-' + role).toLowerCase().replace(/[^a-z]+/g, '-'); };
 var prettyAlias = function (slug) {
@@ -1173,6 +1212,7 @@ function roomCount(k, side) {
   return { n: n, t: t };
 }
 function loadAnswers(keys, fresh) {
+  if (keys.length) prefetchMedia();
   var want = keys.filter(function (k) { return !answers[k]; });
   if (keys.length === TOTAL_CODES && !answers.tiebreak) want.push('tiebreak');
   Promise.all(want.map(function (k) { return db.ref(ROOT + '/answers/' + k).once('value').then(function (s) { if (s.val()) answers[k] = s.val(); }); }))
@@ -1190,7 +1230,7 @@ function tickClock() {
   if (!config.lockAt) { if (locked) { locked = false; renderAll(); } if (el.dataset.mode !== 'off') { el.dataset.mode = 'off'; el.innerHTML = ''; el.className = 'clock'; } return; }
   var rem = config.lockAt - now();
   if (rem <= 0) {
-    if (!locked) { locked = true; renderAll(); }
+    if (!locked) { locked = true; renderAll(); prefetchMedia(); }
     if (el.dataset.mode !== 'closed') { el.dataset.mode = 'closed'; el.innerHTML = signHtml(); el.className = 'clock locked'; }
     return;
   }
@@ -1350,7 +1390,7 @@ function verdict(k, side) {
 }
 function gapHtml(k, side) {
   var cur = pick(k, side), v = verdict(k, side), inner = '';
-  if (v) inner = '<span class="namecard truth ' + v + '">' + NAMES[answers[k][side]] + '</span>';
+  if (v) inner = '<span class="namecard truth ' + v + '" aria-label="' + NAMES[answers[k][side]] + '. ' + (v === 'right' ? 'You had it.' : v === 'wrong' ? 'You said ' + NAMES[cur] + '.' : 'No answer.') + '">' + NAMES[answers[k][side]] + '</span>';
   else if (cur) inner = '<span class="namecard' + (justPlaced === k + side ? ' just' : '') + (pending[k + side] ? '' : ' pinned') + '">' + NAMES[cur] + '</span>';
   return '<span class="gap' + (inner ? ' filled' : '') + (v ? ' ' + v : '') + '" data-q="' + k + '" data-side="' + side + '">' + inner + '</span>';
 }
@@ -1415,7 +1455,7 @@ function openSheet() {
   if (!qk || codeUnknown) return;
   if (cardDone(qk)) { flashRow(qk); return; }
   sheetOpen = true; sheetLeaving = false; sheetTimer = null;
-  var el = $('sheet'); el.classList.remove('leave'); el.hidden = false; el.scrollTop = 0;
+  var el = $('sheet'); el.classList.remove('leave'); el.hidden = false; el.scrollTop = 0; el.setAttribute('aria-label', 'Card ' + qnum(qk));
   renderSheet();
 }
 function renderSheet() {
@@ -1479,7 +1519,7 @@ function renderMine() {
       if (flashKey === k) cls += ' flash';
       html += '<li class="' + cls + '" data-q="' + k + '" style="' + window.codeVars(n - 1) + '"><span class="n">' + label + '</span><span class="ic">' + icon(q.icon) + '</span><div class="body">';
       html += '<p>' + sentenceHtml(k, side) + '</p>';
-      if (v) html += saidHtml(k, side);
+      if (v) html += saidHtml(k, side) + photoHtml(k, side, true);
       else if (locked && !cur) html += '<div class="verdict">Not answered</div>';
       else html += deckHtml(k, side);
       html += '</div></li>';
