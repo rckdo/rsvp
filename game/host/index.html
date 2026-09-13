@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v18.5 (13/09/2026): A reveal note per statement (150 characters) on Setup, shown with the answer on the
+          phones, in the feed and the presenter. Reset keeps it.
   v18.4 (13/09/2026): Motifs panel on Setup: re-pair any card's block and colour, duplicates flagged. An icon
           picker on every statement, from the vendored Lucide set. Both saved to config, so the
           phones, the feed and the card sheet follow at once. Reset keeps them.
@@ -208,10 +210,12 @@
   .stm .num{font-size:12px;color:var(--sage);padding-top:10px;font-variant-numeric:tabular-nums}
   .stm .qb{margin-top:8px}
   .stm textarea{margin:0;min-height:60px;font-family:inherit;font-size:14px}
+  .stm input.rnote{grid-column:4 / -1;font-family:inherit;font-size:13px;font-style:italic;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--forest)}
+  .st .rnote{grid-column:1 / -1;font-size:14px;font-style:italic;color:var(--forest);margin:0}
   .stm .ans{display:flex;flex-direction:column;gap:4px}
   .stm .ans button{font-family:inherit;font-size:12px;font-weight:700;min-height:28px;padding:2px 10px;border-radius:6px;border:1.5px solid var(--line-strong);background:#fff;color:var(--sage);cursor:pointer}
   .stm .ans button.on{background:var(--olive);border-color:var(--olive);color:#fff}
-  @media (max-width:720px){ .stm{grid-template-columns:28px 38px 1fr auto} .stm .num{display:none} .ipick{padding-left:0} }
+  @media (max-width:720px){ .stm{grid-template-columns:28px 38px 1fr auto} .stm .num{display:none} .ipick{padding-left:0} .stm input.rnote{grid-column:3 / -1} }
   .clues{display:grid;gap:var(--s1)}
   .clue{display:grid;grid-template-columns:22px 22px 1fr;gap:var(--s1);align-items:center}
   .clue .num{font-size:12px;color:var(--sage);text-align:right;font-variant-numeric:tabular-nums}
@@ -567,7 +571,7 @@ $('bSeed').addEventListener('click', function () {
 $('resetInput').addEventListener('input', function () { $('bReset').disabled = $('resetInput').value.trim() !== 'RESET'; });
 $('bReset').addEventListener('click', function () {
   if (!confirm('Wipe every player and all settings? This cannot be undone.')) return;
-  cfg().set({ epoch: Date.now(), clues: config.clues || null, statements: config.statements || null, icons: config.icons || null, motifs: config.motifs || null }).then(function () { return db.ref(ROOT + '/players').remove(); }).then(function () { $('resetInput').value = ''; $('bReset').disabled = true; }).catch(fail);
+  cfg().set({ epoch: Date.now(), clues: config.clues || null, statements: config.statements || null, icons: config.icons || null, motifs: config.motifs || null, notes: config.notes || null }).then(function () { return db.ref(ROOT + '/players').remove(); }).then(function () { $('resetInput').value = ''; $('bReset').disabled = true; }).catch(fail);
 });
 
 /* ---- Rendering ---- */
@@ -615,7 +619,8 @@ function renderStatements() {
         return '<div class="stm"><span class="num">' + (i + 1) + (side === 'human' ? 'a' : 'b') + '</span><span class="mblock" data-i="' + i + '">' + CODE_STYLE[i] + '</span>' +
           '<button type="button" class="ico" data-k="' + k + '" data-side="' + side + '" title="Change the icon"><img alt=""></button>' +
           '<textarea data-k="' + k + '" data-side="' + side + '" rows="2" autocomplete="off"></textarea>' +
-          '<div class="ans">' + opts.map(function (o) { return '<button type="button" data-k="' + k + '" data-side="' + side + '" data-ans="' + o + '">' + NAMES[o] + '</button>'; }).join('') + '</div></div>' +
+          '<div class="ans">' + opts.map(function (o) { return '<button type="button" data-k="' + k + '" data-side="' + side + '" data-ans="' + o + '">' + NAMES[o] + '</button>'; }).join('') + '</div>' +
+          '<input type="text" class="rnote" data-k="' + k + '" data-side="' + side + '" maxlength="150" placeholder="Reveal note, optional: a line of context shown with the answer (150 characters)" autocomplete="off"></div>' +
           '<div class="ipick" data-k="' + k + '" data-side="' + side + '" hidden>' + ICONS.map(function (ic) { return '<button type="button" data-icon="' + ic + '.svg" title="' + ic + '"><img src="../icons/' + ic + '.svg" alt="' + ic + '"></button>'; }).join('') + '</div>';
       }).join('');
     }).join('');
@@ -630,6 +635,8 @@ function renderStatements() {
       }
     });
     box.addEventListener('change', function (ev) {
+      var rn = ev.target.closest('input.rnote');
+      if (rn) { var u2 = {}; u2['notes/' + rn.dataset.k + '/' + rn.dataset.side] = rn.value.trim().slice(0, 150) || null; cfg().update(u2).catch(fail); return; }
       var ta = ev.target.closest('textarea[data-k]'); if (!ta) return;
       var text = ta.value.trim().replace(/_{2,}/g, '{name}');
       var base = content.questions[parseInt(ta.dataset.k.slice(1), 10) - 1][ta.dataset.side].third;
@@ -645,6 +652,7 @@ function renderStatements() {
   box.querySelectorAll('textarea[data-k]').forEach(function (ta) { if (document.activeElement !== ta) ta.value = stmtText(ta.dataset.k, ta.dataset.side); });
   box.querySelectorAll('button[data-ans]').forEach(function (b) { var a = answers[b.dataset.k]; b.classList.toggle('on', !!a && a[b.dataset.side] === b.dataset.ans); });
   box.querySelectorAll('.mblock').forEach(function (m) { m.innerHTML = CODE_STYLE[+m.dataset.i]; });
+  box.querySelectorAll('input.rnote').forEach(function (inp) { if (document.activeElement !== inp) { var nn = config.notes && config.notes[inp.dataset.k]; inp.value = (nn && nn[inp.dataset.side]) || ''; } });
   box.querySelectorAll('button.ico').forEach(function (b) {
     var cur = iconOf(b.dataset.k, b.dataset.side); b.querySelector('img').src = '../icons/' + cur;
     var pk = box.querySelector('.ipick[data-k="' + b.dataset.k + '"][data-side="' + b.dataset.side + '"]');
@@ -714,6 +722,8 @@ function stHtml(k, side, showSplit) {
   var img = m ? (typeof m === 'string' ? m : (m.video ? null : m.src)) : (answers[k] && answers[k][side + 'Img']);
   if (m && m.video) h += '<video class="photo" src="../' + esc(m.video) + '"' + (m.poster ? ' poster="../' + esc(m.poster) + '"' : '') + ' controls muted playsinline preload="metadata"></video>';
   else if (img) h += '<img class="photo" src="../' + esc(img) + '" alt="">';
+  var rn = config.notes && config.notes[k] && config.notes[k][side];
+  if (rn) h += '<p class="rnote">' + esc(rn) + '</p>';
   var note = HOST_NOTES[k] && HOST_NOTES[k][side];
   if (note) h += '<p class="note">' + esc(note) + '</p>';
   return h + '</div>';
