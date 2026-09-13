@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v17.3 (13/09/2026): Heavier type. Cormorant now loads at 600 and 700 and the body sits at 600 (it was
+          rendering at 500 with thin hairlines); grey antialiasing off; Marcellus labels get a
+          hairline stroke since the face has one weight.
   v17.2 (12/09/2026): Lining numerals site-wide (Playfair and Cormorant default to old-style figures,
           which is why 2017 sat unevenly on its placard). Gate sizing tightened under 700px so it
           fits an iPhone SE with the real web fonts.
@@ -116,7 +119,7 @@
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Playfair+Display:wght@500;600&family=Marcellus&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Playfair+Display:wght@600;700&family=Marcellus&display=swap" rel="stylesheet">
 <style>
   :root{
     --paper:#e7e0d2;
@@ -142,6 +145,10 @@
   /* Playfair and Cormorant default to old-style figures (3, 5, 7, 9 hang below the line). Lining
      numerals everywhere: the 2017 placard sits level and scores read plainly. */
   body{font-variant-numeric:lining-nums}
+  /* Cormorant is a fine-hairline Garamond: 600 is its readable weight for older eyes, 700 for emphasis.
+     Marcellus comes in one weight, so the small labels get a hairline stroke to thicken them. */
+  b,strong{font-weight:700}
+  .namecard,.tab,.btn,.slot:before,.tombola .lab,.reel-hint,.hello-k,.ph small,.sec-k,.row .n,.row .verdict,.split .lab,.split .you,.clock .cd,.tb-k{-webkit-text-stroke:.35px currentColor;paint-order:stroke fill}
   :focus-visible{outline:3px solid var(--rust);outline-offset:3px}
   .namecard:focus-visible{outline-offset:2px}
   html,body{margin:0}
@@ -152,8 +159,8 @@
     color:var(--ink);
     font-family:var(--body);
     font-size:18px;
+    font-weight:600;
     line-height:1.4;
-    -webkit-font-smoothing:antialiased;
     display:flex;justify-content:center;
     padding:12px 10px 8px;
   }
