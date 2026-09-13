@@ -4,6 +4,13 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v21.4 (13/09/2026): A card the host steps back from and reveals again fetches its answers again, instead
+          of sitting on "One moment."
+  v21.3 (13/09/2026): The date reels hold on 1 January for a beat before they spin, and their words sit
+          centred. Nothing shifts on the answer beat: the polaroid (a square milk window in a cream
+          frame with a deeper foot) is there blank from the sentences beat, and the note and room
+          line hold their space unseen. Pictures fill the square edge to edge; the lightbox shows
+          the whole image.
   v21.2 (13/09/2026): The polaroid's second half is quick: the bloom takes its time to the halfway point,
           then floods the print and settles in under a second.
   v21.1 (13/09/2026): The print develops like a polaroid: an uneven, liquid bloom from the middle, its edge
@@ -447,18 +454,21 @@
   .dp .gap.sm .namecard.sm.right:after,.dp .gap.sm .namecard.sm.truth:after{width:16px;height:16px;right:-7px;top:-7px;background-size:9px 9px}
   .dp .gap.sm .namecard.sm.truth:after{content:none}
   /* A photo is a print: cream border, deeper foot, laid slightly askew. Fades in as it loads; tap to open. */
-  button.photo{-webkit-appearance:none;appearance:none;border:0;cursor:zoom-in;display:block;max-width:86%;margin:14px auto 4px;padding:6px 6px 14px;background:#fbf6ea;
-    box-shadow:0 2px 0 var(--ochre-deep), 0 10px 20px rgba(74,63,47,.2);transform:rotate(-1.5deg);opacity:0;transition:opacity .5s ease}
-  .photo.in{opacity:1}
-  .photo img,.photo video{display:block;max-width:100%;max-height:34vh;width:auto;height:auto;background:#3a3023}
+  /* A polaroid: cream frame, deeper foot, a square milk window that holds the picture. The frame and the
+     blank window are laid out before any image arrives, so nothing moves when it does. */
+  button.photo{-webkit-appearance:none;appearance:none;border:0;cursor:zoom-in;display:block;width:min(300px,84%);margin:14px auto 4px;padding:8px 8px 28px;background:#fbf6ea;
+    box-shadow:0 2px 0 var(--ochre-deep), 0 10px 20px rgba(74,63,47,.2);transform:rotate(-1.5deg);overflow:hidden}
+  .dev{display:block;aspect-ratio:1;background:#e3d9c3;overflow:hidden}
+  .print{display:block;width:100%;height:100%}
+  .photo img,.photo video{display:block;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s ease}
+  .photo.in img,.photo.in video{opacity:1}
   .photo.video:after{content:'';position:absolute;right:12px;bottom:20px;width:0;height:0;border-left:12px solid rgba(251,246,234,.9);border-top:7px solid transparent;border-bottom:7px solid transparent;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
   button.photo{position:relative}
   #lightbox video{max-width:100%;max-height:100%;background:#000;box-shadow:0 20px 50px rgba(0,0,0,.5)}
   #lightbox [hidden]{display:none}
   .lb-close{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;width:48px;height:48px;border:0;border-radius:50%;background:rgba(251,246,234,.92);color:var(--bark);font-size:30px;line-height:1;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.4)}
   .lb-close:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
-  .photo.small{max-width:58%;margin:12px 0 0;transform:rotate(1deg)}
-  .photo.small img{max-height:26vh}
+  .photo.small{width:min(200px,58%);margin:12px 0 0;padding:6px 6px 20px;transform:rotate(1deg)}
   #lightbox{position:fixed;inset:0;z-index:60;background:rgba(30,24,16,.94);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
   #lightbox[hidden]{display:none}
   #lightbox img{max-width:100%;max-height:100%;object-fit:contain;background:#fbf6ea;padding:6px 6px 14px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
@@ -647,6 +657,7 @@
   @keyframes flyin{from{opacity:0;transform:translate(140px,-70px) rotate(14deg) scale(1.2)}55%{opacity:1}to{opacity:1;transform:rotate(-3deg)}}
   /* The date beat: the reels, the placard, then what you said once they land */
   .stage-view.date .tb-reels{margin:6px auto 14px}
+  .stage-view.date .reel .word{text-align:center}
   .stage-view.date .tb-year{display:flex;justify-content:center;margin:0 0 18px}
   .stage-view.date .tb-year .namecard.fixed{margin:0;padding:0 34px;height:38px;font-size:22px}
   .stage-view.date .tb-out{text-align:center}
@@ -667,27 +678,27 @@
   .stage-view.answer .room i{transform-origin:left;animation:grow .9s 1.25s both}
   @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
   @keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-  .stage-view.answer .photo{opacity:1;overflow:hidden;animation:fadeup .5s 1.5s both}
-  .dev,.print{display:block}
-  .stage-view.answer .photo .print{opacity:0}
+  /* On the sentences beat the polaroid is already there, blank; the note and the room line hold their
+     space unseen, so the answer beat changes nothing but what is in them. */
+  .held{visibility:hidden}
+  .stage-view .photo img,.stage-view .photo video{opacity:0}
   /* The print develops like a polaroid: the picture seeps out from the middle through milk as an uneven,
      liquid bloom. Five soft pools grow at different rates and their union is rippled by a turbulence
      filter on the wrapper (the SVG filter below the sheet), which settles flat as the image comes up.
      The tone lifts from washed-out to full at the same time, and a warm glow blooms and thins away. */
-  .stage-view.answer .photo.in .dev{filter:url(#seep)}
-  .stage-view.answer .photo.in .print{
+  .stage-view.answer .photo.in .print{filter:url(#seep)}
+  .stage-view.answer .photo.in .print img,.stage-view.answer .photo.in .print video{
     -webkit-mask-image:radial-gradient(ellipse at 50% 50%,#000 30%,transparent 62%),radial-gradient(ellipse at 36% 62%,#000 28%,transparent 60%),radial-gradient(ellipse at 66% 36%,#000 26%,transparent 60%),radial-gradient(ellipse at 42% 28%,#000 24%,transparent 58%),radial-gradient(ellipse at 62% 72%,#000 26%,transparent 60%);
     mask-image:radial-gradient(ellipse at 50% 50%,#000 30%,transparent 62%),radial-gradient(ellipse at 36% 62%,#000 28%,transparent 60%),radial-gradient(ellipse at 66% 36%,#000 26%,transparent 60%),radial-gradient(ellipse at 42% 28%,#000 24%,transparent 58%),radial-gradient(ellipse at 62% 72%,#000 26%,transparent 60%);
     -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
     -webkit-mask-position:50% 50%,36% 62%,66% 36%,42% 28%,62% 72%;mask-position:50% 50%,36% 62%,66% 36%,42% 28%,62% 72%;
-    animation:seepin 2.6s cubic-bezier(.4,.05,.2,1) 1.8s both}
+    animation:seepin 2.6s cubic-bezier(.4,.05,.2,1) 1.8s both, tone 2.6s ease-out 1.8s both}
   @keyframes seepin{
     0%{opacity:0;-webkit-mask-size:0% 0%,0% 0%,0% 0%,0% 0%,0% 0%;mask-size:0% 0%,0% 0%,0% 0%,0% 0%,0% 0%}
     8%{opacity:1}
     50%{-webkit-mask-size:150% 130%,70% 90%,110% 80%,40% 60%,90% 110%;mask-size:150% 130%,70% 90%,110% 80%,40% 60%,90% 110%}
     72%{-webkit-mask-size:360% 360%,300% 300%,320% 320%,280% 280%,300% 300%;mask-size:360% 360%,300% 300%,320% 320%,280% 280%,300% 300%}
     100%{opacity:1;-webkit-mask-size:420% 420%,360% 360%,380% 380%,340% 340%,360% 360%;mask-size:420% 420%,360% 360%,380% 380%,340% 340%,360% 360%}}
-  .stage-view.answer .photo.in .print img,.stage-view.answer .photo.in .print video{animation:tone 2.6s ease-out 1.8s both}
   @keyframes tone{from{filter:brightness(2.1) contrast(.3) saturate(0)}50%{filter:brightness(1.2) contrast(.8) saturate(.6)}75%{filter:none}to{filter:none}}
   .stage-view.answer .photo.in:before{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
     background:radial-gradient(circle,rgba(255,205,130,.8) 0%,rgba(255,140,80,.4) 38%,transparent 68%);mix-blend-mode:screen;
@@ -715,8 +726,8 @@
     .motes{display:none}
     #ack{transition:none}
     #ack .stage-view,#ack .stage-view *{animation:none!important}
-    #ack .print{opacity:1!important;-webkit-mask-image:none!important;mask-image:none!important}
-    #ack .dev{filter:none!important}
+    #ack .stage-view.answer .photo img,#ack .stage-view.answer .photo video{opacity:1!important;-webkit-mask-image:none!important;mask-image:none!important}
+    #ack .print{filter:none!important}
     .reel.spinning .strip{filter:none}
     ::view-transition-old(panels),::view-transition-new(panels){animation:none}
   }
@@ -1298,9 +1309,12 @@ function onConfig() {
   var keys = revealedKeys();
   if (seenRevealed === null) { seenRevealed = {}; keys.forEach(function (k) { seenRevealed[k] = true; }); loadAnswers(keys, null); }
   else {
+    // A card the host stepped back from is forgotten, so revealing it again fetches its answers again.
+    Object.keys(seenRevealed).forEach(function (k) { if (keys.indexOf(k) < 0) { delete seenRevealed[k]; delete answers[k]; } });
     var fresh = keys.filter(function (k) { return !seenRevealed[k]; });
+    var missing = keys.filter(function (k) { return !answers[k]; });
     keys.forEach(function (k) { seenRevealed[k] = true; });
-    if (fresh.length) loadAnswers(keys, fresh);
+    if (fresh.length || missing.length) loadAnswers(keys, fresh);
     if (!keys.length) { answers = {}; }
   }
   tickClock();
@@ -1323,10 +1337,12 @@ function renderStage() {
     var q = question(k)[side];
     html += '<div class="patch stmt stage-stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + stageSentenceHtml(k, side, answerStep && ready) + '</p></div>';
     html += stageSaidHtml(k, side, answerStep && ready);
-    if (answerStep && ready) {
-      var rc = roomCount(k, side), pc = rc.t ? Math.round(rc.n / rc.t * 100) : 0;
-      html += noteHtml(k, side) + '<p class="room"><i style="width:' + pc + '%"></i><span>' + rc.n + ' of ' + rc.t + ' got it</span></p>' + photoHtml(k, side);
-    }
+    // Everything the answer beat adds is laid out on the sentences beat too, unseen, so nothing shifts.
+    var live = answerStep && ready, rc = live ? roomCount(k, side) : { n: 0, t: 0 }, pc = rc.t ? Math.round(rc.n / rc.t * 100) : 0;
+    var note = noteHtml(k, side);
+    if (note) html += live ? note : note.replace('class="rnote"', 'class="rnote ghost"');
+    html += '<p class="room' + (live ? '' : ' ghost') + '"><i style="width:' + pc + '%"></i><span>' + (live ? rc.n + ' of ' + rc.t + ' got it' : '&nbsp;') + '</span></p>';
+    html += photoHtml(k, side);
     html += '</div>';
   });
   if (answerStep && !ready && !isDate) html += '<p class="waiting">One moment.</p>';
@@ -1383,9 +1399,10 @@ function spinDate(view) {
     var out = view.querySelector('.tb-out'); if (out) { out.hidden = false; out.classList.add('in'); }
     try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {}
   };
+  // An intro beat: the reels sit on 1 January for a moment before they go.
   setTimeout(function () {
     Promise.all([spinReel(dayReel, a.day - 1, 3200, 0, 1), spinReel(monthReel, a.month - 1, 3800, 180, -1)]).then(land);
-  }, REDUCED ? 0 : 500);
+  }, REDUCED ? 0 : 1800);
 }
 /* The stage's two beats. Sentences beat: the gap is blank and "You said" shows your card, plain.
    Answers beat: the true name flies into the gap and a tick or cross stamps onto your card. */
