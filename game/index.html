@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v22.0 (13/09/2026): The date in two beats, like the cards. First beat: the reels sit on 1 January and
+          the phone shows what you said, plain. Second beat: the reels spin and land, then "Spot on"
+          or the days out arrives beneath and your cards take the tick. Nothing shifts between the two.
   v21.9 (13/09/2026): Sound, opt in. A clip still starts silent; a small speaker in the polaroid's foot turns
           its sound on and off (one clip at a time, the others fall silent). The picture itself still
           pauses and resumes on a tap; the play mark moved to the foot's left.
@@ -690,7 +693,7 @@
   .stage-view.date .tb-out .gap.sm[data-side="month"]{width:86px}
   .stage-view.date .tb-out .dist{font-family:var(--display);font-weight:600;font-size:30px;color:var(--rust);margin:14px 0 0}
   .stage-view.date .tb-out .dist.right{color:var(--olive-deep)}
-  .stage-view.date .tb-out.in{animation:fadeup .5s var(--ease-out) both}
+  .stage-view.date .tb-out .dist.in{animation:fadeup .5s var(--ease-out) both}
   .stage-view.answer .said .namecard.mini:after{animation:sticker .45s cubic-bezier(.2,1.4,.4,1) .6s both}
   .stage-view.answer .stage-stmt.dog .said .namecard.mini:after{animation-delay:.9s}
   @keyframes sticker{from{opacity:0;transform:scale(2.6) rotate(-25deg)}to{opacity:1;transform:none}}
@@ -1375,8 +1378,8 @@ function renderStage() {
     if (lastStage) { lastStage = ''; el.classList.remove('show'); refreshPin(); if (revealedKeys().length) showTab('results'); }
     return;
   }
-  var k = st.card, answerStep = st.step === 'answer', ready = isDate ? !!answers.tiebreak : (!answerStep || !!answers[k]);
-  var html = isDate ? dateStageHtml(ready) : '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + 'Card ' + qnum(k) + '</div>';
+  var k = st.card, answerStep = st.step === 'answer', ready = isDate ? (!answerStep || !!answers.tiebreak) : (!answerStep || !!answers[k]);
+  var html = isDate ? dateStageHtml(answerStep, ready) : '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + 'Card ' + qnum(k) + '</div>';
   if (!isDate) ['human', 'dog'].forEach(function (side) {
     var q = question(k)[side];
     html += '<div class="patch stmt stage-stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + stageSentenceHtml(k, side, answerStep && ready) + '</p></div>';
@@ -1393,14 +1396,15 @@ function renderStage() {
   if (answerStep && !ready && !isDate) html += '<p class="waiting">One moment.</p>';
   var view = document.createElement('div');
   view.className = 'stage-view' + (answerStep && !isDate ? ' answer' : '') + (isDate ? ' date' : '');
-  view.dataset.ready = (answerStep && ready) ? '1' : '0';
+  // The date's first beat has nothing to wait for, so it counts as ready: a config tick must not rebuild its reels.
+  view.dataset.ready = ((isDate && !answerStep) || (answerStep && ready)) ? '1' : '0';
   view.innerHTML = html;
   var old = el.querySelector('.stage-view');
   if (key === lastStage) {
     // Same beat, fresh data: swap quietly, and not at all if nothing can have changed.
     if (old && old.dataset.ready === view.dataset.ready && old.dataset.ready === '1') return;
     if (old) old.replaceWith(view); else el.appendChild(view);
-    if (isDate && ready) spinDate(view);
+    if (isDate) { buildDateReels(view); if (answerStep && ready) spinDate(view); }
     if (!isDate && answerStep && ready) startSeep();
     return;
   }
@@ -1417,31 +1421,44 @@ function renderStage() {
   if (!el.classList.contains('show')) { void el.offsetWidth; el.classList.add('show'); refreshPin(); }
   if (answerStep && !isDate) { try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {} }
   el.scrollTop = 0;
-  if (isDate && ready) spinDate(view);
+  if (isDate) { buildDateReels(view); if (answerStep && ready) spinDate(view); }
   if (!isDate && answerStep && ready) startSeep();
 }
-/* The eleventh reveal: the date, on the name generator's reels. They spin, land on the day and the
-   month, and only then does the phone say how far out you were. */
-function dateStageHtml(ready) {
+/* The eleventh reveal: the date, on the name generator's reels, in two beats. First beat: the reels sit
+   on 1 January and "You said" shows your date, plain, with the distance line held blank beneath. Second
+   beat: the reels spin and land, and only then does the phone say how far out you were. */
+function dateStageHtml(answerStep, ready) {
   var h = '<div class="k">The date</div>' +
     '<div class="tombolas tb-reels" role="group" aria-label="The date">' +
     '<div class="tombola"><p class="lab">Day</p><div class="window"><div class="reel-wrap"><div class="reel" id="tbDay"><div class="strip"></div></div></div></div></div>' +
     '<div class="tombola"><p class="lab">Month</p><div class="window"><div class="reel-wrap"><div class="reel" id="tbMonth"><div class="strip"></div></div></div></div></div></div>' +
     '<div class="tb-year"><span class="namecard sm fixed">' + TB_YEAR + '</span></div>';
-  if (!ready) return h + '<p class="waiting">One moment.</p>';
-  var tb = me && me.tiebreak, d = tbDistance(me);
-  h += '<div class="tb-out" hidden>';
-  if (tb) h += '<p class="k2">You said</p>' + dateCards(tb.day, tb.month, d === 0 ? 'right' : '') + '<p class="dist' + (d === 0 ? ' right' : '') + '">' + (d === 0 ? 'Spot on' : d + ' day' + (d === 1 ? '' : 's') + ' out') + '</p>';
+  if (answerStep && !ready) return h + '<p class="waiting">One moment.</p>';
+  var tb = me && me.tiebreak;
+  h += '<div class="tb-out">';
+  if (tb) h += '<p class="k2">You said</p>' + dateCards(tb.day, tb.month, '') + '<p class="dist held">&nbsp;</p>';
   h += '</div>';
   return h;
 }
-function spinDate(view) {
-  var a = answers.tiebreak; if (!a || !view.querySelector('#tbDay')) return;
+/* The reels, built at rest on 1 January. Both beats show them; only the second spins them. */
+function buildDateReels(view) {
+  if (!view.querySelector('#tbDay')) return null;
   var days = []; for (var i = 1; i <= 31; i++) days.push(String(i));
   var months = MONTHS.map(function (m) { return m.slice(0, 3).toUpperCase(); });
-  var dayReel = buildReel('tbDay', days), monthReel = buildReel('tbMonth', months);
+  view.__reels = { day: buildReel('tbDay', days), month: buildReel('tbMonth', months) };
+  return view.__reels;
+}
+function spinDate(view) {
+  var a = answers.tiebreak; if (!a || !view.querySelector('#tbDay')) return;
+  var r = view.__reels || buildDateReels(view), dayReel = r.day, monthReel = r.month;
+  var d = tbDistance(me);
   var land = function () {
-    var out = view.querySelector('.tb-out'); if (out) { out.hidden = false; out.classList.add('in'); }
+    var out = view.querySelector('.tb-out'), dist = out && out.querySelector('.dist');
+    if (dist && d !== null) {
+      dist.textContent = d === 0 ? 'Spot on' : d + ' day' + (d === 1 ? '' : 's') + ' out';
+      dist.classList.toggle('right', d === 0); dist.classList.remove('held'); dist.classList.add('in');
+      if (d === 0) out.querySelectorAll('.namecard.sm:not(.fixed)').forEach(function (c) { c.classList.add('right'); });
+    }
     try { if (navigator.vibrate) navigator.vibrate([70, 50, 70]); } catch (e) {}
   };
   // An intro beat: the reels sit on 1 January for a moment before they go.
