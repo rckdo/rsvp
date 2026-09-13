@@ -4,6 +4,7 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v1.4 (13/09/2026): Follows the host page's motif re-pairings and icon swaps from config.
   v1.3 (12/09/2026): Quieter card. Watermark gone, the number stands alone on clean paper, and one
           level row beneath it: icon, block on its patch, icon. QR at the foot.
   v1.2 (12/09/2026): The number is the hero: huge in the card's colour, the block and icons beneath,
@@ -152,9 +153,14 @@ function boot() {
   firebase.initializeApp(FIREBASE_CONFIG); db = firebase.database();
   Promise.all([
     fetch('/game/content.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
-    firebase.auth().signInAnonymously().then(function () { return db.ref(ROOT + '/codes').once('value'); }).then(function (s) { return s.val(); }).catch(function () { return null; })
+    firebase.auth().signInAnonymously().then(function () { return db.ref(ROOT + '/codes').once('value'); }).then(function (s) { return s.val(); }).catch(function () { return null; }),
+    db.ref(ROOT + '/config').once('value').then(function (s) { return s.val() || {}; }).catch(function () { return {}; })
   ]).then(function (r) {
     content = r[0]; codes = r[1];
+    // The host page's re-pairings and icon swaps apply here too.
+    var cfg = r[2];
+    PAIRS.forEach(function (p, i) { var m = cfg.motifs && cfg.motifs['q' + (i + 1)]; if (m) { if (HST[m.shape] || m.shape === 'nine' || m.shape === 'hourglass') p[0] = m.shape; if (COLOURS[m.colour]) p[1] = m.colour; } });
+    content.questions.forEach(function (q, i) { var ic = cfg.icons && cfg.icons['q' + (i + 1)]; if (ic) ['human', 'dog'].forEach(function (s) { if (ic[s]) q[s].icon = ic[s]; }); });
     if (!codes) { try { codes = JSON.parse(localStorage.getItem('rl-game-codes') || 'null'); } catch (e) {} }
     if (!codes) { $('state').textContent = ''; $('err').textContent = 'No codes on this phone. Open the host page, paste the seed and write it, then come back.'; return; }
     return loadIcons().then(drawAll);
