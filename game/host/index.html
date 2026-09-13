@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v18.4 (13/09/2026): Motifs panel on Setup: re-pair any card's block and colour, duplicates flagged. An icon
+          picker on every statement, from the vendored Lucide set. Both saved to config, so the
+          phones, the feed and the card sheet follow at once. Reset keeps them.
   v18.3 (13/09/2026): Clips from the media map play in the feed and presenter with controls.
   v18.2 (13/09/2026): Photos come from content.json's media map, same as the phones.
   v18.1 (13/09/2026): Feed and presenter lead with "14 of 22 got it" per statement, the other name and
@@ -186,7 +189,21 @@
   textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:8px;background:#fff;width:100%;resize:vertical;margin-bottom:var(--s1)}
   .row2{display:grid;grid-template-columns:1fr auto;gap:var(--s1)}
   .panel.wide{grid-column:1 / -1}
-  .stm{display:grid;grid-template-columns:22px 28px 1fr auto;gap:var(--s1);align-items:start;padding:var(--s1) 0;border-top:1px solid var(--line)}
+  .stm{display:grid;grid-template-columns:22px 28px 38px 1fr auto;gap:var(--s1);align-items:start;padding:var(--s1) 0;border-top:1px solid var(--line)}
+  .stm .ico{width:38px;height:38px;margin-top:4px;padding:0;border-radius:8px;border:1.5px solid var(--line-strong);background:#fff;cursor:pointer;display:grid;place-items:center}
+  .stm .ico img,.ipick img{width:22px;height:22px;display:block}
+  .ipick{display:flex;flex-wrap:wrap;gap:4px;padding:4px 0 10px 58px}
+  .ipick[hidden]{display:none}
+  .ipick button{width:38px;height:38px;padding:0;border-radius:8px;border:1.5px solid var(--line);background:#fff;cursor:pointer;display:grid;place-items:center}
+  .ipick button.on{border-color:var(--forest);background:var(--paper)}
+  .mot{display:grid;grid-template-columns:22px 28px 1fr;gap:var(--s1);align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+  .mot .num{font-size:12px;color:var(--sage);text-align:right;font-variant-numeric:tabular-nums}
+  .mot .opts{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+  .mot .opts i{width:12px}
+  .mot .opts button{width:36px;height:36px;padding:4px;border-radius:6px;border:1.5px solid transparent;background:transparent;cursor:pointer}
+  .mot .opts button.on{border-color:var(--forest);background:#fff}
+  .mot .opts button .qb{width:100%;height:100%}
+  .mot .dup{grid-column:2 / -1;font-size:12px;color:var(--rust)}
   .stm:first-child{border-top:0}
   .stm .num{font-size:12px;color:var(--sage);padding-top:10px;font-variant-numeric:tabular-nums}
   .stm .qb{margin-top:8px}
@@ -194,7 +211,7 @@
   .stm .ans{display:flex;flex-direction:column;gap:4px}
   .stm .ans button{font-family:inherit;font-size:12px;font-weight:700;min-height:28px;padding:2px 10px;border-radius:6px;border:1.5px solid var(--line-strong);background:#fff;color:var(--sage);cursor:pointer}
   .stm .ans button.on{background:var(--olive);border-color:var(--olive);color:#fff}
-  @media (max-width:720px){ .stm{grid-template-columns:22px 1fr auto} .stm .num{display:none} }
+  @media (max-width:720px){ .stm{grid-template-columns:28px 38px 1fr auto} .stm .num{display:none} .ipick{padding-left:0} }
   .clues{display:grid;gap:var(--s1)}
   .clue{display:grid;grid-template-columns:22px 22px 1fr;gap:var(--s1);align-items:center}
   .clue .num{font-size:12px;color:var(--sage);text-align:right;font-variant-numeric:tabular-nums}
@@ -322,6 +339,11 @@
           <p class="state">Shown on the phones in place of "Not found yet" for that card. Saves as you type.</p>
           <div class="clues" id="clues"></div>
         </section>
+        <section class="panel wide">
+          <h2>Motifs</h2>
+          <p class="state">Each card's quilt block and colour. Tap a shape, then a colour. Saves at once; the phones, the feed and the card sheet all follow.</p>
+          <div id="motifs"></div>
+        </section>
         <section class="panel danger" id="resetSection">
           <h2>Reset</h2>
           <p class="state">Wipes every player and the clock, release and reveal state. Codes and answers stay. Type RESET to arm.</p>
@@ -337,7 +359,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script>
 /* Each code's quilt block and colour, matching the guest page. */
-var CODE_STYLE = (function () {
+var CODE_STYLE = [];
+var MOTIF = (function () {
   var CREAM = '#efe6d3';
   function hst(dir, a) {
     switch (dir) {
@@ -357,11 +380,18 @@ var CODE_STYLE = (function () {
   var C = { rust: '#a34a2c', olive: '#7a7c47', gold: '#c99a3f', terracotta: '#bf6a43', bark: '#4a3f2f' };
   var PAIRS = [['geese', 'rust'], ['pinwheel', 'olive'], ['dishes', 'gold'], ['nine', 'terracotta'], ['hourglass', 'bark'],
                ['pinwheel', 'rust'], ['dishes', 'olive'], ['geese', 'gold'], ['hourglass', 'terracotta'], ['nine', 'bark']];
-  return PAIRS.map(function (p) {
-    var sh = SHAPES[p[0]](C[p[1]]);
+  function html(shape, colour) {
+    var sh = SHAPES[shape](C[colour]);
     return '<span class="qb" style="grid-template-columns:repeat(' + sh[0] + ',1fr);grid-template-rows:repeat(' + sh[0] + ',1fr)">' + sh[1].map(function (bg) { return '<span class="cell" style="background:' + bg + '"></span>'; }).join('') + '</span>';
-  });
+  }
+  // Rebuilds CODE_STYLE from the defaults plus any host re-pairing in config.motifs.
+  function pairOf(map, i) { var p = PAIRS[i], m = map && map['q' + (i + 1)]; return [m && SHAPES[m.shape] ? m.shape : p[0], m && C[m.colour] ? m.colour : p[1]]; }
+  function build(map) { CODE_STYLE.length = 0; PAIRS.forEach(function (p, i) { var pr = pairOf(map, i); CODE_STYLE.push(html(pr[0], pr[1])); }); }
+  build();
+  return { build: build, html: html, pairOf: pairOf, shapes: Object.keys(SHAPES), colours: Object.keys(C) };
 })();
+/* The vendored Lucide icons in /game/icons, for the picker. */
+var ICONS = ['bed', 'biceps-flexed', 'binoculars', 'bird', 'bone', 'brush', 'chess-king', 'chess-knight', 'clipboard-check', 'cog', 'crown', 'cup-soda', 'dog', 'dumbbell', 'feather', 'flask-conical', 'footprints', 'glasses', 'guitar', 'hourglass-cog', 'medal', 'megaphone', 'milk', 'music-4', 'paw-print', 'plane', 'recycle', 'scale', 'sigma', 'spade', 'sparkles', 'stethoscope', 'table', 'tag', 'timer', 'toothbrush-sparkles', 'toothbrush', 'trophy', 'tv', 'volume-2', 'wand-sparkles', 'wand', 'weight'];
 
 /* Private host notes: the anecdote cue for each statement. Never in Firebase. */
 var HOST_NOTES = {
@@ -537,7 +567,7 @@ $('bSeed').addEventListener('click', function () {
 $('resetInput').addEventListener('input', function () { $('bReset').disabled = $('resetInput').value.trim() !== 'RESET'; });
 $('bReset').addEventListener('click', function () {
   if (!confirm('Wipe every player and all settings? This cannot be undone.')) return;
-  cfg().set({ epoch: Date.now(), clues: config.clues || null, statements: config.statements || null }).then(function () { return db.ref(ROOT + '/players').remove(); }).then(function () { $('resetInput').value = ''; $('bReset').disabled = true; }).catch(fail);
+  cfg().set({ epoch: Date.now(), clues: config.clues || null, statements: config.statements || null, icons: config.icons || null, motifs: config.motifs || null }).then(function () { return db.ref(ROOT + '/players').remove(); }).then(function () { $('resetInput').value = ''; $('bReset').disabled = true; }).catch(fail);
 });
 
 /* ---- Rendering ---- */
@@ -547,7 +577,28 @@ function phase() {
   var revealing = revealedKeys().length > 0 || !!(config.stage && config.stage.card);
   return revealing ? 'revealing' : (lockedNow ? 'closed' : 'open');
 }
-function renderAll() { renderClock(); renderRelease(); renderReveal(); renderBoard(); renderPresent(); renderClues(); renderStatements(); }
+function renderAll() { MOTIF.build(config.motifs); renderClock(); renderRelease(); renderReveal(); renderBoard(); renderPresent(); renderClues(); renderStatements(); renderMotifs(); }
+/* Motifs: re-pair any card's block and colour. A pair used twice is flagged, not forbidden. */
+var motifsBuilt = false;
+function renderMotifs() {
+  var box = $('motifs'); if (!box) return;
+  if (!motifsBuilt) {
+    motifsBuilt = true;
+    box.addEventListener('click', function (ev) {
+      var b = ev.target.closest('button[data-shape],button[data-colour]'); if (!b) return;
+      var up = {}; up['motifs/' + b.dataset.k + '/' + (b.dataset.shape ? 'shape' : 'colour')] = b.dataset.shape || b.dataset.colour;
+      cfg().update(up).catch(fail);
+    });
+  }
+  var pairs = keys.map(function (k, i) { return MOTIF.pairOf(config.motifs, i); });
+  box.innerHTML = keys.map(function (k, i) {
+    var pr = pairs[i], dup = pairs.map(function (p, j) { return j !== i && p[0] === pr[0] && p[1] === pr[1] ? j + 1 : 0; }).filter(Boolean);
+    return '<div class="mot"><span class="num">' + (i + 1) + '</span>' + CODE_STYLE[i] +
+      '<div class="opts">' + MOTIF.shapes.map(function (s) { return '<button type="button" class="' + (s === pr[0] ? 'on' : '') + '" data-k="' + k + '" data-shape="' + s + '" title="' + s + '">' + MOTIF.html(s, pr[1]) + '</button>'; }).join('') +
+      '<i></i>' + MOTIF.colours.map(function (c) { return '<button type="button" class="sw ' + (c === pr[1] ? 'on' : '') + '" data-k="' + k + '" data-colour="' + c + '" title="' + c + '">' + MOTIF.html(pr[0], c) + '</button>'; }).join('') + '</div>' +
+      (dup.length ? '<span class="dup">same as card ' + dup.join(', ') + '</span>' : '') + '</div>';
+  }).join('');
+}
 /* Statements: wording overrides live in config.statements, answers in /game/answers. */
 var stmtsBuilt = false;
 function stmtText(k, side) {
@@ -561,11 +612,23 @@ function renderStatements() {
     box.innerHTML = keys.map(function (k, i) {
       return ['human', 'dog'].map(function (side) {
         var opts = side === 'human' ? ['R', 'L'] : ['E', 'T'];
-        return '<div class="stm"><span class="num">' + (i + 1) + (side === 'human' ? 'a' : 'b') + '</span>' + CODE_STYLE[i] +
+        return '<div class="stm"><span class="num">' + (i + 1) + (side === 'human' ? 'a' : 'b') + '</span><span class="mblock" data-i="' + i + '">' + CODE_STYLE[i] + '</span>' +
+          '<button type="button" class="ico" data-k="' + k + '" data-side="' + side + '" title="Change the icon"><img alt=""></button>' +
           '<textarea data-k="' + k + '" data-side="' + side + '" rows="2" autocomplete="off"></textarea>' +
-          '<div class="ans">' + opts.map(function (o) { return '<button type="button" data-k="' + k + '" data-side="' + side + '" data-ans="' + o + '">' + NAMES[o] + '</button>'; }).join('') + '</div></div>';
+          '<div class="ans">' + opts.map(function (o) { return '<button type="button" data-k="' + k + '" data-side="' + side + '" data-ans="' + o + '">' + NAMES[o] + '</button>'; }).join('') + '</div></div>' +
+          '<div class="ipick" data-k="' + k + '" data-side="' + side + '" hidden>' + ICONS.map(function (ic) { return '<button type="button" data-icon="' + ic + '.svg" title="' + ic + '"><img src="../icons/' + ic + '.svg" alt="' + ic + '"></button>'; }).join('') + '</div>';
       }).join('');
     }).join('');
+    box.addEventListener('click', function (ev) {
+      var ico = ev.target.closest('button.ico');
+      if (ico) { var pk = box.querySelector('.ipick[data-k="' + ico.dataset.k + '"][data-side="' + ico.dataset.side + '"]'); pk.hidden = !pk.hidden; return; }
+      var pick = ev.target.closest('.ipick button[data-icon]');
+      if (pick) {
+        var pk2 = pick.closest('.ipick'), base = content.questions[parseInt(pk2.dataset.k.slice(1), 10) - 1][pk2.dataset.side].icon;
+        var up = {}; up['icons/' + pk2.dataset.k + '/' + pk2.dataset.side] = pick.dataset.icon === base ? null : pick.dataset.icon;
+        cfg().update(up).catch(fail); pk2.hidden = true;
+      }
+    });
     box.addEventListener('change', function (ev) {
       var ta = ev.target.closest('textarea[data-k]'); if (!ta) return;
       var text = ta.value.trim().replace(/_{2,}/g, '{name}');
@@ -581,6 +644,16 @@ function renderStatements() {
   }
   box.querySelectorAll('textarea[data-k]').forEach(function (ta) { if (document.activeElement !== ta) ta.value = stmtText(ta.dataset.k, ta.dataset.side); });
   box.querySelectorAll('button[data-ans]').forEach(function (b) { var a = answers[b.dataset.k]; b.classList.toggle('on', !!a && a[b.dataset.side] === b.dataset.ans); });
+  box.querySelectorAll('.mblock').forEach(function (m) { m.innerHTML = CODE_STYLE[+m.dataset.i]; });
+  box.querySelectorAll('button.ico').forEach(function (b) {
+    var cur = iconOf(b.dataset.k, b.dataset.side); b.querySelector('img').src = '../icons/' + cur;
+    var pk = box.querySelector('.ipick[data-k="' + b.dataset.k + '"][data-side="' + b.dataset.side + '"]');
+    pk.querySelectorAll('button[data-icon]').forEach(function (x) { x.classList.toggle('on', x.dataset.icon === cur); });
+  });
+}
+function iconOf(k, side) {
+  var o = config.icons && config.icons[k] && config.icons[k][side];
+  return o || content.questions[parseInt(k.slice(1), 10) - 1][side].icon;
 }
 var cluesBuilt = false;
 function renderClues() {

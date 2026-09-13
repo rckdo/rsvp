@@ -65,7 +65,13 @@ closes, so the reveal never waits on a download. A photo shows on the reveal tak
 and on My answers afterwards; tap for full screen. The file names are public (Pages
 serves everything), which only matters if a guest goes looking before the reveal.
 
-## Editing statements or icons
+## Editing statements, icons or motifs
 
-Edit `content.json`. Icons are Lucide static SVGs by filename under `iconBase`, or a
-full URL. Answers are not in this file: change `/game/answers` in Firebase to match.
+Day to day, use the host page's Setup tab: reword a statement, pick its icon, set the
+answer, re-pair a card's quilt block and colour. Those live in `/game/config`
+(`statements`, `icons`, `motifs`) and apply to the phones, the feed and the card sheet
+at once, and survive a reset.
+
+`content.json` is the base underneath. Icons are Lucide static SVGs by filename under
+`iconBase` (the vendored set is in `icons/`; add more from lucide.dev/icons as files
+there and to the host page's `ICONS` list). Answers are not in this file.
