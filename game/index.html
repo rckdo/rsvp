@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v22.3 (13/09/2026): On My answers a card no longer lifts the moment a finger lands on it. The lift waits for
+          a sideways move or the release, so a scroll that starts on a card shows nothing.
   v22.2 (13/09/2026): Scrolling My answers no longer picks a card by accident: a vertical swipe that starts on a
           name card scrolls the page instead of dragging the card. Taps and sideways drags still place.
   v22.1 (13/09/2026): The line that carries the name slot no longer sits further from the next line than the
@@ -1576,33 +1578,41 @@ function overGap(gap, x, y) {
   var g = gap.getBoundingClientRect(), pad = 28;
   return x > g.left - pad && x < g.right + pad && y > g.top - pad && y < g.bottom + pad;
 }
+/* The lift: the card fades on the table and a ghost of it rides under the finger. In the takeover it lifts at
+   once. On My answers a landing finger is usually starting a scroll, so the lift waits for a sideways move
+   or the release, and a scroll never shows it. */
+function lift(d) {
+  if (d.ghost) return;
+  var ghost = d.card.cloneNode(true);
+  ghost.className = 'namecard dragcard';
+  ghost.style.cssText = (d.host && d.host.getAttribute('style') ? d.host.getAttribute('style') + ';' : '') + 'left:' + d.rect.left + 'px;top:' + d.rect.top + 'px;width:' + d.rect.width + 'px;height:' + d.rect.height + 'px';
+  document.body.appendChild(ghost);
+  d.ghost = ghost; d.card.classList.add('dragging');
+}
 document.addEventListener('pointerdown', function (ev) {
   var card = ev.target.closest('.deck .namecard');
   if (!card || locked || drag) return;
   ev.preventDefault();
   var r = card.getBoundingClientRect();
-  var ghost = card.cloneNode(true);
-  ghost.className = 'namecard dragcard';
   var host = card.closest('.dp') || card.closest('.patch, .row');
-  ghost.style.cssText = (host && host.getAttribute('style') ? host.getAttribute('style') + ';' : '') + 'left:' + r.left + 'px;top:' + r.top + 'px;width:' + r.width + 'px;height:' + r.height + 'px';
-  document.body.appendChild(ghost);
   var gap = host ? host.querySelector('.gap[data-side="' + card.dataset.side + '"]') : null;
-  drag = { card: card, ghost: ghost, gap: gap, host: host, x0: ev.clientX, y0: ev.clientY, moved: false, id: ev.pointerId, rect: r };
+  drag = { card: card, ghost: null, gap: gap, host: host, x0: ev.clientX, y0: ev.clientY, moved: false, id: ev.pointerId, rect: r, lazy: !!card.closest('#p-mine') };
   window.__busy = true;
-  card.classList.add('dragging');
+  if (!drag.lazy) lift(drag);
   try { card.setPointerCapture(ev.pointerId); } catch (e) {}
 });
 document.addEventListener('pointermove', function (ev) {
   if (!drag || ev.pointerId !== drag.id) return;
   var dx = ev.clientX - drag.x0, dy = ev.clientY - drag.y0;
-  if (Math.hypot(dx, dy) > 6) drag.moved = true;
-  drag.ghost.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(-4deg)';
+  if (Math.hypot(dx, dy) > 6) { drag.moved = true; lift(drag); }
+  if (drag.ghost) drag.ghost.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(-4deg)';
   if (drag.gap) drag.gap.classList.toggle('hot', overGap(drag.gap, ev.clientX, ev.clientY));
 });
 function endDrag(place) {
   var d = drag; drag = null; window.__busy = false;
   if (d.gap) d.gap.classList.remove('hot');
   var ok = place && d.gap && document.contains(d.gap);
+  if (!d.ghost) { if (!ok) return; lift(d); }
   d.ghost.style.transition = 'transform .2s cubic-bezier(.22,1,.36,1), opacity .2s ease';
   if (ok) {
     var g = d.gap.getBoundingClientRect();
