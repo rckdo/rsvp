@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v21.5 (13/09/2026): The room line's track stays on screen from the sentences beat; only the fill and the
+          count arrive with the answer. The note is held blank until then.
   v21.4 (13/09/2026): A card the host steps back from and reveals again fetches its answers again, instead
           of sitting on "One moment."
   v21.3 (13/09/2026): The date reels hold on 1 January for a beat before they spin, and their words sit
@@ -674,7 +676,7 @@
   @keyframes sticker{from{opacity:0;transform:scale(2.6) rotate(-25deg)}to{opacity:1;transform:none}}
   .rnote{font-size:18px;line-height:1.45;color:var(--bark);margin:10px 0 0}
   .stage-view.answer .rnote{animation:fadeup .45s .95s both}
-  .stage-view.answer .room{animation:fadeup .45s 1.05s both}
+  .stage-view.answer .room span{animation:fadeup .45s 1.05s both}
   .stage-view.answer .room i{transform-origin:left;animation:grow .9s 1.25s both}
   @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
   @keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
@@ -1340,8 +1342,9 @@ function renderStage() {
     // Everything the answer beat adds is laid out on the sentences beat too, unseen, so nothing shifts.
     var live = answerStep && ready, rc = live ? roomCount(k, side) : { n: 0, t: 0 }, pc = rc.t ? Math.round(rc.n / rc.t * 100) : 0;
     var note = noteHtml(k, side);
-    if (note) html += live ? note : note.replace('class="rnote"', 'class="rnote ghost"');
-    html += '<p class="room' + (live ? '' : ' ghost') + '"><i style="width:' + pc + '%"></i><span>' + (live ? rc.n + ' of ' + rc.t + ' got it' : '&nbsp;') + '</span></p>';
+    if (note) html += live ? note : note.replace('class="rnote"', 'class="rnote held"');
+    // The room line's track is there from the sentences beat; only the fill and the count arrive with the answer.
+    html += '<p class="room"><i style="width:' + pc + '%"></i><span>' + (live ? rc.n + ' of ' + rc.t + ' got it' : '&nbsp;') + '</span></p>';
     html += photoHtml(k, side);
     html += '</div>';
   });
