@@ -4,6 +4,10 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v1.5 (13/09/2026): Two print buttons. "One card per page" is the 4 x 6 photo-paper run as before.
+          "All on one A4 sheet" lays the ten small on a single landscape A4 (five across, two
+          down, each about 53 x 80 mm with a hairline cut guide) for an ordinary printer. The page
+          size is set at print time, since @page cannot be switched by a class.
   v1.4 (13/09/2026): Follows the host page's motif re-pairings and icon swaps from config.
   v1.3 (12/09/2026): Quieter card. Watermark gone, the number stands alone on clean paper, and one
           level row beneath it: icon, block on its patch, icon. QR at the foot.
@@ -61,11 +65,15 @@
   @media print{
     body{background:#fff}
     .wrap{max-width:none;padding:0}
-    header,.btns,.state,.cardbox .row,#splash{display:none!important}
+    header,.btns,.state,.err,.cardbox .row,#splash{display:none!important}
     .grid{display:block}
     .cardbox{border:0;padding:0;margin:0;background:none;page-break-after:always;break-after:page}
     .cardbox canvas{width:4in;height:6in;box-shadow:none}
-    @page{size:4in 6in;margin:0}
+    .cardbox:last-child{page-break-after:auto;break-after:auto}
+    /* All ten on one landscape A4: five across, two down, a hairline round each for cutting. */
+    body.a4 .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4mm;align-content:start}
+    body.a4 .cardbox{break-after:auto;page-break-after:auto;border:.2mm solid #c6cdbe;padding:0;line-height:0}
+    body.a4 .cardbox canvas{width:100%;height:auto}
   }
 </style>
 </head>
@@ -88,7 +96,7 @@
     <a href="/game/host/">Host page</a>
   </header>
   <p class="state" id="state">Loading.</p>
-  <div class="btns"><button id="bPrint">Print all (one card per page)</button><button class="ghost" id="bRedraw">Redraw</button></div>
+  <div class="btns"><button id="bPrint">Print: one card per page (4 × 6)</button><button id="bPrintA4">Print: all on one A4 sheet</button><button class="ghost" id="bRedraw">Redraw</button></div>
   <div class="err" id="err"></div>
   <div class="grid" id="grid"></div>
 </div>
@@ -251,10 +259,23 @@ function drawAll() {
         });
       });
     })(n);
-    chain.then(function () { $('state').textContent = 'Save each card as a PNG for a photo printer (4 × 6 in), or print this page. The URL is inside the QR only.'; });
+    chain.then(function () { $('state').textContent = 'Save each card as a PNG for a photo printer (4 × 6 in), print one card per page, or print all ten small on one A4 sheet to cut out. The URL is inside the QR only.'; });
   });
 }
-$('bPrint').addEventListener('click', function () { window.print(); });
+/* The page size is chosen at print time: @page cannot be switched by a class, so a one-off style is added
+   for the run and taken away after. */
+function printAs(mode) {
+  var old = $('pageStyle'); if (old) old.remove();
+  var s = document.createElement('style'); s.id = 'pageStyle';
+  s.textContent = mode === 'a4' ? '@page{size:A4 landscape;margin:8mm}' : '@page{size:4in 6in;margin:0}';
+  document.head.appendChild(s);
+  document.body.classList.toggle('a4', mode === 'a4');
+  var done = function () { window.removeEventListener('afterprint', done); document.body.classList.remove('a4'); };
+  window.addEventListener('afterprint', done);
+  window.print();
+}
+$('bPrint').addEventListener('click', function () { printAs('single'); });
+$('bPrintA4').addEventListener('click', function () { printAs('a4'); });
 $('bRedraw').addEventListener('click', function () { if (codes) drawAll(); });
 </script>
 </body>
