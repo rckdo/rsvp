@@ -4,6 +4,11 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v19.0 (13/09/2026): One grammar for the reveal. After a card is revealed its gap holds the true name and
+          the sticker says how you did: tick, cross, or a blank for no answer; only a wrong answer
+          adds "You said" with your card struck through. Revealed cards show in full whether found
+          or not. Results is rank, score and leaderboard; the Answers block is gone. The tie-breaker
+          reveal shows the true date and what you said as the picker's own cards, with the distance.
   v18.2 (13/09/2026): The closed state is a sign: a bark plank screwed on askew reading HUNT CLOSED in
           pressed gold, hung where the countdown was and on a scan after the close.
   v18.1 (13/09/2026): My answers lists the unfound cards first as one batch, then the answered cards.
@@ -390,23 +395,33 @@
   @keyframes pin{from{transform:scale(0);opacity:0}}
   .namecard.sm.pinned:before{width:7px;height:7px;left:50%;margin-left:-3.5px;top:-3px}
   @keyframes drop{from{transform:rotate(-3deg) scale(1.2);opacity:.5}to{transform:rotate(-3deg) scale(1);opacity:1}}
-  .namecard.right{background:#edf0de;border-color:var(--olive);color:var(--olive-deep)}
-  .namecard.wrong{background:#f6e2da;border-color:var(--rust);color:var(--rust)}
-  .namecard.right:after,.namecard.wrong:after{content:'';position:absolute;right:-9px;top:-9px;width:20px;height:20px;border-radius:50%;
+  /* After the reveal the card in the gap is the true name; only the sticker changes. */
+  .namecard.blank:after{background-color:var(--cream);box-shadow:inset 0 0 0 2px var(--mutedbrown), 0 1px 3px rgba(74,63,47,.25)}
+  .namecard.right:after,.namecard.wrong:after,.namecard.blank:after{content:'';position:absolute;right:-9px;top:-9px;width:20px;height:20px;border-radius:50%;
     box-shadow:0 1px 3px rgba(74,63,47,.35);background-size:11px 11px;background-position:center;background-repeat:no-repeat}
   .namecard.mini{width:84px;height:30px;font-size:11px;letter-spacing:.12em;vertical-align:middle;margin-left:8px;transform:rotate(-2deg)}
   .namecard.mini:after{width:16px;height:16px;right:-7px;top:-7px;background-size:9px 9px}
-  .said{font-style:italic;font-size:18px;color:var(--mutedbrown);margin:8px 0 2px}
-  .namecard.mini.truth{background:#edf0de;color:var(--olive-deep);border-color:var(--olive);box-shadow:0 2px 0 var(--olive-deep);margin-left:6px;transform:rotate(-2deg)}
-  .itwas{font-style:italic;font-size:18px;color:var(--mutedbrown);margin:12px 0 0;display:flex;align-items:center}
+  .said{font-style:italic;font-size:18px;color:var(--mutedbrown);margin:10px 0 0;display:flex;align-items:center}
+  .namecard.mini.struck{color:var(--mutedbrown);text-decoration:line-through;text-decoration-color:var(--rust);text-decoration-thickness:2px;box-shadow:0 2px 0 var(--ochre-deep)}
+  /* The tie-breaker result: the true date as cards, then yours */
+  .tbres{margin-top:14px}
+  .tbres .k{font-family:var(--label);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--mutedbrown);margin:12px 0 8px}
+  .tbres .dp{margin:0}
+  .tbres .date-row{margin:0}
+  .rank-card .tbres .date-row{justify-content:center}
+  .tbres .gap.sm[data-side="day"]{width:54px}
+  .tbres .gap.sm[data-side="month"]{width:86px}
+  .tbres .dist{font-style:italic;font-size:19px;color:var(--rust);margin:10px 0 0}
+  .tbres .dist.right{color:var(--olive-deep)}
+  .tbres .dist.blank{color:var(--mutedbrown);margin-top:0}
+  .dp .gap.sm .namecard.sm.right:after,.dp .gap.sm .namecard.sm.truth:after{width:16px;height:16px;right:-7px;top:-7px;background-size:9px 9px}
+  .dp .gap.sm .namecard.sm.truth:after{content:none}
   .photo{display:block;max-width:100%;height:auto;margin:12px auto 6px;padding:6px 6px 14px;background:#fbf6ea;
     box-shadow:0 2px 0 var(--ochre-deep), 0 10px 20px rgba(74,63,47,.2);transform:rotate(-1.5deg)}
   .split .photo{max-width:82%}
   .ackp .photo{max-height:30vh;width:auto;max-width:86%;margin:12px auto 0;transform:rotate(1.5deg)}
   .namecard.right:after{background-color:var(--olive);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5l2.6 2.6L10 3.5' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
   .namecard.wrong:after{background-color:var(--rust);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 3l6 6M9 3l-6 6' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E")}
-  .gap.missed{border-style:solid;border-color:var(--mutedbrown);opacity:.5}
-  .gap.missed .namecard{background:var(--cream);color:var(--mutedbrown);box-shadow:none;border-color:var(--mutedbrown);transform:none;left:-1px;top:-1px}
   .gap.filled.missed{opacity:.75}
   .mark{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:5px;background-size:8px 8px;background-position:center;background-repeat:no-repeat}
   .mark.right{background-color:var(--olive);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5l2.6 2.6L10 3.5' fill='none' stroke='%23efe6d3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
@@ -1128,11 +1143,7 @@ function renderStage() {
   ['human', 'dog'].forEach(function (side) {
     var q = question(k)[side], mine = pick(k, side);
     html += '<div class="patch stmt stage-stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + sentenceHtml(k, side) + '</p></div>';
-    if (answerStep && ready) {
-      var truth = answers[k][side];
-      if (mine !== truth) html += '<p class="itwas">It was<span class="namecard mini truth">' + NAMES[truth] + '</span></p>';
-      html += photoHtml(k, side);
-    }
+    if (answerStep && ready) html += saidHtml(k, side) + photoHtml(k, side);
     html += '</div>';
   });
   if (answerStep && !ready) html += '<p class="waiting">One moment.</p>';
@@ -1313,19 +1324,29 @@ function placeDate(dp, side, val) {
 function renderAll() { if (!content || !$('app') || $('app').hidden) return; setTabUI(); renderMine(); renderResults(); renderSheet(); }
 
 var justPlaced = null, justBack = null, pending = {};
+/* Before the reveal the gap holds what you placed. After it, the gap always holds the true name, and
+   the sticker on it says how you did: tick, cross, or a blank for no answer. */
+function verdict(k, side) {
+  if (!(config.revealed && config.revealed[k] && answers[k])) return null;
+  var cur = pick(k, side), truth = answers[k][side];
+  return !cur ? 'blank' : (cur === truth ? 'right' : 'wrong');
+}
 function gapHtml(k, side) {
-  var cur = pick(k, side), cls = 'gap', v = '';
-  var revealed = config.revealed && config.revealed[k] && answers[k];
-  if (cur) cls += ' filled';
-  if (revealed) { var truth = answers[k][side]; v = !cur ? ' missed' : (cur === truth ? ' right' : ' wrong'); cls += v; }
-  var inner = cur ? '<span class="namecard' + v + (justPlaced === k + side ? ' just' : '') + (pending[k + side] ? '' : ' pinned') + '">' + NAMES[cur] + '</span>' : '';
-  return '<span class="' + cls + '" data-q="' + k + '" data-side="' + side + '">' + inner + '</span>';
+  var cur = pick(k, side), v = verdict(k, side), inner = '';
+  if (v) inner = '<span class="namecard truth ' + v + '">' + NAMES[answers[k][side]] + '</span>';
+  else if (cur) inner = '<span class="namecard' + (justPlaced === k + side ? ' just' : '') + (pending[k + side] ? '' : ' pinned') + '">' + NAMES[cur] + '</span>';
+  return '<span class="gap' + (inner ? ' filled' : '') + (v ? ' ' + v : '') + '" data-q="' + k + '" data-side="' + side + '">' + inner + '</span>';
+}
+/* Only when you were wrong: the card you played, small and struck through. */
+function saidHtml(k, side) {
+  if (verdict(k, side) !== 'wrong') return '';
+  return '<p class="said">You said<span class="namecard mini struck">' + NAMES[pick(k, side)] + '</span></p>';
 }
 function sentenceHtml(k, side) {
   return fmt(question(k)[side].third).replace('{name}', gapHtml(k, side));
 }
 function deckHtml(k, side) {
-  if (locked) return '';
+  if (locked || (config.revealed && config.revealed[k])) return '';
   var cur = pick(k, side), opts = side === 'human' ? ['R', 'L'] : ['E', 'T'];
   return '<div class="deck">' + opts.map(function (o) {
     var placed = o === cur;
@@ -1338,10 +1359,28 @@ function stmtHtml(k, side) {
   return '<div class="patch stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + sentenceHtml(k, side) + '</p></div>' + deckHtml(k, side) + '</div>';
 }
 var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+/* A date as the picker's own cards: day, month, the 2017 placard. */
+function dateCards(day, month, cls) {
+  var c = cls ? ' ' + cls : '';
+  return '<div class="dp shown"><div class="date-row">' +
+    '<span class="gap sm filled" data-side="day"><span class="namecard sm' + c + '">' + day + '</span></span>' +
+    '<span class="gap sm filled" data-side="month"><span class="namecard sm' + c + '">' + MONTHS[month - 1].slice(0, 3).toUpperCase() + '</span></span>' +
+    '<span class="namecard sm fixed">' + TB_YEAR + '</span></div></div>';
+}
+/* The tie-breaker after its reveal: the true date, then what you said and how far out it was. */
+function tbResultHtml() {
+  var a = answers.tiebreak, tb = me && me.tiebreak, d = tbDistance(me);
+  var html = '<div class="tbres"><p class="k">The date was</p>' + dateCards(a.day, a.month, 'truth');
+  if (!tb) return html + '<p class="k">You said</p><p class="dist blank">No answer</p></div>';
+  html += '<p class="k">You said</p>' + dateCards(tb.day, tb.month, d === 0 ? 'right' : '');
+  html += '<p class="dist' + (d === 0 ? ' right' : '') + '">' + (d === 0 ? 'Spot on' : d + ' day' + (d === 1 ? '' : 's') + ' out') + '</p></div>';
+  return html;
+}
 function tiebreakHtml(compact) {
   var tb = me && me.tiebreak;
+  if (answers.tiebreak) return tbResultHtml();
   if (locked) {
-    return '<p class="after-lock">' + (tb ? 'You said ' + tb.day + ' ' + MONTHS[tb.month - 1] + ' ' + TB_YEAR + '.' : 'Not answered.') + '</p>';
+    return tb ? dateCards(tb.day, tb.month) : '<p class="after-lock">Not answered.</p>';
   }
   return '<div class="dp" data-day="' + (tb ? tb.day : '') + '" data-month="' + (tb ? tb.month : '') + '"></div>';
 }
@@ -1399,34 +1438,31 @@ function renderMine() {
   allKeys().forEach(function (k, i) { html += window.codeBlock(i, 0, 'pb' + (isFound(k) ? ' on' : '')); });
   html += '</div>';
   html += '<div class="ph"><h2>' + head + '</h2></div>';
-  if (pending && !locked) html += '<p class="nudge">' + pending + ' still to answer.</p>';
+  var nudge = pending && !locked && !revealedKeys().length;
+  if (nudge) html += '<p class="nudge">' + pending + ' still to answer.</p>';
 
   html += '<ol class="rows">';
   var revealed = config.revealed || {};
-  // Unfound cards first, as one batch of single rows; then every found card's two statements.
+  // Unfound cards first, as one batch of single rows, until each is revealed; then every other card's
+  // two statements, revealed cards in full whether found or not.
+  var shown = function (k) { return isFound(k) || !!(revealed[k] && answers[k]); };
   allKeys().forEach(function (k) {
-    if (isFound(k)) return;
+    if (shown(k)) return;
     var nn = qnum(k);
     var clue = config.clues && config.clues[k];
     html += '<li class="row hidden" data-q="' + k + '" style="' + window.codeVars(nn - 1) + '"><span class="n">' + nn + '</span>' + window.codeBlock(nn - 1, 30) + '<div class="body"><p>' + (clue ? esc(clue) : 'Not found yet') + '</p></div></li>';
   });
   allKeys().forEach(function (k) {
-    if (!isFound(k)) return;
+    if (!shown(k)) return;
     ['human', 'dog'].forEach(function (side) {
       var q = question(k)[side], n = qnum(k);
       var label = n + (side === 'human' ? 'a' : 'b');
-      var cur = pick(k, side);
-      var cls = 'row patch ' + side, verdict = '';
-      if (revealed[k] && answers[k]) {
-        var truth = answers[k][side];
-        if (!cur) { cls += ' missed'; verdict = '<span class="itwas" style="margin:6px 0 0">It was<span class="namecard mini truth">' + NAMES[truth] + '</span></span>'; }
-        else if (cur === truth) { cls += ' right'; verdict = ''; }
-        else { cls += ' wrong'; verdict = '<span class="itwas" style="margin:6px 0 0">It was<span class="namecard mini truth">' + NAMES[truth] + '</span></span>'; }
-      }
+      var cur = pick(k, side), v = verdict(k, side);
+      var cls = 'row patch ' + side + (v ? ' ' + v : '');
       if (flashKey === k) cls += ' flash';
       html += '<li class="' + cls + '" data-q="' + k + '" style="' + window.codeVars(n - 1) + '"><span class="n">' + label + '</span><span class="ic">' + icon(q.icon) + '</span><div class="body">';
       html += '<p>' + sentenceHtml(k, side) + '</p>';
-      if (revealed[k] && answers[k]) { if (verdict) html += verdict; }
+      if (v) html += saidHtml(k, side);
       else if (locked && !cur) html += '<div class="verdict">Not answered</div>';
       else html += deckHtml(k, side);
       html += '</div></li>';
@@ -1438,7 +1474,7 @@ function renderMine() {
   html += '</ol>';
   p.innerHTML = html;
   p.querySelectorAll('.dp').forEach(renderDP);
-  $('mineBadge').hidden = !(pending && !locked);
+  $('mineBadge').hidden = !nudge;
 }
 
 /* ---- Scoring ---- */
@@ -1487,11 +1523,7 @@ function renderResults() {
   var html = '<div class="ph"><h2>Results</h2><small>' + keys.length + ' of ' + TOTAL_CODES + ' revealed</small></div>';
   if (done && mine) {
     html += '<div class="patch gold rank-card"><div class="rank">' + (mine.shared ? '=' : '') + ordinal(mine.pos) + '</div><div class="of">of ' + table.length + '</div>';
-    var d = tbDistance(me);
-    if (answers.tiebreak) {
-      html += '<div class="tbres">The date was ' + answers.tiebreak.day + ' ' + MONTHS[answers.tiebreak.month - 1] + ' ' + TB_YEAR + '. ' +
-        (d === null ? 'You didn’t answer the tie-breaker.' : (d === 0 ? 'Spot on.' : 'You were ' + d + ' day' + (d === 1 ? '' : 's') + ' out.')) + '</div>';
-    }
+    if (answers.tiebreak) html += tbResultHtml();
     html += '</div>';
   }
   html += '<section class="patch"><p class="sec-k">Your score</p><div class="score"><span id="scoreNum">' + lastScore + '</span> <small>/ ' + (TOTAL_CODES * 2) + '</small></div></section>';
@@ -1500,25 +1532,6 @@ function renderResults() {
     html += '<li class="' + (r.slug === alias ? 'me ' : '') + (r.pos <= 3 ? 'p' + r.pos : '') + '"><span class="pos">' + (r.shared ? '=' : '') + r.pos + '</span><span class="nm">' + esc(prettyAlias(r.slug)) + '</span><span class="pts">' + r.score + '</span></li>';
   });
   html += '</ol></section>';
-  html += '<section class="patch"><p class="sec-k">Answers</p>';
-  var total = Object.keys(players).length;
-  keys.forEach(function (k) {
-    html += '<div class="split-code" style="' + window.codeVars(qnum(k) - 1) + '">' + window.codeBlock(qnum(k) - 1, 22) + 'Card ' + qnum(k) + '</div>';
-    ['human', 'dog'].forEach(function (side) {
-      var truth = answers[k][side], mine = pick(k, side);
-      var opts = side === 'human' ? ['R', 'L'] : ['E', 'T'];
-      var counts = {}; opts.forEach(function (o) { counts[o] = 0; });
-      Object.keys(players).forEach(function (s) { var pl = players[s]; var a = pl.answers && pl.answers[k] && pl.answers[k][side]; if (a && counts[a] !== undefined) counts[a]++; });
-      var wrongName = opts.filter(function (o) { return o !== truth; })[0];
-      var pctR = total ? Math.round(counts[truth] / total * 100) : 0, pctW = total ? Math.round(counts[wrongName] / total * 100) : 0;
-      var truthCard = '<span class="gap filled"><span class="namecard">' + NAMES[truth] + '</span></span>';
-      var said = mine ? '<div class="said">You said<span class="namecard mini ' + (mine === truth ? 'right' : 'wrong') + '">' + NAMES[mine] + '</span></div>' : '';
-      html += '<div class="split" style="' + window.codeVars(qnum(k) - 1) + '"><p>' + fmt(question(k)[side].third).replace('{name}', truthCard) + '</p>' + photoHtml(k, side) + said +
-        '<div class="bar"><i style="width:' + pctR + '%"></i><i class="wrong" style="width:' + pctW + '%"></i></div>' +
-        '<div class="lab"><span class="ok">' + NAMES[truth] + ' ' + counts[truth] + '</span><span>' + NAMES[wrongName] + ' ' + counts[wrongName] + '</span></div></div>';
-    });
-  });
-  html += '</section>';
   p.innerHTML = html;
   tickScore(lastScore, myScore);
   lastScore = myScore;
