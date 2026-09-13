@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v22.1 (13/09/2026): The line that carries the name slot no longer sits further from the next line than the
+          rest of the sentence: the slot keeps its size but no longer stretches its line box.
   v22.0 (13/09/2026): The date in two beats, like the cards. First beat: the reels sit on 1 January and
           the phone shows what you said, plain. Second beat: the reels spin and land, then "Spot on"
           or the days out arrives beneath and your cards take the tick. Nothing shifts between the two.
@@ -433,7 +435,8 @@
   code{display:block;margin:8px 0 2px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.6em;line-height:1.5;background:var(--cream);padding:8px 10px;color:var(--bark);word-break:break-all;overflow-wrap:anywhere;text-align:left;font-style:normal}
   .ackp code{background:rgba(255,255,255,.15);color:inherit}
   /* The gap in the sentence, and the name cards. All cards one size, on purpose. */
-  .gap{display:inline-block;vertical-align:middle;width:112px;height:42px;margin:0 6px 4px 0;position:relative;
+  /* The slot is taller than the line; negative vertical margins keep it from stretching the first line apart from the rest. */
+  .gap{display:inline-block;vertical-align:middle;width:112px;height:42px;margin:-6px 6px -6px 0;position:relative;
     border:1.5px dashed var(--c);opacity:.9;transition:transform .15s ease,background .15s ease}
   .gap.filled{border-color:transparent}
   .gap.hot{background:color-mix(in srgb, var(--c), transparent 82%);transform:scale(1.06)}
