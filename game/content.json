@@ -1,5 +1,5 @@
 {
-  "version": "1.17",
+  "version": "1.18",
   "reels": {
     "items": [
       "Sausage",
@@ -39,6 +39,7 @@
     ]
   },
   "iconBase": "/game/icons/",
+  "media": {},
   "tiebreak": {
     "question": "Until today, what date was Richard and Lorraine’s anniversary?",
     "third": "Richard and Lorraine’s anniversary, until today"

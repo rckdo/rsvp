@@ -38,6 +38,23 @@ Import the seed JSON at the `/game` node (not the root, which would wipe the RSV
 replies and tracker). Reset on the host page wipes players and config but leaves
 codes, answers and the host claim in place.
 
+## Photos at the reveal
+
+Photos live in `media/` and are named in `content.json` under `media`, keyed by card and
+side. Either a single path, or `src` plus a larger `full` for the lightbox:
+
+```json
+"media": {
+  "q3": { "human": "media/q3-lorraine.jpg", "dog": { "src": "media/q3-eric.jpg", "full": "media/q3-eric-full.jpg" } }
+}
+```
+
+Condense before committing: 1400px on the long edge, JPEG around 80 quality, under
+250KB. Every phone fetches every photo quietly, one at a time, as soon as the hunt
+closes, so the reveal never waits on a download. A photo shows on the reveal takeover
+and on My answers afterwards; tap for full screen. The file names are public (Pages
+serves everything), which only matters if a guest goes looking before the reveal.
+
 ## Editing statements or icons
 
 Edit `content.json`. Icons are Lucide static SVGs by filename under `iconBase`, or a
