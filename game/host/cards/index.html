@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v1.7 (18/09/2026): A fourth print: the instruction card at 4 x 6, one per page, for the photo printer
+          alongside the hunt cards.
   v1.6 (13/09/2026): An instruction card for the tables: the quilt band, "Find the cards", five lines on how
           to play (a name, one question, ten cards, who said what, most right wins) and a QR to the
           game's front door (/game/, no code). Previewed on the page; a third print button lays two
@@ -107,6 +109,12 @@
     body.instr .leaves{display:flex;gap:0;flex-wrap:nowrap}
     body.instr .leaf{width:148.5mm;height:210mm;max-width:none;aspect-ratio:auto;box-shadow:none;flex:none}
     body.instr .leaf + .leaf{display:block;border-left:.2mm dashed #c6cdbe;box-sizing:border-box}
+    /* The instruction card at 4 x 6, one per page, same stock as the hunt cards. */
+    body.instr46 .grid{display:none}
+    body.instr46 #instr{display:block;margin:0}
+    body.instr46 #instr h2,body.instr46 #instr .sub{display:none}
+    body.instr46 .leaf{width:4in;height:6in;max-width:none;aspect-ratio:auto;box-shadow:none}
+    body.instr46 .leaf + .leaf{display:none}
   }
 </style>
 </head>
@@ -129,7 +137,7 @@
     <a href="/game/host/">Host page</a>
   </header>
   <p class="state" id="state">Loading.</p>
-  <div class="btns"><button id="bPrint">Print: one card per page (4 × 6)</button><button id="bPrintA4">Print: all on one A4 sheet</button><button id="bPrintInstr">Print: instruction card (A5, two per A4)</button><button class="ghost" id="bRedraw">Redraw</button></div>
+  <div class="btns"><button id="bPrint">Print: one card per page (4 × 6)</button><button id="bPrintA4">Print: all on one A4 sheet</button><button id="bPrintInstr">Print: instruction card (A5, two per A4)</button><button id="bPrintInstr46">Print: instruction card (4 × 6)</button><button class="ghost" id="bRedraw">Redraw</button></div>
   <div class="err" id="err"></div>
   <div class="grid" id="grid"></div>
   <section id="instr">
@@ -308,8 +316,8 @@ function printAs(mode) {
   var s = document.createElement('style'); s.id = 'pageStyle';
   s.textContent = mode === 'a4' ? '@page{size:A4 landscape;margin:8mm}' : mode === 'instr' ? '@page{size:A4 landscape;margin:0}' : '@page{size:4in 6in;margin:0}';
   document.head.appendChild(s);
-  document.body.classList.toggle('a4', mode === 'a4'); document.body.classList.toggle('instr', mode === 'instr');
-  var done = function () { window.removeEventListener('afterprint', done); document.body.classList.remove('a4'); document.body.classList.remove('instr'); };
+  document.body.classList.toggle('a4', mode === 'a4'); document.body.classList.toggle('instr', mode === 'instr'); document.body.classList.toggle('instr46', mode === 'instr46');
+  var done = function () { window.removeEventListener('afterprint', done); document.body.classList.remove('a4'); document.body.classList.remove('instr'); document.body.classList.remove('instr46'); };
   window.addEventListener('afterprint', done);
   window.print();
 }
@@ -348,6 +356,7 @@ function drawInstr() {
 }
 $('bPrint').addEventListener('click', function () { printAs('single'); });
 $('bPrintInstr').addEventListener('click', function () { printAs('instr'); });
+$('bPrintInstr46').addEventListener('click', function () { printAs('instr46'); });
 $('bPrintA4').addEventListener('click', function () { printAs('a4'); });
 $('bRedraw').addEventListener('click', function () { if (codes) drawAll(); });
 </script>
