@@ -442,7 +442,7 @@
     <section class="stop" data-pin="pin-gardens" style="color:#66693a">
       <div class="top"><span class="glyph"><svg><use href="#g-tea"/></svg></span>
         <div><div class="eyebrow">Then cream tea</div><div class="name">The Botanical Gardens</div></div></div>
-      <p class="detail">Cream tea in the gardens after the ceremony, a few steps from the temple.</p>
+      <p class="detail">Cream tea in the gardens after the ceremony, outside the temple.</p>
       <div class="acts"><a class="act go" href="https://www.google.com/maps/dir/?api=1&destination=Botanical+Gardens%2C+Royal+Victoria+Park%2C+Bath" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="dia" d="M12 1.5 22.5 12 12 22.5 1.5 12z"/><path class="arr" d="M13.2 7.6 17.4 11.4 13.2 15.2v-2.6H9.6a1 1 0 0 0-1 1V16H6.5v-2.4a3 3 0 0 1 3-3h3.7z"/></svg>Directions</a></div>
     </section>
     <section class="stop" data-pin="pin-pub" style="color:#bf6a43">
@@ -656,7 +656,8 @@
       var a=(idle+kick)*Math.PI/180;
       // hang straight below the pin; if the plate would run off the map, it slides
       // sideways and the string leans to it, still tied to the pin
-      var vy=(T.len+8)*u, half=T.w/2*u;
+      var effLen=touring?6:T.len;
+      var vy=(effLen+8)*u, half=T.w/2*u;
       var bx=Math.max(6+half,Math.min(VB_W-6-half,T.ax)), by=T.ay+vy;
       var sway=T.post?0:(idle+kick);
       bx+=Math.sin(sway*Math.PI/180)*vy;
