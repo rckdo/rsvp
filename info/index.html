@@ -41,6 +41,10 @@
        intro hides every label, the taxis board and lit stop included.
   v1.9 (19/09/2026): The hanging strings hide with their signs during
        the tour, appearing only when their stop does.
+  v2.0 (19/09/2026): The intro tidies up: the robin perches inside the
+       cropped intro frame instead of half off the page, the waffly
+       intro line goes, and the button reads "Begin the tour" in a
+       heavier face.
 -->
 <html lang="en-GB">
 <head>
@@ -186,7 +190,7 @@
   .touring .map .landmarks,.touring .map .tag,.touring .map .pin.taxi{opacity:0;transition:opacity .35s ease}
   .touring .map .tag.up,.touring .map .pin.taxi.here{opacity:1}
   .touring .stop .detail{font-size:17px;color:#6b5a44}
-  .next-btn{display:none;margin:8px auto 6px;font-family:'Marcellus',serif;font-size:14px;letter-spacing:.18em;
+  .next-btn{display:none;margin:8px auto 6px;font-family:'Playfair Display',serif;font-weight:600;font-size:15px;letter-spacing:.14em;
     text-transform:uppercase;color:var(--cream);background:var(--rust);border:none;padding:15px 52px;cursor:pointer;
     box-shadow:0 3px 0 rgba(74,63,47,.3)}
   .next-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(74,63,47,.3)}
@@ -463,13 +467,12 @@
       <div class="acts"><a class="act" href="tel:+441225464646">V Cars &middot; 01225 464 646</a><a class="act" href="tel:+441225444444">Abbey Taxis &middot; 01225 444 444</a><a class="act" href="https://m.uber.com/ul/?action=setPickup&amp;pickup=my_location" target="_blank" rel="noopener">Open Uber</a></div>
     </section>
   </div>
-  <button class="next-btn" id="next-btn" type="button">Begin</button>
+  <button class="next-btn" id="next-btn" type="button">Begin the tour</button>
   <div class="dots" id="dots" aria-hidden="true"></div>
   <div class="tap-hint" id="tap-hint">tap to continue &rsaquo;</div>
   <div class="intro-panel" id="intro-panel">
     <div class="eyebrow">Monday 21 September 2026</div>
     <div class="name">Lorraine &amp; Richard&rsquo;s day</div>
-    <div class="detail">A little map of everything you&rsquo;ll need &mdash; where to arrive, where to park, and where we raise a glass. Tap to begin.</div>
   </div>
   <div class="finale-note" id="finale-note">That&rsquo;s the day &mdash; the full map and every stop live right here.</div>
   <div class="credit-line">Map data &copy; OpenStreetMap contributors</div>
@@ -616,7 +619,7 @@
     svg.addEventListener('click',function(e){ if(panned){ e.preventDefault(); e.stopPropagation(); } },true);
   })();
   sizeMap();
-  window.addEventListener('resize',function(){ sizeMap(); });
+  window.addEventListener('resize',function(){ sizeMap(); if(introMode)introPerch(false); });
 
   var strLayer=document.createElementNS(NS,'g'); svg.insertBefore(strLayer,robinG);
   var tagLayer=document.createElementNS(NS,'g'); tagLayer.setAttribute('id','tags'); svg.insertBefore(tagLayer,robinG);
@@ -821,7 +824,17 @@
   var cardEl=document.querySelector('main.card');
   var nextBtn=document.getElementById('next-btn');
   function refreshNext(){
-    nextBtn.textContent=introMode?'Begin':(current>=stops.length-1?'Finish':'Next \u203a');
+    nextBtn.textContent=introMode?'Begin the tour':(current>=stops.length-1?'Finish':'Next \u203a');
+  }
+  function introPerch(fly){
+    // the intro camera crops the map's sides on phones; the station sits
+    // right on the edge, so pull the robin onto the visible stage
+    var m=55;
+    var tx=Math.max(vb.x+m,Math.min(vb.x+vb.w-m,pos.x));
+    var ty=Math.max(vb.y+110,Math.min(vb.y+vb.h-15,pos.y));
+    if(Math.abs(tx-pos.x)<1&&Math.abs(ty-pos.y)<1)return;
+    if(fly||reduce){pos={x:tx,y:ty};faceRoom();if(reduce)draw(pos.x,pos.y,1,1,performance.now());}
+    else travel({x:tx,y:ty},'hops',null);
   }
   function startTour(){
     touring=true; introMode=true;
@@ -829,14 +842,14 @@
     cardEl.classList.remove('show-finale');
     // the intro shows a quiet map: nothing highlighted, no labels at all
     document.querySelectorAll('.pin.here').forEach(function(p){p.classList.remove('here');});
-    sizeMap(); refreshNext();
+    sizeMap(); refreshNext(); introPerch(false);
   }
   function dismissIntro(){
     introMode=false;
     cardEl.classList.remove('introing');
     sizeMap(); refreshNext();
     if(current!==0){goTo(0,'hops');}
-    else{scrollToCard(0);var p0=pinOf(0);if(p0)p0.classList.add('here');}
+    else{scrollToCard(0);var p0=pinOf(0);if(p0){p0.classList.add('here');travel({x:+p0.dataset.x,y:+p0.dataset.y},'hops',stops[0].dataset.say);}}
   }
   function exitTour(){
     touring=false; introMode=false; markSeen();
@@ -870,9 +883,10 @@
   /* ---- Arrival ---- */
   function arrive(){
     sizeMap();
-    if(!seen()){touring=true;introMode=true;cardEl.classList.add('touring','introing','fresh');sizeMap();refreshNext();}
+    if(!seen()){touring=true;introMode=true;cardEl.classList.add('touring','introing','fresh');sizeMap();refreshNext();introPerch(true);}
     if(!touring)panTo(+home.dataset.cx,+home.dataset.cy);
-    current=0;dots.children[0].classList.add('on');home.classList.add('here');
+    current=0;dots.children[0].classList.add('on');
+    if(!introMode)home.classList.add('here');
     if(reduce){faceRoom();draw(pos.x,pos.y,1,1,performance.now());TAGS.forEach(function(T){T.lift=T.pin.classList.contains('here')?1:0});drawTags(performance.now());return;}
     busy=true;var start={x:-80,y:-60};facing=1;draw(start.x,start.y,1,1,performance.now());
     var s=null;
