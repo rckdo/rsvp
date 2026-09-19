@@ -37,6 +37,8 @@
        tour uses the tall, close-up frame.
   v1.7 (19/09/2026): Clearer MiPermit guidance on the Charlotte Street
        card with labelled download buttons, and Uber joins the taxis.
+  v1.8 (19/09/2026): The replay pill is now "Tour", top right, and the
+       intro hides every label, the taxis board and lit stop included.
 -->
 <html lang="en-GB">
 <head>
@@ -156,7 +158,7 @@
   .day-pill,.skip-btn{position:absolute;top:8px;z-index:5;font-family:'Marcellus',serif;font-size:11px;
     letter-spacing:.14em;text-transform:uppercase;background:var(--paper);border:1.4px solid var(--bark);
     color:var(--bark);padding:7px 12px;cursor:pointer;box-shadow:2px 2px 0 rgba(74,63,47,.18)}
-  .day-pill{left:8px}
+  .day-pill{right:8px}
   .skip-btn{right:8px;display:none}
   .day-pill:focus-visible,.skip-btn:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
   .touring .day-pill{display:none}
@@ -204,7 +206,7 @@
   <div class="band" id="band" aria-hidden="true"></div>
 
   <div class="mapwrap" id="mapwrap">
-    <button class="day-pill" id="day-pill" type="button">The day</button>
+    <button class="day-pill" id="day-pill" type="button">Tour</button>
     <button class="skip-btn" id="skip-btn" type="button">Skip</button>
     <svg class="map" viewBox="0 0 720 677" role="img" aria-label="A map of Bath, traced from OpenStreetMap, showing the Temple of Minerva, the car parks, the Bath Cider House and Bath Spa station">
       <defs>
@@ -815,13 +817,16 @@
     touring=true; introMode=true;
     cardEl.classList.add('touring','introing','fresh');
     cardEl.classList.remove('show-finale');
+    // the intro shows a quiet map: nothing highlighted, no labels at all
+    document.querySelectorAll('.pin.here').forEach(function(p){p.classList.remove('here');});
     sizeMap(); refreshNext();
   }
   function dismissIntro(){
     introMode=false;
     cardEl.classList.remove('introing');
     sizeMap(); refreshNext();
-    if(current!==0)goTo(0,'hops'); else scrollToCard(0);
+    if(current!==0){goTo(0,'hops');}
+    else{scrollToCard(0);var p0=pinOf(0);if(p0)p0.classList.add('here');}
   }
   function exitTour(){
     touring=false; introMode=false; markSeen();
