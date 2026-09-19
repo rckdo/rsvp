@@ -37,7 +37,8 @@
        tour uses the tall, close-up frame.
   v1.7 (19/09/2026): Clearer MiPermit guidance on the Charlotte Street
        card with labelled download buttons, and Uber joins the taxis.
-  v1.8 (19/09/2026): The replay pill is now "Tour", top right.
+  v1.8 (19/09/2026): The replay pill is now "Tour", top right, and the
+       intro hides every label, the taxis board and lit stop included.
 -->
 <html lang="en-GB">
 <head>
@@ -816,13 +817,16 @@
     touring=true; introMode=true;
     cardEl.classList.add('touring','introing','fresh');
     cardEl.classList.remove('show-finale');
+    // the intro shows a quiet map: nothing highlighted, no labels at all
+    document.querySelectorAll('.pin.here').forEach(function(p){p.classList.remove('here');});
     sizeMap(); refreshNext();
   }
   function dismissIntro(){
     introMode=false;
     cardEl.classList.remove('introing');
     sizeMap(); refreshNext();
-    if(current!==0)goTo(0,'hops'); else scrollToCard(0);
+    if(current!==0){goTo(0,'hops');}
+    else{scrollToCard(0);var p0=pinOf(0);if(p0)p0.classList.add('here');}
   }
   function exitTour(){
     touring=false; introMode=false; markSeen();
