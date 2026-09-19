@@ -178,6 +178,9 @@
   .finale-note{display:none;text-align:center;font-style:italic;font-size:15px;color:var(--bark);padding:0 24px 10px}
   .show-finale .finale-note{display:block}
   @media(prefers-reduced-motion:reduce){ .tap-hint{animation:none} }
+  .touring .map .pin{transition:opacity .35s ease,filter .35s ease}
+  .touring .map .pin:not(.here):not(.taxi){opacity:.35}
+  .touring .map .pin.here{filter:drop-shadow(0 0 4px rgba(201,154,63,.85)) drop-shadow(0 0 11px rgba(201,154,63,.4))}
   .touring .map .landmarks,.touring .map .tag,.touring .map .pin.taxi{opacity:0;transition:opacity .35s ease}
   .touring .map .tag.up,.touring .map .pin.taxi.here{opacity:1}
   .touring .stop .detail{font-size:17px;color:#6b5a44}
