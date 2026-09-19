@@ -39,6 +39,8 @@
        card with labelled download buttons, and Uber joins the taxis.
   v1.8 (19/09/2026): The replay pill is now "Tour", top right, and the
        intro hides every label, the taxis board and lit stop included.
+  v1.9 (19/09/2026): The hanging strings hide with their signs during
+       the tour, appearing only when their stop does.
 -->
 <html lang="en-GB">
 <head>
@@ -111,7 +113,7 @@
   .map .lbl.onpark{stroke:none;fill:#efe6d3;opacity:.9}
   #robin{pointer-events:none;filter:drop-shadow(0 3px 3px rgba(59,56,47,.28))}
   .map .tag{cursor:pointer}
-  .map .string{stroke:var(--bark);stroke-width:1.2;fill:none}
+  .map .string{stroke:var(--bark);stroke-width:1.2;fill:none;transition:opacity .35s ease}
   .map .string.post{stroke-width:4;stroke-linecap:round}
   .map .tag .plate{fill:var(--paper);stroke:var(--bark);stroke-width:1.1;filter:url(#tagshadow);transition:fill .25s ease}
   .map .tag .hole{fill:#e7e0d2;stroke:var(--bark);stroke-width:1}
@@ -644,6 +646,7 @@
     var t=now/1000, u=Math.min(px(),1.5);   // tags scale with the screen, but never past 1.5x map scale
     TAGS.forEach(function(T){
       var here=T.pin.classList.contains('here');
+      T.str.style.opacity=(touring&&!here)?'0':'1';
       T.up+=((here?1:0)-T.up)*0.18;
       T.g.classList.toggle('up',here);
       var s=1+0.07*T.up;
