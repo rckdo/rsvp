@@ -58,6 +58,12 @@
        leaves room under the lowest pins so hanging signs are never
        cut off, the robin sits a little smaller, and the MiPermit
        buttons are now a simple iOS / Android pair.
+  v2.4 (19/09/2026): The resting map crops to its content (the empty
+       strip above the pins and slivers at the sides go), so everything
+       draws larger; the hanging tags render a touch bigger too. The
+       card text gets an accessibility pass: upright Cormorant at 600
+       weight in a darker ink instead of the light italic, larger
+       sizes throughout.
 -->
 <html lang="en-GB">
 <head>
@@ -156,11 +162,11 @@
   .stop .top{display:flex;align-items:center;gap:12px}
   .stop .glyph{flex:0 0 auto;width:40px;height:40px;border-radius:50%;background:var(--cream);border:2.5px solid currentColor;display:grid;place-items:center}
   .stop .glyph svg{width:24px;height:24px;display:block}
-  .stop .eyebrow{font-family:'Marcellus',serif;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#9e5a30}
-  .stop .name{font-weight:600;font-size:19px;color:var(--bark);line-height:1.15;margin-top:1px}
-  .stop .detail{font-size:14.5px;font-weight:500;font-style:italic;color:var(--muted);line-height:1.3;margin:0}
+  .stop .eyebrow{font-family:'Marcellus',serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#9e5a30}
+  .stop .name{font-weight:600;font-size:20px;color:var(--bark);line-height:1.15;margin-top:1px}
+  .stop .detail{font-size:15.5px;font-weight:600;color:#5d4c38;line-height:1.38;margin:0}
   .stop .acts{display:flex;gap:8px;flex-wrap:wrap}
-  .stop .act{display:inline-block;text-decoration:none;font-family:'Marcellus',serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  .stop .act{display:inline-block;text-decoration:none;font-family:'Marcellus',serif;font-size:12px;letter-spacing:.16em;text-transform:uppercase;
     color:var(--cream);background:var(--rust);padding:9px 14px;white-space:nowrap}
   .stop .act:hover{background:#8a3f26}
   .stop .act.go{display:inline-flex;align-items:center;gap:8px;background:var(--paper);color:var(--bark);border:1.3px solid var(--bark);padding:7px 14px 7px 9px}
@@ -193,7 +199,7 @@
   @media(max-height:700px){
     .touring .stop{padding:12px 16px;gap:6px}
     .touring .stop .name{font-size:22px}
-    .touring .stop .detail{font-size:14.5px;line-height:1.3}
+    .touring .stop .detail{font-size:15px;line-height:1.3}
     .touring .next-btn{padding:11px 44px;margin:4px auto 4px}
   }
   .tap-hint{display:none;text-align:center;font-style:italic;font-size:15px;color:var(--muted);
@@ -208,7 +214,7 @@
   .touring .map .pin.here{filter:drop-shadow(0 0 4px rgba(201,154,63,.85)) drop-shadow(0 0 11px rgba(201,154,63,.4))}
   .touring .map .landmarks,.touring .map .tag,.touring .map .pin.taxi{opacity:0;transition:opacity .35s ease}
   .touring .map .tag.up,.touring .map .pin.taxi.here{opacity:1}
-  .touring .stop .detail{font-size:17px;color:#6b5a44}
+  .touring .stop .detail{font-size:17px;color:#5d4c38}
   .next-btn{display:none;margin:8px auto 6px;font-family:'Playfair Display',serif;font-weight:600;font-size:15px;letter-spacing:.14em;
     text-transform:uppercase;color:var(--cream);background:var(--rust);border:none;padding:15px 52px;cursor:pointer;
     box-shadow:0 3px 0 rgba(74,63,47,.3)}
@@ -555,16 +561,22 @@
   var wrap=document.getElementById('mapwrap');
   var VB_H=svg.viewBox.baseVal.height;
   var vb={x:0,y:0,w:VB_W,h:VB_H}, baseW=VB_W, boxA=VB_H/VB_W;
+  // at rest the camera frames just the content (pins, tags, boards),
+  // not the map sheet's empty margins, so everything draws larger
+  var REST={x:16,y:48,w:696,h:629}, FULL={x:0,y:0,w:VB_W,h:VB_H};
+  var clipR=document.querySelector('#mapclip rect');
+  function setClip(c){clipR.setAttribute('x',c.x);clipR.setAttribute('y',c.y);clipR.setAttribute('width',c.w);clipR.setAttribute('height',c.h);}
   function applyVB(){
     svg.setAttribute('viewBox',vb.x.toFixed(1)+' '+vb.y.toFixed(1)+' '+vb.w.toFixed(1)+' '+vb.h.toFixed(1));
     var zoomed=vb.w<baseW-1;
-    svg.style.overflow=(zoomed||baseW<VB_W-1)?'hidden':'visible';
+    svg.style.overflow=(zoomed||touring)?'hidden':'visible';
     svg.style.touchAction=zoomed?'none':'pan-y';
   }
   function clampVB(){
+    var B=touring?FULL:REST;
     vb.w=Math.max(baseW/2,Math.min(baseW,vb.w)); vb.h=vb.w*boxA;
-    vb.x=Math.max(0,Math.min(VB_W-vb.w,vb.x));
-    var yLo=Math.min(-60,VB_H-vb.h), yHi=Math.max(0,VB_H-vb.h);
+    vb.x=Math.max(B.x,Math.min(B.x+B.w-vb.w,vb.x));
+    var yLo=Math.min(B.y-60,B.y+B.h-vb.h), yHi=Math.max(B.y,B.y+B.h-vb.h);
     vb.y=Math.max(yLo,Math.min(yHi,vb.y));
   }
   function pageLock(){
@@ -578,20 +590,22 @@
   function sizeMap(){
     var cw=Math.max(1,wrap.clientWidth);
     if(window.innerWidth>560||!touring){
+      var C=touring?FULL:REST; setClip(C);
       svg.style.height=''; svg.style.width=''; svg.style.margin='';
-      boxA=VB_H/VB_W; baseW=VB_W;
-      vb={x:0,y:0,w:VB_W,h:VB_H}; applyVB();
+      boxA=C.h/C.w; baseW=C.w;
+      vb={x:C.x,y:C.y,w:C.w,h:C.h}; applyVB();
       if(window.innerWidth<=560){
         // at rest the whole map stays visible: it shrinks, centred,
         // until the page fits the screen without scrolling
         var over0=document.documentElement.scrollHeight-window.innerHeight;
         if(over0>0){
-          var w2=Math.max(cw*0.55,(cw*VB_H/VB_W-over0-1)*VB_W/VB_H);
+          var w2=Math.max(cw*0.55,(cw*C.h/C.w-over0-1)*C.w/C.h);
           svg.style.width=Math.min(cw,w2)+'px'; svg.style.margin='0 auto';
         }
       }
       pageLock(); return;
     }
+    setClip(FULL);
     svg.style.width=''; svg.style.margin='';
     var others=document.getElementById('band').offsetHeight
       +document.getElementById('deck').offsetHeight
@@ -616,7 +630,7 @@
   function panTo(mx,my,tw){
     var targW=Math.max(baseW/2,Math.min(baseW,tw||vb.w));
     var targH=targW*boxA;
-    if(targW>=VB_W-1&&targH>=VB_H-1)return;
+    if(targW>=baseW-1)return;
     var tx=Math.max(0,Math.min(VB_W-targW,mx-targW/2));
     var ty=Math.max(-60,Math.min(VB_H-targH,my-targH*0.45));
     if(reduce){vb.w=targW;vb.h=targH;vb.x=tx;vb.y=ty;applyVB();return;}
@@ -697,7 +711,7 @@
     TAGS.push({pin:pin,g:g,str:str,body:body,w:w,post:isPost,ax:+pin.dataset.cx,ay:+pin.dataset.cy+19,len:+pin.dataset.len,up:0,kick:-9,seed:Math.random()*7});
   });
   function drawTags(now){
-    var t=now/1000, u=Math.min(px(),1.5);   // tags scale with the screen, but never past 1.5x map scale
+    var t=now/1000, u=Math.min(px(),1.65);  // tags scale with the screen, but never past 1.65x map scale
     TAGS.forEach(function(T){
       var here=T.pin.classList.contains('here');
       T.str.style.opacity=(touring&&!here)?'0':'1';
@@ -732,7 +746,7 @@
     // +46 of blank map below the lowest pins, so a hanging sign never
     // gets cut off by the card under the map
     var yLo=Math.min(-60,VB_H-vb.h), yHi=Math.max(0,VB_H-vb.h)+(introMode?0:46);
-    var ty=Math.max(yLo,Math.min(yHi,my-vb.h*0.45));
+    var ty=Math.max(yLo,Math.min(yHi,my-vb.h*0.34)); // pin high in frame: the sign below needs the room
     vb.x+=(tx-vb.x)*0.09; vb.y+=(ty-vb.y)*0.09;
     applyVB();
   }
