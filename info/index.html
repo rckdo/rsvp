@@ -45,6 +45,10 @@
        cropped intro frame instead of half off the page, the waffly
        intro line goes, and the button reads "Begin the tour" in a
        heavier face.
+  v2.1 (19/09/2026): The tour locks to the screen: the map gives up
+       exactly the height the cards and button need, so Next never
+       sits below the fold, and the page cannot scroll mid-tour. The
+       "That's the day" note after the finale goes.
 -->
 <html lang="en-GB">
 <head>
@@ -170,18 +174,24 @@
   .day-pill:focus-visible,.skip-btn:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
   .touring .day-pill{display:none}
   .touring .skip-btn{display:block}
-  .touring .dots{visibility:hidden}
+  .touring .dots{display:none}
   .touring .deck{overflow-x:hidden}
   .touring .stop{flex:0 0 100%;padding:18px 20px;gap:10px}
   .touring .stop .name{font-size:26px}
   .touring .stop .eyebrow{font-size:12px}
   .touring .stop .detail{font-size:16px;line-height:1.35}
+  /* short screens: the tour cards tighten so map, card and button share one screen */
+  @media(max-height:700px){
+    .touring .stop{padding:12px 16px;gap:6px}
+    .touring .stop .name{font-size:22px}
+    .touring .stop .detail{font-size:14.5px;line-height:1.3}
+    .touring .next-btn{padding:11px 44px;margin:4px auto 4px}
+  }
   .tap-hint{display:none;text-align:center;font-style:italic;font-size:15px;color:var(--muted);
     padding:0 0 10px;animation:hintpulse 1.8s ease-in-out infinite}
   @keyframes hintpulse{0%,100%{opacity:.45}50%{opacity:1}}
-  .finale-note{display:none;text-align:center;font-style:italic;font-size:15px;color:var(--bark);padding:0 24px 10px}
-  .show-finale .finale-note{display:block}
   @media(prefers-reduced-motion:reduce){ .tap-hint{animation:none} }
+  body.tour-lock{overflow:hidden}
   .touring .map .pin{transition:opacity .35s ease,filter .35s ease}
   .touring .map .pin:not(.here):not(.taxi){color:#c3b596}
   .touring .map .pin:not(.here):not(.taxi) circle.disc{stroke:#c3b596}
@@ -474,7 +484,6 @@
     <div class="eyebrow">Monday 21 September 2026</div>
     <div class="name">Lorraine &amp; Richard&rsquo;s day</div>
   </div>
-  <div class="finale-note" id="finale-note">That&rsquo;s the day &mdash; the full map and every stop live right here.</div>
   <div class="credit-line">Map data &copy; OpenStreetMap contributors</div>
 
 </main>
@@ -563,6 +572,10 @@
       +(document.getElementById('next-btn')?document.getElementById('next-btn').offsetHeight:0)+10;
     var avail=Math.max(cw*0.92,Math.min(cw*1.6,window.innerHeight-others));
     svg.style.height=avail+'px';
+    // the height sums above miss paddings and margins, so measure the truth:
+    // if the page still overflows the screen, the map gives that height back
+    var over=document.documentElement.scrollHeight-window.innerHeight;
+    if(over>0){avail=Math.max(cw*0.5,avail-over-1);svg.style.height=avail+'px';}
     boxA=avail/cw;
     baseW=Math.min(VB_W,VB_H/boxA);
     vb.w=baseW; vb.h=baseW*boxA;
@@ -836,10 +849,14 @@
     if(fly||reduce){pos={x:tx,y:ty};faceRoom();if(reduce)draw(pos.x,pos.y,1,1,performance.now());}
     else travel({x:tx,y:ty},'hops',null);
   }
+  function tourLock(on){
+    document.body.classList.toggle('tour-lock',on);
+    if(on)window.scrollTo(0,0);
+  }
   function startTour(){
     touring=true; introMode=true;
     cardEl.classList.add('touring','introing','fresh');
-    cardEl.classList.remove('show-finale');
+    tourLock(true);
     // the intro shows a quiet map: nothing highlighted, no labels at all
     document.querySelectorAll('.pin.here').forEach(function(p){p.classList.remove('here');});
     sizeMap(); refreshNext(); introPerch(false);
@@ -854,9 +871,8 @@
   function exitTour(){
     touring=false; introMode=false; markSeen();
     cardEl.classList.remove('touring','introing','fresh');
+    tourLock(false);
     sizeMap();
-    cardEl.classList.add('show-finale');
-    setTimeout(function(){cardEl.classList.remove('show-finale');},6000);
     var pin=pinOf(current);
     if(pin)panTo(+pin.dataset.cx,+pin.dataset.cy,baseW);
     scrollToCard(current);
@@ -883,7 +899,7 @@
   /* ---- Arrival ---- */
   function arrive(){
     sizeMap();
-    if(!seen()){touring=true;introMode=true;cardEl.classList.add('touring','introing','fresh');sizeMap();refreshNext();introPerch(true);}
+    if(!seen()){touring=true;introMode=true;cardEl.classList.add('touring','introing','fresh');tourLock(true);sizeMap();refreshNext();introPerch(true);}
     if(!touring)panTo(+home.dataset.cx,+home.dataset.cy);
     current=0;dots.children[0].classList.add('on');
     if(!introMode)home.classList.add('here');
