@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v24.1 (20/09/2026): On a French phone the generated name keeps its English words (it is the alias everyone
+          sees) and carries a small French gloss beneath, on the reel hint and the "Vous êtes" card:
+          Meatball Snaffler, Chipeur de boulettes. content.json's reels carry items_fr and roles_fr.
   v24.0 (20/09/2026): French. ?lang=fr on any landing (remembered on the phone) puts the whole page in French:
           every label, button, toast, sign, the reveal beats, the date reels and Results. The twenty
           statements, the anniversary question and the reveal notes have French versions: content.json
@@ -365,6 +368,10 @@
   .reel.spinning .strip{filter:blur(.6px)}
   .reel .word.hit{color:var(--rust)}
   .reel-hint{font-family:var(--label);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--rust);margin:18px 0 4px;min-height:18px}
+  /* The French gloss under a name: what the English words mean, small and italic, never the name itself. */
+  .gloss{display:block;font-family:var(--body);font-size:15px;font-style:italic;letter-spacing:0;text-transform:none;color:var(--mutedbrown);margin-top:5px}
+  .hello-gloss{margin:14px 0 0;opacity:0}
+  #hello.go .hello-gloss{animation:hello-k .5s var(--ease-out) 1.2s both}
   .spin-actions{display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:18px}
   .taken{font-style:italic;color:var(--rust);min-height:24px;margin-top:12px}
   #spin.lockin .tombola,#spin.lockin .spin-actions,#spin.lockin .lede,#spin.lockin h1,#spin.lockin .reel-hint{animation:lift .4s var(--ease-out) both}
@@ -939,6 +946,14 @@ function monthAbbr(m) { return FR ? MONTHS_FR[m - 1] : MONTHS[m - 1].slice(0, 3)
 function distText(d) { return d === 0 ? t('Spot on') : (FR ? 'À ' + d + ' jour' + (d === 1 ? '' : 's') + ' près' : d + ' day' + (d === 1 ? '' : 's') + ' out'); }
 function gotIt(n, tot) { return FR ? n + ' sur ' + tot + (n === 1 ? ' a trouvé' : ' ont trouvé') : n + ' of ' + tot + ' got it'; }
 function moreToFind(left) { return FR ? 'Encore ' + left + ' carte' + (left === 1 ? '' : 's') + ' à trouver' : left + ' more card' + (left === 1 ? '' : 's') + ' to find'; }
+/* The French gloss of a generated name: the role word then the item phrase, from content.json's reels. */
+function glossOf(slug) {
+  if (!FR || !content || !content.reels.items_fr) return '';
+  var parts = String(slug).split('-'), r = content.reels, gi = -1, gr = -1;
+  r.items.forEach(function (w, i) { if (parts.indexOf(w.toLowerCase()) >= 0) gi = i; });
+  r.roles.forEach(function (w, i) { if (parts.indexOf(w.toLowerCase()) >= 0) gr = i; });
+  return gi >= 0 && gr >= 0 ? r.roles_fr[gr] + ' ' + r.items_fr[gi] : '';
+}
 function tbQuestion() { return (FR && content.tiebreak.question_fr) || content.tiebreak.question; }
 function tbThird() { return (FR && content.tiebreak.third_fr) || content.tiebreak.third; }
 /* The static markup, once, in French. */
@@ -1299,7 +1314,8 @@ function spin(free) {
     spinReel(reels.reelRole, tr, 2150, 140, -1)
   ]).then(function () {
     spinning = false;
-    $('reelHint').textContent = prettyAlias(slugOf(current.item, current.role));
+    var slugNow = slugOf(current.item, current.role), gl = glossOf(slugNow);
+    $('reelHint').innerHTML = esc(prettyAlias(slugNow)) + (gl ? '<span class="gloss">' + esc(gl) + '</span>' : '');
     $('btnLock').disabled = false;
     $('btnSpin').disabled = spinsLeft <= 0;
     $('btnSpin').textContent = spinsLeft > 0 ? tf('Spin again · %1 left', spinsLeft) : t('No spins left');
@@ -1348,6 +1364,8 @@ function showHello() {
   var h = $('hello'), card = h.querySelector('.hello-card');
   $('helloName').textContent = prettyAlias(alias);
   if (!card.querySelector('svg')) card.insertBefore($('aliasPill').querySelector('svg').cloneNode(true), card.firstChild);
+  var old = h.querySelector('.hello-gloss'); if (old) old.remove();
+  var gl = glossOf(alias); if (gl) { var g = document.createElement('p'); g.className = 'gloss hello-gloss'; g.textContent = gl; card.parentNode.appendChild(g); }
   h.hidden = false;
   if (REDUCED) { afterAlias(); return; }
   h.classList.add('go');
