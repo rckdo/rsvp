@@ -40,6 +40,14 @@ the rules let an away player answer any card. Away players are ranked among them
 leaderboard and the reveal's "N of M got it" leave them out. Send the link privately: it is the only
 thing standing between an attendee and a hunt-free game.
 
+## French
+
+Add `lang=fr` to any landing (`/game/?c=CODE&lang=fr`) and the phone remembers it: every label, the
+reveal, the date reels and Results read in French. The twenty statements, the anniversary question and
+the reveal notes have French versions: `content.json` carries the defaults (`third_fr`, `question_fr`),
+and the host page's Setup tab has a French field beside each statement and note (`config.fr`), kept by
+Reset. Names and the name generator stay English. Have a French speaker read the twenty sentences.
+
 ## Seeding and reset
 
 Import the seed JSON at the `/game` node (not the root, which would wipe the RSVP
