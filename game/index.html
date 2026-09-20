@@ -4,6 +4,11 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v24.0 (20/09/2026): French. ?lang=fr on any landing (remembered on the phone) puts the whole page in French:
+          every label, button, toast, sign, the reveal beats, the date reels and Results. The twenty
+          statements, the anniversary question and the reveal notes have French versions: content.json
+          carries the defaults (third_fr, question_fr) and the host page's Setup tab can override
+          them live (config.fr.statements, config.fr.notes). Names and the name generator stay English.
   v23.0 (20/09/2026): Playing from afar. A link carrying an "away" code (seeded like the ten card codes) hands
           the phone all ten cards at once: name, the date, then My answers with every card open, no
           hunting. The player is marked away at claim time, which the rules check against the code.
@@ -314,6 +319,10 @@
     text-shadow:0 -1px 0 rgba(0,0,0,.75), 0 1px 0 rgba(255,235,190,.35);
     box-shadow:inset 0 1px 0 rgba(255,240,210,.22), inset 0 -1px 0 rgba(0,0,0,.45), 0 3px 0 #2e2719, 0 12px 22px rgba(74,63,47,.3);
     animation:hang 1.1s cubic-bezier(.2,1.4,.4,1) both}
+  /* A longer legend (French) sits smaller so the plank still clears the card's edges on a narrow phone. */
+  .sign .board.long{font-size:22px;letter-spacing:.12em;padding:14px 30px 13px}
+  html[lang=fr] .said{font-size:15px}
+  html[lang=fr] .said .namecard.mini{margin-left:6px}
   .sign .board:before,.sign .board:after{content:'';position:absolute;top:9px;width:12px;height:12px;border-radius:50%;
     background:linear-gradient(40deg,transparent 42%,#3a3023 42% 58%,transparent 58%), radial-gradient(circle at 35% 35%,#e6d7b1,#a8956e 60%,#6e5f43);
     box-shadow:0 1px 1px rgba(0,0,0,.5), inset 0 0 0 1px rgba(0,0,0,.25)}
@@ -889,6 +898,62 @@ var TOTAL_CODES = 10;
 var RESPINS = 4;
 var TB_YEAR = 2017;
 var NAMES = { R: 'Richard', L: 'Lorraine', E: 'Eric', T: 'Tango' };
+/* Language. ?lang=fr (or en) on the landing sets it and the phone remembers; everything on the page reads
+   through t(), the statements through question() and the notes through noteHtml(). Names stay English. */
+var LANG_KEY = 'rl-game-lang', LANG = 'en';
+(function () {
+  var m = location.search.match(/[?&]lang=(fr|en)\b/i);
+  try { if (m) localStorage.setItem(LANG_KEY, m[1].toLowerCase()); LANG = localStorage.getItem(LANG_KEY) || 'en'; } catch (e) { LANG = m ? m[1].toLowerCase() : 'en'; }
+  if (LANG !== 'fr') LANG = 'en';
+})();
+var FR = LANG === 'fr';
+var T = {
+  'One moment.': 'Un instant.',
+  'Could not load the game. Check your signal and try again.': 'Impossible de charger le jeu. Vérifiez votre réseau et réessayez.',
+  'Could not connect. Check your signal and try again.': 'Connexion impossible. Vérifiez votre réseau et réessayez.',
+  'Name generator': 'Générateur de nom', 'Name reels': 'Rouleaux du nom', 'Item': 'Objet', 'Role': 'Rôle',
+  'Lock it in': 'Je le garde', 'Spin again · %1 left': 'Relancer · %1 restant', 'No spins left': 'Plus de relance', 'Spinning…': 'Ça tourne…',
+  '%1 is taken. Have another go.': '%1 est déjà pris. Relancez.',
+  'That didn’t save. Check your signal and try again.': 'Pas enregistré. Vérifiez votre réseau et réessayez.',
+  'That didn’t save. Check your signal.': 'Pas enregistré. Vérifiez votre réseau.',
+  'You are…': 'Vous êtes…', 'Before we begin…': 'Avant de commencer…',
+  'In the event of a tiebreaker, the closest wins!': 'En cas d’égalité, la date la plus proche gagne !',
+  'Start the hunt': 'Commencer la chasse', 'The hunt has closed.': 'La chasse est terminée.', 'Not one of ours.': 'Ce code n’est pas à nous.',
+  'My answers': 'Mes réponses', 'Results': 'Résultats', 'This card': 'Cette carte', 'Card': 'Carte', 'of': 'sur',
+  'Closes in': 'Ferme dans', 'Hunt closed': 'Chasse terminée',
+  'You said': 'Vous avez dit', 'right': 'juste', 'wrong': 'faux', '%1 of %2 got it': '%1 sur %2 ont trouvé',
+  'The date': 'La date', 'Day': 'Jour', 'Month': 'Mois', 'Spot on': 'Pile-poil', 'The date was': 'La date était', 'Not answered.': 'Sans réponse.', 'Not answered': 'Sans réponse',
+  'The hunt has closed': 'La chasse est terminée', 'All ten cards are yours': 'Les dix cartes sont à vous', '%1 of %2 found': '%1 sur %2 trouvées',
+  'Everything’s open': 'Tout est ouvert', 'All ten found': 'Les dix cartes trouvées', '%1 of %2 cards found': '%1 cartes sur %2 trouvées',
+  '%1 still to answer.': 'Encore %1 à répondre.', 'Not found yet': 'Pas encore trouvée',
+  'Answers are revealed at the pub. Keep this page open and it follows along.': 'Les réponses seront révélées au pub. Gardez cette page ouverte : elle suit en direct.',
+  'Unlocks at the reveal.': 'Se débloque à la révélation.', '%1 of %2 revealed': '%1 sur %2 révélées', 'joint': 'ex æquo', 'Your score': 'Votre score',
+  'Leaderboard': 'Classement', 'The room': 'La salle', 'Playing from afar': 'À distance',
+  'Pause the clip': 'Mettre la vidéo en pause', 'Play the clip': 'Lire la vidéo', 'Turn sound on': 'Activer le son', 'Turn sound off': 'Couper le son',
+  'Find the cards · Lorraine & Richard': 'Trouvez les cartes · Lorraine & Richard'
+};
+function t(s) { return (FR && T[s]) || s; }
+function tf(s) { var out = t(s); for (var i = 1; i < arguments.length; i++) out = out.replace('%' + i, arguments[i]); return out; }
+var MONTHS_FR = ['JANV', 'FÉVR', 'MARS', 'AVR', 'MAI', 'JUIN', 'JUIL', 'AOÛT', 'SEPT', 'OCT', 'NOV', 'DÉC'];
+function monthAbbr(m) { return FR ? MONTHS_FR[m - 1] : MONTHS[m - 1].slice(0, 3).toUpperCase(); }
+function distText(d) { return d === 0 ? t('Spot on') : (FR ? 'À ' + d + ' jour' + (d === 1 ? '' : 's') + ' près' : d + ' day' + (d === 1 ? '' : 's') + ' out'); }
+function gotIt(n, tot) { return FR ? n + ' sur ' + tot + (n === 1 ? ' a trouvé' : ' ont trouvé') : n + ' of ' + tot + ' got it'; }
+function moreToFind(left) { return FR ? 'Encore ' + left + ' carte' + (left === 1 ? '' : 's') + ' à trouver' : left + ' more card' + (left === 1 ? '' : 's') + ' to find'; }
+function tbQuestion() { return (FR && content.tiebreak.question_fr) || content.tiebreak.question; }
+function tbThird() { return (FR && content.tiebreak.third_fr) || content.tiebreak.third; }
+/* The static markup, once, in French. */
+function applyLang() {
+  if (!FR) return;
+  document.documentElement.lang = 'fr'; document.title = t('Find the cards · Lorraine & Richard');
+  var set = function (sel, s) { var el = document.querySelector(sel); if (el) el.textContent = t(s); };
+  set('#bootMsg', 'One moment.'); set('#spin h1', 'Name generator'); set('#btnLock', 'Lock it in'); set('.hello-k', 'You are…');
+  set('#intro h1', 'Before we begin…'); set('.tb-note', 'In the event of a tiebreaker, the closest wins!'); set('#introGo', 'Start the hunt');
+  var labs = document.querySelectorAll('#spin .tombola .lab'); if (labs[0]) labs[0].textContent = t('Item'); if (labs[1]) labs[1].textContent = t('Role');
+  $('btnSpin').textContent = tf('Spin again · %1 left', 4);
+  ['tabMine', 'tabResults'].forEach(function (id, i) { var b = $(id); if (b && b.firstChild && b.firstChild.nodeType === 3) b.firstChild.textContent = t(i ? 'Results' : 'My answers'); });
+  var reels = document.querySelector('#spin .tombolas'); if (reels) reels.setAttribute('aria-label', t('Name reels'));
+  $('sheet').setAttribute('aria-label', t('This card'));
+}
 var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 var TS = firebase.database.ServerValue.TIMESTAMP;
 
@@ -938,7 +1003,7 @@ var mediaOf = function (k, side) {
 var photoHtml = function (k, side, small) {
   var m = mediaOf(k, side); if (!m) return '';
   if (m.video) {
-    return '<span class="photo video' + (small ? ' small' : '') + '"><button type="button" class="tap" aria-label="Pause the clip" aria-pressed="false"><span class="dev" style="aspect-ratio:' + esc(m.aspect) + '"><span class="print"><video src="' + esc(m.video) + '"' + (m.src ? ' poster="' + esc(m.src) + '"' : '') + ' muted playsinline loop autoplay preload="auto" onloadeddata="clipIn(this)" onerror="clipIn(this)" onplaying="clipState(this)" onpause="clipState(this)" onvolumechange="clipState(this)"></video></span></span></button><button type="button" class="snd" aria-label="Turn sound on" aria-pressed="false">' + SND_OFF + SND_ON + '</button></span>';
+    return '<span class="photo video' + (small ? ' small' : '') + '"><button type="button" class="tap" aria-label="' + t('Pause the clip') + '" aria-pressed="false"><span class="dev" style="aspect-ratio:' + esc(m.aspect) + '"><span class="print"><video src="' + esc(m.video) + '"' + (m.src ? ' poster="' + esc(m.src) + '"' : '') + ' muted playsinline loop autoplay preload="auto" onloadeddata="clipIn(this)" onerror="clipIn(this)" onplaying="clipState(this)" onpause="clipState(this)" onvolumechange="clipState(this)"></video></span></span></button><button type="button" class="snd" aria-label="' + t('Turn sound on') + '" aria-pressed="false">' + SND_OFF + SND_ON + '</button></span>';
   }
   return '<span class="photo' + (small ? ' small' : '') + '"><span class="dev" style="aspect-ratio:' + esc(m.aspect) + '"><span class="print"><img src="' + esc(m.src) + '" alt="" decoding="async" onload="this.closest(\'.photo\').classList.add(\'in\')"></span></span></span>';
 };
@@ -968,9 +1033,9 @@ var SND_ON = '<svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentCol
 function clipState(v) {
   var b = v.closest('.photo'); if (!b) return;
   b.classList.toggle('paused', v.paused);
-  var t = b.querySelector('.tap'); if (t) { t.setAttribute('aria-label', v.paused ? 'Play the clip' : 'Pause the clip'); t.setAttribute('aria-pressed', v.paused ? 'true' : 'false'); }
+  var tp = b.querySelector('.tap'); if (tp) { tp.setAttribute('aria-label', t(v.paused ? 'Play the clip' : 'Pause the clip')); tp.setAttribute('aria-pressed', v.paused ? 'true' : 'false'); }
   b.classList.toggle('sound', !v.muted);
-  var s = b.querySelector('.snd'); if (s) { s.setAttribute('aria-label', v.muted ? 'Turn sound on' : 'Turn sound off'); s.setAttribute('aria-pressed', v.muted ? 'false' : 'true'); }
+  var s = b.querySelector('.snd'); if (s) { s.setAttribute('aria-label', t(v.muted ? 'Turn sound on' : 'Turn sound off')); s.setAttribute('aria-pressed', v.muted ? 'false' : 'true'); }
 }
 function clipIn(v) { var b = v.closest('.photo'); if (b) b.classList.add('in'); setTimeout(function () { clipState(v); }, 700); }
 document.addEventListener('click', function (ev) {
@@ -1112,12 +1177,13 @@ function qnum(k) { return parseInt(String(k).replace('q', ''), 10); }
 /* content.json is the base; the host page can override a statement's wording (config.statements) and
    its icon (config.icons) without a deploy. */
 function question(k) {
-  var base = content.questions[qnum(k) - 1], ov = config.statements && config.statements[k], ic = config.icons && config.icons[k];
-  if (!ov && !ic) return base;
+  var base = content.questions[qnum(k) - 1], ic = config.icons && config.icons[k];
+  var ov = FR ? (config.fr && config.fr.statements && config.fr.statements[k]) : (config.statements && config.statements[k]);
+  if (!ov && !ic && !FR) return base;
   var q = { q: base.q, human: base.human, dog: base.dog };
   ['human', 'dog'].forEach(function (side) {
-    var t = ov && ov[side], i = ic && ic[side];
-    if (t || i) q[side] = Object.assign({}, base[side], t ? { third: t } : {}, i ? { icon: i } : {});
+    var tx = (ov && ov[side]) || (FR ? base[side].third_fr : null), i = ic && ic[side];
+    if (tx || i) q[side] = Object.assign({}, base[side], tx ? { third: tx } : {}, i ? { icon: i } : {});
   });
   return q;
 }
@@ -1136,10 +1202,11 @@ function foundCount() { var n = 0; allKeys().forEach(function (k) { if (me && me
 function answeredCount(p) { var n = 0; allKeys().forEach(function (k) { if (p && p.answers && p.answers[k]) { if (p.answers[k].human) n++; if (p.answers[k].dog) n++; } }); return n; }
 function revealedKeys() { return allKeys().filter(function (k) { return config.revealed && config.revealed[k] === true; }); }
 
+applyLang();
 fetch('content.json', { cache: 'no-store' })
   .then(function (r) { if (!r.ok) throw new Error('content'); return r.json(); })
   .then(function (c) { content = c; return startFirebase(); })
-  .catch(function (e) { $('bootMsg').textContent = 'Could not load the game. Check your signal and try again.'; console.error(e); });
+  .catch(function (e) { $('bootMsg').textContent = t('Could not load the game. Check your signal and try again.'); console.error(e); });
 
 function startFirebase() {
   firebase.initializeApp(FIREBASE_CONFIG);
@@ -1153,7 +1220,7 @@ function startFirebase() {
     try { alias = localStorage.getItem(ALIAS_KEY); } catch (e) { alias = null; }
     if (alias) afterAlias(); else showSpin();
   }).catch(function (e) {
-    $('bootMsg').textContent = 'Could not connect. Check your signal and try again.'; console.error(e);
+    $('bootMsg').textContent = t('Could not connect. Check your signal and try again.'); console.error(e);
   });
 }
 
@@ -1225,7 +1292,7 @@ function spin(free) {
   var ti = Math.floor(Math.random() * items.length), tr = Math.floor(Math.random() * roles.length);
   current = { item: items[ti], role: roles[tr] };
   $('btnLock').disabled = true; $('btnSpin').disabled = true;
-  $('reelHint').textContent = 'Spinning…';
+  $('reelHint').textContent = t('Spinning…');
   if (!free) $('taken').textContent = '';
   Promise.all([
     spinReel(reels.reelItem, ti, 1500, 0, 1),
@@ -1235,7 +1302,7 @@ function spin(free) {
     $('reelHint').textContent = prettyAlias(slugOf(current.item, current.role));
     $('btnLock').disabled = false;
     $('btnSpin').disabled = spinsLeft <= 0;
-    $('btnSpin').textContent = spinsLeft > 0 ? 'Spin again · ' + spinsLeft + ' left' : 'No spins left';
+    $('btnSpin').textContent = spinsLeft > 0 ? tf('Spin again · %1 left', spinsLeft) : t('No spins left');
   });
 }
 function showSpin() {
@@ -1256,7 +1323,7 @@ function lockIn() {
     return; // taken: abort
   }).then(function (res) {
     if (!res.committed) {
-      $('taken').textContent = prettyAlias(slug) + ' is taken. Have another go.';
+      $('taken').textContent = tf('%1 is taken. Have another go.', prettyAlias(slug));
       setTimeout(function () { spin(true); }, 900);
       return;
     }
@@ -1267,7 +1334,7 @@ function lockIn() {
     setTimeout(showHello, REDUCED ? 0 : 380);
   }).catch(function (e) {
     console.error(e);
-    $('taken').textContent = 'That didn’t save. Check your signal and try again.';
+    $('taken').textContent = t('That didn’t save. Check your signal and try again.');
     $('btnLock').disabled = false;
   });
 }
@@ -1289,7 +1356,7 @@ function showHello() {
 }
 function afterAlias() {
   $('boot').hidden = true; $('spin').hidden = true; $('hello').hidden = true;
-  $('bootMsg').textContent = 'One moment.'; $('boot').hidden = false;
+  $('bootMsg').textContent = t('One moment.'); $('boot').hidden = false;
   Promise.all([
     db.ref(ROOT + '/players/' + alias + '/tiebreak').once('value'),
     db.ref(ROOT + '/config/lockAt').once('value'),
@@ -1308,7 +1375,7 @@ function afterAlias() {
 function showIntro() {
   $('boot').hidden = true; $('intro').hidden = false;
   var pill = $('aliasPill'); $('aliasName').textContent = prettyAlias(alias); pill.hidden = false; pill.classList.add('arrive');
-  $('introQ').textContent = content.tiebreak.question;
+  $('introQ').textContent = tbQuestion();
   renderDP($('introDP'));
   $('introGo').addEventListener('click', function () {
     var d = parseInt($('introDP').dataset.day, 10), m = parseInt($('introDP').dataset.month, 10);
@@ -1317,8 +1384,8 @@ function showIntro() {
     db.ref(ROOT + '/players/' + alias).update({ tiebreak: { day: d, month: m, at: TS }, lastChange: TS })
       .then(function () { $('intro').hidden = true; enterGame(); })
       .catch(function (e) {
-        if (e && e.code === 'PERMISSION_DENIED') { $('intro').hidden = true; enterGame(); toast('The hunt has closed.'); }
-        else { toast('That didn\u2019t save. Check your signal.'); $('introGo').disabled = false; }
+        if (e && e.code === 'PERMISSION_DENIED') { $('intro').hidden = true; enterGame(); toast(t('The hunt has closed.')); }
+        else { toast(t('That didn’t save. Check your signal.')); $('introGo').disabled = false; }
       });
   });
 }
@@ -1332,8 +1399,8 @@ function enterGame() {
   var pill = $('aliasPill'); $('aliasName').textContent = prettyAlias(alias); pill.hidden = false; pill.classList.add('arrive');
   document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () { showTab(b.dataset.tab); }); });
   // Hold on the boot line until the first player snapshot, so a scan opens straight onto its card.
-  $('bootMsg').textContent = 'One moment.'; $('boot').hidden = false;
-  if (codeUnknown) toast('Not one of ours.');
+  $('bootMsg').textContent = t('One moment.'); $('boot').hidden = false;
+  if (codeUnknown) toast(t('Not one of ours.'));
 
   db.ref(ROOT + '/config').on('value', function (s) { config = s.val() || {}; onConfig(); });
   db.ref(ROOT + '/players').on('value', function (s) { players = s.val() || {}; me = players[alias] || null; onPlayer(); });
@@ -1400,7 +1467,7 @@ function renderStage() {
     return;
   }
   var k = st.card, answerStep = st.step === 'answer', ready = isDate ? (!answerStep || !!answers.tiebreak) : (!answerStep || !!answers[k]);
-  var html = isDate ? dateStageHtml(answerStep, ready) : '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + 'Card ' + qnum(k) + '</div>';
+  var html = isDate ? dateStageHtml(answerStep, ready) : '<div class="k">' + window.codeBlock(qnum(k) - 1, 36) + t('Card') + ' ' + qnum(k) + '</div>';
   if (!isDate) ['human', 'dog'].forEach(function (side) {
     var q = question(k)[side];
     html += '<div class="patch stmt stage-stmt ' + side + '" style="' + window.codeVars(qnum(k) - 1) + '"><div class="stmt-row ' + side + '"><span class="icon">' + icon(q.icon) + '</span><p class="stmt-text">' + stageSentenceHtml(k, side, answerStep && ready) + '</p></div>';
@@ -1410,11 +1477,11 @@ function renderStage() {
     var note = noteHtml(k, side);
     if (note) html += live ? note : note.replace('class="rnote"', 'class="rnote held"');
     // The room line's track is there from the sentences beat; only the fill and the count arrive with the answer.
-    html += '<p class="room"><i style="width:' + pc + '%"></i><span>' + (live ? rc.n + ' of ' + rc.t + ' got it' : '&nbsp;') + '</span></p>';
+    html += '<p class="room"><i style="width:' + pc + '%"></i><span>' + (live ? gotIt(rc.n, rc.t) : '&nbsp;') + '</span></p>';
     html += photoHtml(k, side);
     html += '</div>';
   });
-  if (answerStep && !ready && !isDate) html += '<p class="waiting">One moment.</p>';
+  if (answerStep && !ready && !isDate) html += '<p class="waiting">' + t('One moment.') + '</p>';
   var view = document.createElement('div');
   view.className = 'stage-view' + (answerStep && !isDate ? ' answer' : '') + (isDate ? ' date' : '');
   // The date's first beat has nothing to wait for, so it counts as ready: a config tick must not rebuild its reels.
@@ -1449,15 +1516,15 @@ function renderStage() {
    on 1 January and "You said" shows your date, plain, with the distance line held blank beneath. Second
    beat: the reels spin and land, and only then does the phone say how far out you were. */
 function dateStageHtml(answerStep, ready) {
-  var h = '<div class="k">The date</div>' +
+  var h = '<div class="k">' + t('The date') + '</div>' +
     '<div class="tombolas tb-reels" role="group" aria-label="The date">' +
-    '<div class="tombola"><p class="lab">Day</p><div class="window"><div class="reel-wrap"><div class="reel" id="tbDay"><div class="strip"></div></div></div></div></div>' +
-    '<div class="tombola"><p class="lab">Month</p><div class="window"><div class="reel-wrap"><div class="reel" id="tbMonth"><div class="strip"></div></div></div></div></div></div>' +
+    '<div class="tombola"><p class="lab">' + t('Day') + '</p><div class="window"><div class="reel-wrap"><div class="reel" id="tbDay"><div class="strip"></div></div></div></div></div>' +
+    '<div class="tombola"><p class="lab">' + t('Month') + '</p><div class="window"><div class="reel-wrap"><div class="reel" id="tbMonth"><div class="strip"></div></div></div></div></div></div>' +
     '<div class="tb-year"><span class="namecard sm fixed">' + TB_YEAR + '</span></div>';
-  if (answerStep && !ready) return h + '<p class="waiting">One moment.</p>';
+  if (answerStep && !ready) return h + '<p class="waiting">' + t('One moment.') + '</p>';
   var tb = me && me.tiebreak;
   h += '<div class="tb-out">';
-  if (tb) h += '<p class="k2">You said</p>' + dateCards(tb.day, tb.month, '') + '<p class="dist held">&nbsp;</p>';
+  if (tb) h += '<p class="k2">' + t('You said') + '</p>' + dateCards(tb.day, tb.month, '') + '<p class="dist held">&nbsp;</p>';
   h += '</div>';
   return h;
 }
@@ -1465,7 +1532,7 @@ function dateStageHtml(answerStep, ready) {
 function buildDateReels(view) {
   if (!view.querySelector('#tbDay')) return null;
   var days = []; for (var i = 1; i <= 31; i++) days.push(String(i));
-  var months = MONTHS.map(function (m) { return m.slice(0, 3).toUpperCase(); });
+  var months = MONTHS.map(function (m, i) { return monthAbbr(i + 1); });
   view.__reels = { day: buildReel('tbDay', days), month: buildReel('tbMonth', months) };
   return view.__reels;
 }
@@ -1476,7 +1543,7 @@ function spinDate(view) {
   var land = function () {
     var out = view.querySelector('.tb-out'), dist = out && out.querySelector('.dist');
     if (dist && d !== null) {
-      dist.textContent = d === 0 ? 'Spot on' : d + ' day' + (d === 1 ? '' : 's') + ' out';
+      dist.textContent = distText(d);
       dist.classList.toggle('right', d === 0); dist.classList.remove('held'); dist.classList.add('in');
       if (d === 0) out.querySelectorAll('.namecard.sm:not(.fixed)').forEach(function (c) { c.classList.add('right'); });
     }
@@ -1497,7 +1564,7 @@ function stageSentenceHtml(k, side, revealed) {
 function stageSaidHtml(k, side, revealed) {
   var cur = pick(k, side); if (!cur) return '';
   var v = revealed ? verdict(k, side) : null;
-  return '<p class="said">You said<span class="namecard mini' + (v && v !== 'blank' ? ' ' + v : '') + '"' + (v ? ' aria-label="' + NAMES[cur] + ', ' + v + '"' : '') + '>' + NAMES[cur] + '</span></p>';
+  return '<p class="said">' + t('You said') + '<span class="namecard mini' + (v && v !== 'blank' ? ' ' + v : '') + '"' + (v ? ' aria-label="' + NAMES[cur] + ', ' + t(v) + '"' : '') + '>' + NAMES[cur] + '</span></p>';
 }
 /* How the room did on one statement: everyone with a name counts, answered or not. */
 function roomCount(k, side) {
@@ -1518,7 +1585,7 @@ function loadAnswers(keys, fresh) {
 
 /* ---- Countdown ---- */
 var FULL = 15 * 60000;
-function signHtml() { return '<div class="sign" role="status"><span class="board">Hunt closed</span></div>'; }
+function signHtml() { var s = t('Hunt closed'); return '<div class="sign" role="status"><span class="board' + (s.length > 11 ? ' long' : '') + '">' + s + '</span></div>'; }
 function tickClock() {
   var el = $('clock');
   if (!config.lockAt) { if (locked) { locked = false; renderAll(); } if (el.dataset.mode !== 'off') { el.dataset.mode = 'off'; el.innerHTML = ''; el.className = 'clock'; } return; }
@@ -1529,7 +1596,7 @@ function tickClock() {
     return;
   }
   if (locked) { locked = false; renderAll(); }
-  if (el.dataset.mode !== 'run') { el.dataset.mode = 'run'; el.innerHTML = '<div class="cd"><span>Closes in</span><b id="cdNum"></b></div><div class="bar"><i id="cdBar"></i></div>'; }
+  if (el.dataset.mode !== 'run') { el.dataset.mode = 'run'; el.innerHTML = '<div class="cd"><span>' + t('Closes in') + '</span><b id="cdNum"></b></div><div class="bar"><i id="cdBar"></i></div>'; }
   var s = Math.ceil(rem / 1000), m = Math.floor(s / 60);
   $('cdNum').textContent = m + ':' + ('0' + (s % 60)).slice(-2);
   $('cdBar').style.width = Math.max(0, Math.min(100, rem / FULL * 100)) + '%';
@@ -1554,28 +1621,28 @@ function showTab(t) {
 
 /* ---- Writes ---- */
 function saveAnswer(k, side, val) {
-  if (locked) { toast('The hunt has closed.'); return; }
+  if (locked) { toast(t('The hunt has closed.')); return; }
   var up = {}; up['answers/' + k + '/' + side] = val; up['answers/' + k + '/at'] = TS; up.lastChange = TS;
   pending[k + side] = true;
   db.ref(ROOT + '/players/' + alias).update(up).then(function () { delete pending[k + side]; renderAll(); }).catch(function (e) {
     delete pending[k + side];
-    if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast('The hunt has closed.'); renderAll(); }
-    else toast('That didn’t save. Check your signal.');
+    if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast(t('The hunt has closed.')); renderAll(); }
+    else toast(t('That didn’t save. Check your signal.'));
   });
 }
 function saveTiebreak(day, month) {
-  if (locked) { toast('The hunt has closed.'); return; }
+  if (locked) { toast(t('The hunt has closed.')); return; }
   pending.tiebreak = true;
   db.ref(ROOT + '/players/' + alias).update({ tiebreak: { day: day, month: month, at: TS }, lastChange: TS }).then(function () { delete pending.tiebreak; renderAll(); }).catch(function (e) {
     delete pending.tiebreak;
-    if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast('The hunt has closed.'); renderAll(); }
-    else toast('That didn’t save. Check your signal.');
+    if (e && e.code === 'PERMISSION_DENIED') { locked = true; toast(t('The hunt has closed.')); renderAll(); }
+    else toast(t('That didn’t save. Check your signal.'));
   });
 }
 /* Name cards: drag one to the gap and it snaps in; a tap places it too. */
 var drag = null;
 function placeCard(k, side, val, cardEl, host) {
-  if (locked) { toast('The hunt has closed.'); return; }
+  if (locked) { toast(t('The hunt has closed.')); return; }
   if (k === 'tiebreak') { placeDate((host && host.classList.contains('dp')) ? host : (cardEl && cardEl.closest('.dp')), side, val); return; }
   me = me || {}; me.answers = me.answers || {}; me.answers[k] = me.answers[k] || {};
   var prev = me.answers[k][side];
@@ -1659,10 +1726,10 @@ function renderDP(el) {
   var card = function (side, val, label, placed) { return '<span class="namecard sm' + (justPlaced === 'tiebreak' + side ? ' just' : '') + (placed && !pending.tiebreak && el.id !== 'introDP' ? ' pinned' : '') + '" data-q="tiebreak" data-side="' + side + '"' + (placed ? '' : ' role="button" tabindex="0"') + ' data-pick="' + val + '">' + label + '</span>'; };
   var h = '<div class="date-row">' +
     '<span class="gap sm' + (d ? ' filled' : '') + '" data-q="tiebreak" data-side="day">' + (d ? card('day', d, d, true) : '') + '</span>' +
-    '<span class="gap sm' + (m ? ' filled' : '') + '" data-q="tiebreak" data-side="month">' + (m ? card('month', m, MONTHS[m - 1].slice(0, 3).toUpperCase(), true) : '') + '</span>' +
+    '<span class="gap sm' + (m ? ' filled' : '') + '" data-q="tiebreak" data-side="month">' + (m ? card('month', m, monthAbbr(m), true) : '') + '</span>' +
     '<span class="namecard sm fixed">' + TB_YEAR + '</span></div>';
   h += '<div class="deck months">';
-  MONTHS.forEach(function (name, i) { var lab = name.slice(0, 3).toUpperCase(); h += '<span class="slot sm' + (m === i + 1 ? ' empty' : '') + '" data-name="' + lab + '">' + (m === i + 1 ? '' : card('month', i + 1, lab)) + '</span>'; });
+  MONTHS.forEach(function (name, i) { var lab = monthAbbr(i + 1); h += '<span class="slot sm' + (m === i + 1 ? ' empty' : '') + '" data-name="' + lab + '">' + (m === i + 1 ? '' : card('month', i + 1, lab)) + '</span>'; });
   h += '</div><div class="deck days">';
   for (var i = 1; i <= 31; i++) { var off = i > max; h += '<span class="slot sm' + (d === i ? ' empty' : '') + (off ? ' off' : '') + '" data-name="' + i + '">' + (d === i || off ? '' : card('day', i, i)) + '</span>'; }
   el.innerHTML = h + '</div>';
@@ -1701,11 +1768,12 @@ function gapHtml(k, side) {
 function saidHtml(k, side) {
   var v = verdict(k, side);
   if (!v || v === 'blank') return '';
-  return '<p class="said">You said<span class="namecard mini ' + v + '" aria-label="' + NAMES[pick(k, side)] + ', ' + (v === 'right' ? 'right' : 'wrong') + '">' + NAMES[pick(k, side)] + '</span></p>';
+  return '<p class="said">' + t('You said') + '<span class="namecard mini ' + v + '" aria-label="' + NAMES[pick(k, side)] + ', ' + t(v === 'right' ? 'right' : 'wrong') + '">' + NAMES[pick(k, side)] + '</span></p>';
 }
 /* The host's line of context for the answer, if there is one (config.notes, 150 characters). */
 function noteHtml(k, side) {
-  var n = config.notes && config.notes[k] && config.notes[k][side];
+  var en = config.notes && config.notes[k] && config.notes[k][side];
+  var n = FR ? ((config.fr && config.fr.notes && config.fr.notes[k] && config.fr.notes[k][side]) || en) : en;
   return n ? '<p class="rnote">' + esc(String(n).slice(0, 150)) + '</p>' : '';
 }
 function sentenceHtml(k, side) {
@@ -1730,30 +1798,30 @@ function dateCards(day, month, cls) {
   var c = cls ? ' ' + cls : '';
   return '<div class="dp shown"><div class="date-row">' +
     '<span class="gap sm filled" data-side="day"><span class="namecard sm' + c + '">' + day + '</span></span>' +
-    '<span class="gap sm filled" data-side="month"><span class="namecard sm' + c + '">' + MONTHS[month - 1].slice(0, 3).toUpperCase() + '</span></span>' +
+    '<span class="gap sm filled" data-side="month"><span class="namecard sm' + c + '">' + monthAbbr(month) + '</span></span>' +
     '<span class="namecard sm fixed">' + TB_YEAR + '</span></div></div>';
 }
 /* The tie-breaker after its reveal: the true date, then what you said and how far out it was. */
 function tbResultHtml() {
   var a = answers.tiebreak, tb = me && me.tiebreak, d = tbDistance(me);
-  var html = '<div class="tbres"><p class="k">The date was</p>' + dateCards(a.day, a.month, 'truth');
+  var html = '<div class="tbres"><p class="k">' + t('The date was') + '</p>' + dateCards(a.day, a.month, 'truth');
   if (!tb) return html + '</div>';
-  html += '<p class="k">You said</p>' + dateCards(tb.day, tb.month, d === 0 ? 'right' : '');
-  html += '<p class="dist' + (d === 0 ? ' right' : '') + '">' + (d === 0 ? 'Spot on' : d + ' day' + (d === 1 ? '' : 's') + ' out') + '</p></div>';
+  html += '<p class="k">' + t('You said') + '</p>' + dateCards(tb.day, tb.month, d === 0 ? 'right' : '');
+  html += '<p class="dist' + (d === 0 ? ' right' : '') + '">' + distText(d) + '</p></div>';
   return html;
 }
 function tiebreakHtml(compact) {
   var tb = me && me.tiebreak;
   if (answers.tiebreak) return tbResultHtml();
   if (locked) {
-    return tb ? dateCards(tb.day, tb.month) : '<p class="after-lock">Not answered.</p>';
+    return tb ? dateCards(tb.day, tb.month) : '<p class="after-lock">' + t('Not answered.') + '</p>';
   }
   return '<div class="dp" data-day="' + (tb ? tb.day : '') + '" data-month="' + (tb ? tb.month : '') + '"></div>';
 }
 
 function codeHead(title, n) {
   if (!n) return '<div class="ph"><h2>' + title + '</h2></div>';
-  return '<div class="ph" style="' + window.codeVars(n - 1) + '"><span class="num" aria-hidden="true">' + n + '</span>' + window.codeBlock(n - 1, 40) + '<h2>' + title + '</h2><small>of ' + TOTAL_CODES + '</small></div>';
+  return '<div class="ph" style="' + window.codeVars(n - 1) + '"><span class="num" aria-hidden="true">' + n + '</span>' + window.codeBlock(n - 1, 40) + '<h2>' + title + '</h2><small>' + t('of') + ' ' + TOTAL_CODES + '</small></div>';
 }
 /* The takeover. A scanned card fills the screen until both names are placed and pinned, then it
    slides up and away to My answers, scrolled to that card's rows. A card already answered goes
@@ -1764,12 +1832,12 @@ function openSheet() {
   if (!qk || codeUnknown) return;
   if (cardDone(qk)) { flashRow(qk); return; }
   sheetOpen = true; sheetLeaving = false; sheetTimer = null;
-  var el = $('sheet'); el.classList.remove('leave'); el.hidden = false; el.scrollTop = 0; el.setAttribute('aria-label', 'Card ' + qnum(qk)); refreshPin();
+  var el = $('sheet'); el.classList.remove('leave'); el.hidden = false; el.scrollTop = 0; el.setAttribute('aria-label', t('Card') + ' ' + qnum(qk)); refreshPin();
   renderSheet();
 }
 function renderSheet() {
   if (!sheetOpen || sheetLeaving) return;
-  var n = qnum(qk), html = codeHead('Card ' + n, n) + stmtHtml(qk, 'human') + stmtHtml(qk, 'dog');
+  var n = qnum(qk), html = codeHead(t('Card') + ' ' + n, n) + stmtHtml(qk, 'human') + stmtHtml(qk, 'dog');
   if (locked) { html += signHtml(); if (!sheetTimer) sheetTimer = setTimeout(leaveSheet, 2200); }
   else if (cardDone(qk) && !sheetTimer) sheetTimer = setTimeout(leaveSheet, REDUCED ? 200 : 750);
   $('sheet').innerHTML = html;
@@ -1794,20 +1862,20 @@ function renderMine() {
   var p = $('p-mine');
   var found = foundCount(), left = TOTAL_CODES - found;
   var head;
-  if (isAway()) head = locked ? 'The hunt has closed' : 'All ten cards are yours';
-  else if (locked) head = found + ' of ' + TOTAL_CODES + ' found';
-  else if (config.releasedAt) head = 'Everything’s open';
-  else if (left === 0) head = 'All ten found';
-  else head = left + ' more card' + (left === 1 ? '' : 's') + ' to find';
+  if (isAway()) head = t(locked ? 'The hunt has closed' : 'All ten cards are yours');
+  else if (locked) head = tf('%1 of %2 found', found, TOTAL_CODES);
+  else if (config.releasedAt) head = t('Everything’s open');
+  else if (left === 0) head = t('All ten found');
+  else head = moreToFind(left);
   var pending = 0;
   allKeys().forEach(function (k) { if (isFound(k)) { if (!pick(k, 'human')) pending++; if (!pick(k, 'dog')) pending++; } });
-  var html = '<div class="progress" aria-label="' + found + ' of ' + TOTAL_CODES + ' cards found">';
+  var html = '<div class="progress" aria-label="' + tf('%1 of %2 cards found', found, TOTAL_CODES) + '">';
   allKeys().forEach(function (k, i) { html += window.codeBlock(i, 0, 'pb' + (isFound(k) ? ' on' : '')); });
   html += '</div>';
   html += '<div class="ph"><h2>' + head + '</h2></div>';
   var nudge = pending && !locked && !revealedKeys().length;
-  if (nudge) html += '<p class="nudge">' + pending + ' still to answer.</p>';
-  if (isAway() && locked && revealedKeys().length < TOTAL_CODES) html += '<p class="nudge">Answers are revealed at the pub. Keep this page open and it follows along.</p>';
+  if (nudge) html += '<p class="nudge">' + tf('%1 still to answer.', pending) + '</p>';
+  if (isAway() && locked && revealedKeys().length < TOTAL_CODES) html += '<p class="nudge">' + t('Answers are revealed at the pub. Keep this page open and it follows along.') + '</p>';
 
   html += '<ol class="rows">';
   var revealed = config.revealed || {};
@@ -1818,7 +1886,7 @@ function renderMine() {
     if (shown(k)) return;
     var nn = qnum(k);
     var clue = config.clues && config.clues[k];
-    html += '<li class="row hidden" data-q="' + k + '" style="' + window.codeVars(nn - 1) + '"><span class="n">' + nn + '</span>' + window.codeBlock(nn - 1, 30) + '<div class="body"><p>' + (clue ? esc(clue) : 'Not found yet') + '</p></div></li>';
+    html += '<li class="row hidden" data-q="' + k + '" style="' + window.codeVars(nn - 1) + '"><span class="n">' + nn + '</span>' + window.codeBlock(nn - 1, 30) + '<div class="body"><p>' + (clue ? esc(clue) : t('Not found yet')) + '</p></div></li>';
   });
   allKeys().forEach(function (k) {
     if (!shown(k)) return;
@@ -1831,13 +1899,13 @@ function renderMine() {
       html += '<li class="' + cls + '" data-q="' + k + '" style="' + window.codeVars(n - 1) + '"><span class="n">' + label + '</span><span class="ic">' + icon(q.icon) + '</span><div class="body">';
       html += '<p>' + sentenceHtml(k, side) + '</p>';
       if (v) html += saidHtml(k, side) + noteHtml(k, side) + photoHtml(k, side, true);
-      else if (locked && !cur) html += '<div class="verdict">Not answered</div>';
+      else if (locked && !cur) html += '<div class="verdict">' + t('Not answered') + '</div>';
       else html += deckHtml(k, side);
       html += '</div></li>';
     });
   });
   if (me) {
-    html += '<li class="row patch gold"><span class="n"></span><span class="ic">' + iconFallback() + '</span><div class="body tb" style="border:0;padding:0;margin:0"><p>' + esc(content.tiebreak.third) + '</p>' + tiebreakHtml(true) + '</div></li>';
+    html += '<li class="row patch gold"><span class="n"></span><span class="ic">' + iconFallback() + '</span><div class="body tb" style="border:0;padding:0;margin:0"><p>' + esc(tbThird()) + '</p>' + tiebreakHtml(true) + '</div></li>';
   }
   html += '</ol>';
   p.innerHTML = html;
@@ -1875,13 +1943,13 @@ function standings(keys, awayGroup) {
   });
   return list;
 }
-function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+function ordinal(n) { if (FR) return n === 1 ? '1er' : n + 'e'; var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 
 function renderResults() {
   var p = $('p-results');
   var keys = revealedKeys().filter(function (k) { return answers[k]; });
   if (!keys.length) {
-    p.innerHTML = codeHead('Results') + '<div class="locked"><span class="lock" aria-hidden="true"></span><p>Unlocks at the reveal.</p></div>';
+    p.innerHTML = codeHead(t('Results')) + '<div class="locked"><span class="lock" aria-hidden="true"></span><p>' + t('Unlocks at the reveal.') + '</p></div>';
     lastScore = 0;
     return;
   }
@@ -1889,19 +1957,19 @@ function renderResults() {
   var mine = (awayTable || room).filter(function (r) { return r.slug === alias; })[0];
   var myScore = mine ? mine.score : 0;
   var done = keys.length === TOTAL_CODES;
-  var html = '<div class="ph"><h2>Results</h2><small>' + keys.length + ' of ' + TOTAL_CODES + ' revealed</small></div>';
+  var html = '<div class="ph"><h2>' + t('Results') + '</h2><small>' + tf('%1 of %2 revealed', keys.length, TOTAL_CODES) + '</small></div>';
   if (done && mine) {
-    html += '<div class="patch gold rank-card"><div class="rank">' + ordinal(mine.pos) + '</div>' + (mine.shared ? '<div class="of">joint</div>' : '');
+    html += '<div class="patch gold rank-card"><div class="rank">' + ordinal(mine.pos) + '</div>' + (mine.shared ? '<div class="of">' + t('joint') + '</div>' : '');
     html += '</div>';
   }
-  html += '<section class="patch"><p class="sec-k">Your score</p><div class="score"><span id="scoreNum">' + lastScore + '</span> <small>/ ' + (TOTAL_CODES * 2) + '</small></div></section>';
+  html += '<section class="patch"><p class="sec-k">' + t('Your score') + '</p><div class="score"><span id="scoreNum">' + lastScore + '</span> <small>/ ' + (TOTAL_CODES * 2) + '</small></div></section>';
   var boardHtml = function (table) {
     return '<ol class="board">' + table.map(function (r) {
       return '<li class="' + (r.slug === alias ? 'me ' : '') + (r.pos <= 3 ? 'p' + r.pos : '') + '"><span class="pos">' + r.pos + (r.shared ? '=' : '') + '</span><span class="nm">' + esc(prettyAlias(r.slug)) + '</span><span class="pts">' + r.score + '</span></li>';
     }).join('') + '</ol>';
   };
-  html += '<section class="patch"><p class="sec-k">' + (awayTable ? 'The room' : 'Leaderboard') + '</p>' + boardHtml(room) + '</section>';
-  if (awayTable) html += '<section class="patch"><p class="sec-k">Playing from afar</p>' + boardHtml(awayTable) + '</section>';
+  html += '<section class="patch"><p class="sec-k">' + t(awayTable ? 'The room' : 'Leaderboard') + '</p>' + boardHtml(room) + '</section>';
+  if (awayTable) html += '<section class="patch"><p class="sec-k">' + t('Playing from afar') + '</p>' + boardHtml(awayTable) + '</section>';
   p.innerHTML = html;
   tickScore(lastScore, myScore);
   lastScore = myScore;

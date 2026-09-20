@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v19.4 (20/09/2026): French fields on Setup: beside each statement and reveal note, a French version
+          (config.fr.statements, config.fr.notes), seeded from content.json's third_fr and shown to
+          phones opened with ?lang=fr. Reset keeps them.
   v19.3 (20/09/2026): Playing from afar. Setup makes an away link (a code seeded as "away"); the Cards panel
           lists it. Away players are marked in the table, counted apart in the feed, and left out of the
           "N of M got it" splits so the phones and the presenter agree.
@@ -235,6 +238,8 @@
   .stm .num{font-size:12px;color:var(--sage);padding-top:10px;font-variant-numeric:tabular-nums}
   .stm .qb{margin-top:8px}
   .stm textarea{margin:0;min-height:60px;font-family:inherit;font-size:14px}
+  .stm textarea.fr{grid-column:4 / -1;min-height:44px;border-color:#c9d3e6;background:#f7f9fd}
+  .stm input.rnotefr{grid-column:4 / -1;font-family:inherit;font-size:13px;font-style:italic;padding:6px 10px;border:1px solid #c9d3e6;border-radius:6px;background:#f7f9fd;color:var(--forest)}
   .stm input.rnote{grid-column:4 / -1;font-family:inherit;font-size:13px;font-style:italic;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--forest)}
   .st .rnote{grid-column:1 / -1;font-size:14px;font-style:italic;color:var(--forest);margin:0}
   .stm .ans{display:flex;flex-direction:column;gap:4px}
@@ -621,7 +626,7 @@ $('bSeed').addEventListener('click', function () {
 $('resetInput').addEventListener('input', function () { $('bReset').disabled = $('resetInput').value.trim() !== 'RESET'; });
 $('bReset').addEventListener('click', function () {
   if (!confirm('Wipe every player and all settings? This cannot be undone.')) return;
-  cfg().set({ epoch: Date.now(), clues: config.clues || null, statements: config.statements || null, icons: config.icons || null, motifs: config.motifs || null, notes: config.notes || null, media: config.media || null }).then(function () { return db.ref(ROOT + '/players').remove(); }).then(function () { $('resetInput').value = ''; $('bReset').disabled = true; }).catch(fail);
+  cfg().set({ epoch: Date.now(), clues: config.clues || null, statements: config.statements || null, icons: config.icons || null, motifs: config.motifs || null, notes: config.notes || null, media: config.media || null, fr: config.fr || null }).then(function () { return db.ref(ROOT + '/players').remove(); }).then(function () { $('resetInput').value = ''; $('bReset').disabled = true; }).catch(fail);
 });
 
 /* ---- Rendering ---- */
@@ -671,7 +676,9 @@ function renderStatements() {
           '<button type="button" class="med" data-k="' + k + '" data-side="' + side + '" title="Choose the photo or clip"><img alt="" hidden><span>+</span></button>' +
           '<textarea data-k="' + k + '" data-side="' + side + '" rows="2" autocomplete="off"></textarea>' +
           '<div class="ans">' + opts.map(function (o) { return '<button type="button" data-k="' + k + '" data-side="' + side + '" data-ans="' + o + '">' + NAMES[o] + '</button>'; }).join('') + '</div>' +
-          '<input type="text" class="rnote" data-k="' + k + '" data-side="' + side + '" maxlength="150" placeholder="Reveal note, optional: a line of context shown with the answer (150 characters)" autocomplete="off"></div>' +
+          '<input type="text" class="rnote" data-k="' + k + '" data-side="' + side + '" maxlength="150" placeholder="Reveal note, optional: a line of context shown with the answer (150 characters)" autocomplete="off">' +
+          '<textarea class="fr" data-k="' + k + '" data-side="' + side + '" rows="2" autocomplete="off" placeholder="En français"></textarea>' +
+          '<input type="text" class="rnotefr" data-k="' + k + '" data-side="' + side + '" maxlength="150" placeholder="Note en français, optional" autocomplete="off"></div>' +
           '<div class="ipick" data-k="' + k + '" data-side="' + side + '" hidden>' + ICONS.map(function (ic) { return '<button type="button" data-icon="' + ic + '.svg" title="' + ic + '"><img src="../icons/' + ic + '.svg" alt="' + ic + '"></button>'; }).join('') + '</div>';
       }).join('');
     }).join('');
@@ -696,7 +703,11 @@ function renderStatements() {
     box.addEventListener('change', function (ev) {
       var rn = ev.target.closest('input.rnote');
       if (rn) { var u2 = {}; u2['notes/' + rn.dataset.k + '/' + rn.dataset.side] = rn.value.trim().slice(0, 150) || null; cfg().update(u2).catch(fail); return; }
-      var ta = ev.target.closest('textarea[data-k]'); if (!ta) return;
+      var rf = ev.target.closest('input.rnotefr');
+      if (rf) { var u3 = {}; u3['fr/notes/' + rf.dataset.k + '/' + rf.dataset.side] = rf.value.trim().slice(0, 150) || null; cfg().update(u3).catch(fail); return; }
+      var tf = ev.target.closest('textarea.fr');
+      if (tf) { var txf = tf.value.trim().replace(/_{2,}/g, '{name}'), basef = content.questions[parseInt(tf.dataset.k.slice(1), 10) - 1][tf.dataset.side].third_fr || ''; var u4 = {}; u4['fr/statements/' + tf.dataset.k + '/' + tf.dataset.side] = (txf && txf !== basef) ? txf : null; cfg().update(u4).catch(fail); return; }
+      var ta = ev.target.closest('textarea[data-k]:not(.fr)'); if (!ta) return;
       var text = ta.value.trim().replace(/_{2,}/g, '{name}');
       var base = content.questions[parseInt(ta.dataset.k.slice(1), 10) - 1][ta.dataset.side].third;
       var up = {}; up['statements/' + ta.dataset.k + '/' + ta.dataset.side] = (text && text !== base) ? text : null;
@@ -708,7 +719,9 @@ function renderStatements() {
       db.ref(ROOT + '/answers/' + b.dataset.k + '/' + b.dataset.side).set(b.dataset.ans).catch(fail);
     });
   }
-  box.querySelectorAll('textarea[data-k]').forEach(function (ta) { if (document.activeElement !== ta) ta.value = stmtText(ta.dataset.k, ta.dataset.side); });
+  box.querySelectorAll('textarea[data-k]:not(.fr)').forEach(function (ta) { if (document.activeElement !== ta) ta.value = stmtText(ta.dataset.k, ta.dataset.side); });
+  box.querySelectorAll('textarea.fr').forEach(function (ta) { if (document.activeElement !== ta) { var ov = config.fr && config.fr.statements && config.fr.statements[ta.dataset.k]; var base = content.questions[parseInt(ta.dataset.k.slice(1), 10) - 1][ta.dataset.side].third_fr || ''; ta.value = ((ov && ov[ta.dataset.side]) || base).replace(/\{name\}/g, '____'); } });
+  box.querySelectorAll('input.rnotefr').forEach(function (inp) { if (document.activeElement !== inp) { var nf = config.fr && config.fr.notes && config.fr.notes[inp.dataset.k]; inp.value = (nf && nf[inp.dataset.side]) || ''; } });
   box.querySelectorAll('button[data-ans]').forEach(function (b) { var a = answers[b.dataset.k]; b.classList.toggle('on', !!a && a[b.dataset.side] === b.dataset.ans); });
   box.querySelectorAll('.mblock').forEach(function (m) { m.innerHTML = CODE_STYLE[+m.dataset.i]; });
   box.querySelectorAll('input.rnote').forEach(function (inp) { if (document.activeElement !== inp) { var nn = config.notes && config.notes[inp.dataset.k]; inp.value = (nn && nn[inp.dataset.side]) || ''; } });
