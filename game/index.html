@@ -4,6 +4,8 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v24.2 (20/09/2026): An away phone's My answers opens straight onto the cards: no heading and no count of
+          answers still to give. The closed heading and the pub line stay.
   v24.1 (20/09/2026): On a French phone the generated name keeps its English words (it is the alias everyone
           sees) and carries a small French gloss beneath, on the reel hint and the "Vous êtes" card:
           Meatball Snaffler, Chipeur de boulettes. content.json's reels carry items_fr and roles_fr.
@@ -1880,7 +1882,7 @@ function renderMine() {
   var p = $('p-mine');
   var found = foundCount(), left = TOTAL_CODES - found;
   var head;
-  if (isAway()) head = t(locked ? 'The hunt has closed' : 'All ten cards are yours');
+  if (isAway()) head = locked ? t('The hunt has closed') : '';
   else if (locked) head = tf('%1 of %2 found', found, TOTAL_CODES);
   else if (config.releasedAt) head = t('Everything’s open');
   else if (left === 0) head = t('All ten found');
@@ -1890,8 +1892,8 @@ function renderMine() {
   var html = '<div class="progress" aria-label="' + tf('%1 of %2 cards found', found, TOTAL_CODES) + '">';
   allKeys().forEach(function (k, i) { html += window.codeBlock(i, 0, 'pb' + (isFound(k) ? ' on' : '')); });
   html += '</div>';
-  html += '<div class="ph"><h2>' + head + '</h2></div>';
-  var nudge = pending && !locked && !revealedKeys().length;
+  if (head) html += '<div class="ph"><h2>' + head + '</h2></div>';
+  var nudge = pending && !locked && !revealedKeys().length && !isAway();
   if (nudge) html += '<p class="nudge">' + tf('%1 still to answer.', pending) + '</p>';
   if (isAway() && locked && revealedKeys().length < TOTAL_CODES) html += '<p class="nudge">' + t('Answers are revealed at the pub. Keep this page open and it follows along.') + '</p>';
 
