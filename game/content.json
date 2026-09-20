@@ -1,5 +1,5 @@
 {
-  "version": "1.19",
+  "version": "1.20",
   "reels": {
     "items": [
       "Sausage",
@@ -36,6 +36,42 @@
       "Rascal",
       "Poacher",
       "Nibbler"
+    ],
+    "items_fr": [
+      "de saucisses",
+      "de scones",
+      "de pizza",
+      "de boulettes",
+      "de crumpets",
+      "de choux de Bruxelles",
+      "de sauce",
+      "de bottes en caoutchouc",
+      "de cornichons",
+      "de crème anglaise",
+      "de pantoufles",
+      "de biscuits",
+      "de frites",
+      "de flaques",
+      "de chaussettes",
+      "de bouilloires"
+    ],
+    "roles_fr": [
+      "Bandit",
+      "Accumulateur",
+      "Gobelin",
+      "Voleur",
+      "Embêteur",
+      "Dompteur",
+      "Inspecteur",
+      "Chapardeur",
+      "Contrebandier",
+      "Esquiveur",
+      "Chuchoteur",
+      "Baron",
+      "Chipeur",
+      "Vaurien",
+      "Braconnier",
+      "Grignoteur"
     ]
   },
   "iconBase": "/game/icons/",
