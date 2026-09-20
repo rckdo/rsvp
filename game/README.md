@@ -22,7 +22,7 @@ page's Seed box and handed over separately.
 /game/answers/q1 … q10        { human: "R"|"L", dog: "E"|"T" }
 /game/answers/tiebreak        { day, month }
 /game/config                  { lockAt, releasedAt, revealed: { q1: true, … }, stage, epoch, clues, statements }
-/game/players/{alias}         { uid, claimedAt, lastChange, found/{q}, answers/{q}, tiebreak }
+/game/players/{alias}         { uid, claimedAt, lastChange, away?, found/{q}, answers/{q}, tiebreak }
 ```
 
 Rules enforce: one anonymous sign-in per phone owns its alias; a code can only be
@@ -31,6 +31,14 @@ nothing after the lock time. The host writes (codes, answers, config, reset) are
 to any signed-in phone. The host page sits behind the passcode splash and is the only
 thing that makes them. Anyone querying Firebase directly could read the answers early;
 that is an accepted risk for a wedding.
+
+## Playing from afar
+
+An "away" code is a code whose value is `away` (the host page's Setup tab makes one). Opening
+`/game/?c=AWAYCODE` marks the phone away at claim time and hands it all ten cards without hunting:
+the rules let an away player answer any card. Away players are ranked among themselves; the room's
+leaderboard and the reveal's "N of M got it" leave them out. Send the link privately: it is the only
+thing standing between an attendee and a hunt-free game.
 
 ## Seeding and reset
 

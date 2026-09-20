@@ -4,6 +4,9 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v19.3 (20/09/2026): Playing from afar. Setup makes an away link (a code seeded as "away"); the Cards panel
+          lists it. Away players are marked in the table, counted apart in the feed, and left out of the
+          "N of M got it" splits so the phones and the presenter agree.
   v19.2 (13/09/2026): The date in two beats. "Show the date" puts the reels on every phone at rest on
           1 January with what each phone said; "Reveal the date" spins them. Back steps through both.
           The presenter view renders as soon as content.json arrives, whichever of it and the config
@@ -353,6 +356,8 @@
           <h2>Cards</h2>
           <p class="state" id="cardsState"></p>
           <ol class="urls" id="cardsList"></ol>
+          <p class="state" id="awayState"></p>
+          <button class="btn ghost" id="bAway">Make an away link</button>
           <a class="btn" href="cards/">Open the card sheet</a>
         </section>
         <section class="panel wide">
@@ -520,6 +525,9 @@ function renderCards() {
   var byQ = {}; Object.keys(codesKnown).forEach(function (c) { byQ[codesKnown[c]] = c; });
   st.textContent = 'The ten card URLs. The card sheet draws them as QR codes.';
   el.innerHTML = keys.map(function (k) { var c = byQ[k]; var u = 'https://lorraine-richard.rsvp/game/?c=' + esc(c); return '<li>' + (c ? '<a href="' + u + '" target="_blank" rel="noopener">' + u + '</a>' : '<span class="muted">missing</span>') + '</li>'; }).join('');
+  var aways = Object.keys(codesKnown).filter(function (c) { return codesKnown[c] === 'away'; });
+  $('awayState').innerHTML = aways.length ? 'Away link, for people playing from afar (all ten cards, no hunting): ' + aways.map(function (c) { var u = 'https://lorraine-richard.rsvp/game/?c=' + esc(c); return '<a href="' + u + '" target="_blank" rel="noopener">' + u + '</a>'; }).join(', ') : 'No away link yet. One link, sent privately, gives a phone all ten cards without hunting.';
+  $('bAway').hidden = aways.length > 0;
 }
 function subscribe() {
   db.ref(ROOT + '/codes').once('value').then(function (s) { codesKnown = s.val(); }).catch(function () {}).then(function () {
@@ -583,6 +591,18 @@ $('bBack').addEventListener('click', function () {
   else if (n > 0) { up.stage = { card: 'q' + n, step: 'answer' }; }
   else return;
   cfg().update(up).catch(fail);
+});
+/* The away link: one code seeded as "away", made here, listed with the cards. */
+$('bAway').addEventListener('click', function () {
+  var abc = 'abcdefghjkmnpqrstuvwxyz23456789', c = '';
+  for (var i = 0; i < 6; i++) c += abc[Math.floor(Math.random() * abc.length)];
+  if (codesKnown && codesKnown[c]) return;
+  var up = {}; up[c] = 'away';
+  db.ref(ROOT + '/codes').update(up).then(function () {
+    codesKnown = codesKnown || {}; codesKnown[c] = 'away';
+    try { localStorage.setItem('rl-game-codes', JSON.stringify(codesKnown)); } catch (e) {}
+    renderCards();
+  }).catch(fail);
 });
 $('bSeed').addEventListener('click', function () {
   $('seedErr').textContent = '';
@@ -767,13 +787,14 @@ function splitOf(k, side) {
   var opts = side === 'human' ? ['R', 'L'] : ['E', 'T'], counts = {}, wrong = [], none = 0;
   opts.forEach(function (o) { counts[o] = 0; });
   Object.keys(players).forEach(function (s) {
+    if (players[s].away) return;
     var v = players[s].answers && players[s].answers[k] && players[s].answers[k][side];
     if (v && counts[v] !== undefined) { counts[v]++; if (truth && v !== truth) wrong.push(s); } else none++;
   });
   return { truth: truth, opts: opts, counts: counts, wrong: wrong, none: none };
 }
 function stHtml(k, side, showSplit) {
-  var q = content.questions[parseInt(k.slice(1), 10) - 1][side], sp = splitOf(k, side), total = Object.keys(players).length;
+  var q = content.questions[parseInt(k.slice(1), 10) - 1][side], sp = splitOf(k, side), total = Object.keys(players).filter(function (s) { return !players[s].away; }).length;
   var other = sp.opts.filter(function (o) { return o !== sp.truth; })[0];
   var sentence = stmtText(k, side).replace('____', sp.truth ? NAMES[sp.truth] : '____');
   var h = '<div class="st"><p class="txt">' + fmt(sentence) + '</p>';
@@ -800,7 +821,8 @@ function renderReveal() {
   var rk = revealedKeys(), n = rk.length, slugs = Object.keys(players), found = 0, ans = 0;
   slugs.forEach(function (s) { var p = players[s]; found += p.found ? Object.keys(p.found).length : 0; keys.forEach(function (k) { if (p.answers && p.answers[k]) { if (p.answers[k].human) ans++; if (p.answers[k].dog) ans++; } }); });
   $('revealVal').innerHTML = n + '<small>of ' + TOTAL + '</small>';
-  $('feedState').textContent = slugs.length + ' players \u00b7 ' + found + ' found \u00b7 ' + ans + ' answered';
+  var nAway = slugs.filter(function (s) { return players[s].away; }).length;
+  $('feedState').textContent = (slugs.length - nAway) + ' in the room' + (nAway ? ' \u00b7 ' + nAway + ' away' : '') + ' \u00b7 ' + found + ' found \u00b7 ' + ans + ' answered';
   var si = stageInfo(), ph = phase(), lab = { show: 'Show card ' + (si.card ? si.card.slice(1) : ''), answer: 'Reveal answers', date: 'Show the date', dateAnswer: 'Reveal the date', finish: 'Finish', done: 'All revealed' }[si.mode];
   $('bNext').disabled = si.mode === 'done' || ph === 'open'; $('bNext').textContent = ph === 'open' ? 'Close the hunt first' : lab;
   $('bAll').disabled = n >= TOTAL || ph === 'open'; $('bHide').disabled = ph !== 'revealing'; $('bScreen').disabled = !(config.stage && config.stage.card);
@@ -890,7 +912,7 @@ function renderBoard() {
     var p = players[r.slug], f = p.found ? Object.keys(p.found).length : 0, a = 0;
     keys.forEach(function (k) { if (p.answers && p.answers[k]) { if (p.answers[k].human) a++; if (p.answers[k].dog) a++; } });
     var tb = p.tiebreak ? (r.tb === Infinity ? p.tiebreak.day + ' ' + MONTHS[p.tiebreak.month - 1].slice(0, 3) : r.tb + 'd') : '\u2014';
-    return '<tr><td class="rank">' + r.pos + '</td><td>' + esc(pretty(r.slug)) + '</td><td class="n">' + f + '</td><td class="n">' + a + '</td><td class="n score">' + r.score + '</td><td class="n muted">' + tb + '</td></tr>';
+    return '<tr><td class="rank">' + r.pos + '</td><td>' + esc(pretty(r.slug)) + (p.away ? ' <span class="muted">away</span>' : '') + '</td><td class="n">' + (p.away ? '\u2014' : f) + '</td><td class="n">' + a + '</td><td class="n score">' + r.score + '</td><td class="n muted">' + tb + '</td></tr>';
   }).join('') || '<tr><td colspan="6" class="muted">No players yet.</td></tr>';
 }
 </script>

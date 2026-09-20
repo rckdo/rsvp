@@ -20,7 +20,7 @@
         ".read": "auth != null",
         ".write": "auth != null",
         "$code": {
-          ".validate": "newData.isString() && newData.val().matches(/^q([1-9]|10)$/)"
+          ".validate": "newData.isString() && newData.val().matches(/^(q([1-9]|10)|away)$/)"
         }
       },
       "answers": {
@@ -43,6 +43,9 @@
           "claimedAt": {
             ".validate": "newData.isNumber()"
           },
+          "away": {
+            ".validate": "newData.isString() && root.child('game/codes').child(newData.val()).val() === 'away'"
+          },
           "lastChange": {
             ".write": "auth != null && root.child('game/players').child($slug).child('uid').val() === auth.uid",
             ".validate": "newData.isNumber()"
@@ -55,7 +58,7 @@
           },
           "answers": {
             "$q": {
-              ".write": "auth != null && root.child('game/players').child($slug).child('uid').val() === auth.uid && (!root.child('game/config/lockAt').exists() || now < root.child('game/config/lockAt').val()) && (root.child('game/players').child($slug).child('found').child($q).exists() || root.child('game/config/releasedAt').exists())",
+              ".write": "auth != null && root.child('game/players').child($slug).child('uid').val() === auth.uid && (!root.child('game/config/lockAt').exists() || now < root.child('game/config/lockAt').val()) && (root.child('game/players').child($slug).child('found').child($q).exists() || root.child('game/config/releasedAt').exists() || root.child('game/players').child($slug).child('away').exists())",
               ".validate": "$q.matches(/^q([1-9]|10)$/) && newData.hasChildren(['at']) && (!newData.hasChild('human') || newData.child('human').val().matches(/^[RL]$/)) && (!newData.hasChild('dog') || newData.child('dog').val().matches(/^[ET]$/))"
             }
           },

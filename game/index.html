@@ -4,6 +4,12 @@
   Lorraine & Richard, Monday 21 September 2026
 
   Changelog
+  v23.0 (20/09/2026): Playing from afar. A link carrying an "away" code (seeded like the ten card codes) hands
+          the phone all ten cards at once: name, the date, then My answers with every card open, no
+          hunting. The player is marked away at claim time, which the rules check against the code.
+          Results: attendees see the room only; an away player sees the room and, beneath it, the
+          away list, and is ranked among the away. The reveal's room count leaves away players out.
+          Once locked, an away phone says the answers are revealed at the pub and to keep the page open.
   v22.3 (13/09/2026): On My answers a card no longer lifts the moment a finger lands on it. The lift waits for
           a sideways move or the release, so a scroll that starts on a card shows nothing.
   v22.2 (13/09/2026): Scrolling My answers no longer picks a card by accident: a vertical swipe that starts on a
@@ -894,6 +900,7 @@ var db, auth, uid = null;
 var offset = 0;          // Firebase server time minus device time
 var code = null;         // ?c=
 var qk = null;           // 'q3' for this landing, or null (home view)
+var away = false, awayCode = null;   // this landing carried an away code: all ten cards, no hunting
 var codeUnknown = false;
 var alias = null;        // slug
 var me = null;           // /game/players/{alias}
@@ -1120,7 +1127,10 @@ function statementText(k, side, person) {
   if (person) return q.third.replace('{name}', '<span class="who">' + esc(NAMES[person].toUpperCase()) + '</span>');
   return q.first;
 }
-function isFound(k) { return !!(config.releasedAt || (me && me.found && me.found[k])); }
+function isAway() { return !!(me && me.away) || away; }
+function isFound(k) { return !!(config.releasedAt || isAway() || (me && me.found && me.found[k])); }
+/* The player node as first written: an away landing records its code so the rules can let it answer unfound cards. */
+function claimNode() { var n = { uid: uid, claimedAt: now(), lastChange: now() }; if (away && awayCode) n.away = awayCode; return n; }
 function pick(k, side) { return me && me.answers && me.answers[k] ? me.answers[k][side] || null : null; }
 function foundCount() { var n = 0; allKeys().forEach(function (k) { if (me && me.found && me.found[k]) n++; }); return n; }
 function answeredCount(p) { var n = 0; allKeys().forEach(function (k) { if (p && p.answers && p.answers[k]) { if (p.answers[k].human) n++; if (p.answers[k].dog) n++; } }); return n; }
@@ -1153,7 +1163,8 @@ function resolveCode() {
   code = m[1].toLowerCase();
   return db.ref(ROOT + '/codes/' + code).once('value').then(function (s) {
     var v = s.val();
-    if (v && /^q([1-9]|10)$/.test(v)) qk = v; else codeUnknown = true;
+    if (v === 'away') { away = true; awayCode = code; }
+    else if (v && /^q([1-9]|10)$/.test(v)) qk = v; else codeUnknown = true;
   }).catch(function () { codeUnknown = true; });
 }
 
@@ -1241,7 +1252,7 @@ function lockIn() {
   var slug = slugOf(current.item, current.role);
   $('btnLock').disabled = true; $('btnSpin').disabled = true;
   db.ref(ROOT + '/players/' + slug).transaction(function (cur) {
-    if (cur === null) return { uid: uid, claimedAt: now(), lastChange: now() };
+    if (cur === null) return claimNode();
     return; // taken: abort
   }).then(function (res) {
     if (!res.committed) {
@@ -1342,7 +1353,7 @@ function onPlayer() {
   // After a host reset the alias node is gone: quietly re-claim it so the phone keeps working.
   if (me === null && !healing && (!config.epoch || storedEpoch() === config.epoch)) {
     healing = true;
-    db.ref(ROOT + '/players/' + alias).transaction(function (cur) { return cur === null ? { uid: uid, claimedAt: now(), lastChange: now() } : undefined; })
+    db.ref(ROOT + '/players/' + alias).transaction(function (cur) { return cur === null ? claimNode() : undefined; })
       .then(function () { healing = false; if (qk) recordFound(); }).catch(function () { healing = false; });
   }
   renderAll();
@@ -1491,7 +1502,7 @@ function stageSaidHtml(k, side, revealed) {
 /* How the room did on one statement: everyone with a name counts, answered or not. */
 function roomCount(k, side) {
   var truth = answers[k] && answers[k][side], n = 0, t = 0;
-  Object.keys(players).forEach(function (s) { t++; var p = players[s]; if (p.answers && p.answers[k] && p.answers[k][side] === truth) n++; });
+  Object.keys(players).forEach(function (s) { var p = players[s]; if (p.away) return; t++; if (p.answers && p.answers[k] && p.answers[k][side] === truth) n++; });
   return { n: n, t: t };
 }
 function loadAnswers(keys, fresh) {
@@ -1783,7 +1794,8 @@ function renderMine() {
   var p = $('p-mine');
   var found = foundCount(), left = TOTAL_CODES - found;
   var head;
-  if (locked) head = found + ' of ' + TOTAL_CODES + ' found';
+  if (isAway()) head = locked ? 'The hunt has closed' : 'All ten cards are yours';
+  else if (locked) head = found + ' of ' + TOTAL_CODES + ' found';
   else if (config.releasedAt) head = 'Everything’s open';
   else if (left === 0) head = 'All ten found';
   else head = left + ' more card' + (left === 1 ? '' : 's') + ' to find';
@@ -1795,6 +1807,7 @@ function renderMine() {
   html += '<div class="ph"><h2>' + head + '</h2></div>';
   var nudge = pending && !locked && !revealedKeys().length;
   if (nudge) html += '<p class="nudge">' + pending + ' still to answer.</p>';
+  if (isAway() && locked && revealedKeys().length < TOTAL_CODES) html += '<p class="nudge">Answers are revealed at the pub. Keep this page open and it follows along.</p>';
 
   html += '<ol class="rows">';
   var revealed = config.revealed || {};
@@ -1847,8 +1860,9 @@ function tbDistance(p) {
   var a = Date.UTC(TB_YEAR, answers.tiebreak.month - 1, answers.tiebreak.day), b = Date.UTC(TB_YEAR, p.tiebreak.month - 1, p.tiebreak.day);
   return Math.abs(Math.round((a - b) / 86400000));
 }
-function standings(keys) {
-  var list = Object.keys(players).map(function (slug) {
+/* Two fields: the room (attendees) and the away group. Each is ranked on its own. */
+function standings(keys, awayGroup) {
+  var list = Object.keys(players).filter(function (slug) { return !!players[slug].away === !!awayGroup; }).map(function (slug) {
     var d = tbDistance(players[slug]);
     return { slug: slug, score: scoreOf(players[slug], keys), tb: d === null ? Infinity : d };
   });
@@ -1871,8 +1885,8 @@ function renderResults() {
     lastScore = 0;
     return;
   }
-  var table = standings(keys);
-  var mine = table.filter(function (r) { return r.slug === alias; })[0];
+  var room = standings(keys, false), awayTable = isAway() ? standings(keys, true) : null;
+  var mine = (awayTable || room).filter(function (r) { return r.slug === alias; })[0];
   var myScore = mine ? mine.score : 0;
   var done = keys.length === TOTAL_CODES;
   var html = '<div class="ph"><h2>Results</h2><small>' + keys.length + ' of ' + TOTAL_CODES + ' revealed</small></div>';
@@ -1881,11 +1895,13 @@ function renderResults() {
     html += '</div>';
   }
   html += '<section class="patch"><p class="sec-k">Your score</p><div class="score"><span id="scoreNum">' + lastScore + '</span> <small>/ ' + (TOTAL_CODES * 2) + '</small></div></section>';
-  html += '<section class="patch"><p class="sec-k">Leaderboard</p><ol class="board">';
-  table.forEach(function (r) {
-    html += '<li class="' + (r.slug === alias ? 'me ' : '') + (r.pos <= 3 ? 'p' + r.pos : '') + '"><span class="pos">' + r.pos + (r.shared ? '=' : '') + '</span><span class="nm">' + esc(prettyAlias(r.slug)) + '</span><span class="pts">' + r.score + '</span></li>';
-  });
-  html += '</ol></section>';
+  var boardHtml = function (table) {
+    return '<ol class="board">' + table.map(function (r) {
+      return '<li class="' + (r.slug === alias ? 'me ' : '') + (r.pos <= 3 ? 'p' + r.pos : '') + '"><span class="pos">' + r.pos + (r.shared ? '=' : '') + '</span><span class="nm">' + esc(prettyAlias(r.slug)) + '</span><span class="pts">' + r.score + '</span></li>';
+    }).join('') + '</ol>';
+  };
+  html += '<section class="patch"><p class="sec-k">' + (awayTable ? 'The room' : 'Leaderboard') + '</p>' + boardHtml(room) + '</section>';
+  if (awayTable) html += '<section class="patch"><p class="sec-k">Playing from afar</p>' + boardHtml(awayTable) + '</section>';
   p.innerHTML = html;
   tickScore(lastScore, myScore);
   lastScore = myScore;
