@@ -5,7 +5,7 @@
   side, one card per car with what has been checked and what is still
   to do, how to pay for it, and next steps.
 
-  Static, ungated, no database, noindex. Photos live in /cars/img/;
+  Static, passcode-gated, no database, noindex. Photos live in /cars/img/;
   if one fails to load it is swapped for a "Photo on listing" box.
   Content is a snapshot (prices as listed on 01/10/2026).
 
@@ -15,6 +15,8 @@
   dark enough to pass contrast on the cream cards.
 
   v1.0 (01/10/2026): Initial build, from the standalone shortlist page.
+  v1.1 (01/10/2026): Behind the DOGS / EGGS passcode, same splash and
+    unlock key as the menu, so a phone that is already in skips it.
 -->
 <html lang="en-GB">
 <head>
@@ -152,9 +154,36 @@
     h2{font-size:27px} h3{font-size:23px}
     .price{font-size:21px}
   }
+  /* Passcode splash, as on the menu */
+  #splash{position:fixed;inset:0;z-index:70;background:var(--forest);display:flex;align-items:center;justify-content:center;padding:24px}
+  #splash.hidden{display:none}
+  .splash-card{background:var(--surface);border-radius:18px;padding:38px 30px 34px;max-width:340px;width:100%;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.28)}
+  .splash-card h1{font-family:var(--f-display);font-weight:600;font-size:30px;color:var(--forest);margin:0;line-height:1.1}
+  .splash-card p{font-size:14px;color:var(--muted);margin:10px 0 24px}
+  .dots{display:flex;gap:12px;justify-content:center;cursor:text;position:relative}
+  .dot{width:50px;height:58px;border:1.5px solid var(--line-strong);border-radius:10px;background:#fff;font-size:26px;font-weight:700;color:var(--fg);display:flex;align-items:center;justify-content:center;transition:border-color .15s ease}
+  .dot.filled{border-color:var(--sage)}
+  #pin{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;font-size:26px}
+  .splash-err{font-size:13px;color:var(--bad);margin-top:14px;min-height:20px}
+  .dots.shake{animation:shake .4s ease}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  /* until the gate has run, keep the page itself out of view */
+  body.locked .wrap{visibility:hidden}
 </style>
 </head>
-<body>
+<body class="locked">
+<div id="splash">
+  <div class="splash-card">
+    <h1>The Car</h1>
+    <p>Enter the code</p>
+    <div class="dots" id="dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <input id="pin" type="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="4" aria-label="4 character passcode">
+    </div>
+    <div class="splash-err" id="splash-err"></div>
+  </div>
+</div>
+
 <div class="wrap">
   <header>
     <div class="quilt" id="quilt-top" aria-hidden="true"></div>
@@ -457,6 +486,55 @@
   }
   fill(document.getElementById("quilt-top"), 2);
   fill(document.getElementById("quilt-bottom"), 4);
+})();
+
+/* Gate: same codes and unlock key as the menu and tracker */
+(function gate(){
+  const PASSCODES = { DOGS: "L", EGGS: "R" };   // Lorraine and Richard
+  const UNLOCK_KEY = "rl-tracker-unlocked";
+  const splash = document.getElementById("splash");
+  const pin = document.getElementById("pin");
+  const dotsEl = document.getElementById("dots");
+  const splashErr = document.getElementById("splash-err");
+
+  function open(){
+    splash.classList.add("hidden");
+    document.body.classList.remove("locked");
+  }
+  function unlock(who){
+    try{
+      localStorage.setItem(UNLOCK_KEY, "1");
+      if(who) localStorage.setItem("rl-tracker-who", who);
+    }catch(e){}
+    open();
+  }
+  function paintDots(){
+    const v = pin.value;
+    dotsEl.querySelectorAll(".dot").forEach((d,i)=>{
+      d.textContent = v[i] ? v[i].toUpperCase() : "";
+      d.classList.toggle("filled", !!v[i]);
+    });
+  }
+  pin.addEventListener("input", ()=>{
+    pin.value = pin.value.replace(/[^a-zA-Z0-9]/g,"").slice(0,4);
+    paintDots();
+    if(pin.value.length === 4){
+      const who = PASSCODES[pin.value.toUpperCase()];
+      if(who){ unlock(who); }
+      else{
+        splashErr.textContent = "That's not it. Try again.";
+        dotsEl.classList.add("shake");
+        setTimeout(()=>{ dotsEl.classList.remove("shake"); pin.value=""; paintDots(); }, 420);
+      }
+    } else {
+      splashErr.textContent = "";
+    }
+  });
+  dotsEl.addEventListener("click", ()=>pin.focus());
+
+  let unlocked = false;
+  try{ unlocked = localStorage.getItem(UNLOCK_KEY) === "1"; }catch(e){}
+  if(unlocked) open(); else pin.focus();
 })();
 </script>
 </body>
