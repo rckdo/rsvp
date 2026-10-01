@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<!--
+  The Car : Lorraine & Richard
+  Shortlist for the Fabia replacement: summary table, features side by
+  side, one card per car with what has been checked and what is still
+  to do, how to pay for it, and next steps.
+
+  Static, ungated, no database, noindex. Photos live in /cars/img/;
+  if one fails to load it is swapped for a "Photo on listing" box.
+  Content is a snapshot (prices as listed on 01/10/2026).
+
+  Styling follows the Rings page: Cormorant Garamond for headings,
+  Karla for everything you actually read (tables, prices, notes), so
+  numbers stay crisp. Status colours are the site's palette pushed
+  dark enough to pass contrast on the cream cards.
+
+  v1.0 (01/10/2026): Initial build, from the standalone shortlist page.
+-->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>The Car : Lorraine &amp; Richard</title>
+<link rel="manifest" href="/app.webmanifest">
+<meta name="theme-color" content="#2f4a3c">
+<link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="L&amp;R">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  /* Variable names kept from the original shortlist so the content's
+     few inline styles (var(--fg)) still resolve. */
+  :root{
+    --forest:#2f4a3c; --gold:#a3762f; --sage:#6f8a77;
+    --bg:#eef1ea; --surface:#fbfaf5; --fg:#26332c; --muted:#56695c; --line:#dce0d6; --line-strong:#c6cdbe;
+    --accent:#2f4a3c; --accent-soft:#e5ece3;
+    --good:#2e6a44; --good-bg:#e2eee2;
+    --warn:#85591a; --warn-bg:#f5e9d3;
+    --bad:#9c4326; --bad-bg:#f6e2d9;
+    --todo:#4a5961; --todo-bg:#e7eae9;
+    --plate:#f4c430; --plate-fg:#111;
+    --shadow:0 1px 2px rgba(38,51,44,.05);
+    --f-display:'Cormorant Garamond',Georgia,serif;
+    --f-body:'Karla',system-ui,sans-serif;
+    --f-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--fg);font:16px/1.6 var(--f-body);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px 96px;display:grid;gap:36px}
+
+  /* Header: same quilt-framed band as the Rings page */
+  header{background:#f2ecdb;color:var(--forest);margin:0 -20px;padding:40px 24px 34px;text-align:center}
+  header .names{font-family:var(--f-display);font-weight:600;font-size:clamp(34px,7vw,50px);line-height:1;margin:0;letter-spacing:.5px}
+  header .amp{color:var(--gold);font-style:italic;font-weight:500}
+  header .meta{margin:14px auto 0;max-width:60ch;color:var(--muted);font-size:15px}
+  header .venue{color:var(--forest);font-weight:700}
+  .quilt{display:flex;justify-content:center;align-items:center;gap:6px;padding:10px 0;background:var(--forest);overflow:hidden}
+  #quilt-top{margin:-40px -24px 30px}
+  #quilt-bottom{margin:30px -24px -34px}
+  .quilt .block{flex:0 0 auto}
+  .quilt .cell{width:100%;height:100%}
+  .brief{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:16px}
+  .brief span{background:var(--surface);border:1px solid var(--line-strong);border-radius:999px;padding:4px 13px;font-size:13.5px;color:var(--forest)}
+
+  /* Headings: Cormorant only where it is large; Karla for small labels */
+  h1,h2,h3{text-wrap:balance;margin:0}
+  h2{font-family:var(--f-display);font-weight:600;font-size:30px;color:var(--forest);line-height:1.1}
+  h3{font-family:var(--f-display);font-weight:600;font-size:26px;color:var(--forest);line-height:1.15}
+  .eyebrow{font:700 12px/1.3 var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
+  section{display:grid;gap:14px;min-width:0}
+  /* grid children default to min-width:auto, which lets the wide tables
+     push the whole page sideways; this keeps the scroll inside .tablebox */
+  .wrap>*,section>*{min-width:0}
+
+  /* Tables */
+  .tablebox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;min-width:720px;font-size:14.5px}
+  th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font:700 11.5px/1.3 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:#f3f2ea}
+  tr:last-child td{border-bottom:0}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .rank{font:700 18px var(--f-body);color:var(--gold)}
+  .plate{display:inline-block;background:var(--plate);color:var(--plate-fg);font:600 12.5px/1 var(--f-mono);letter-spacing:.06em;padding:4px 7px;border-radius:3px;border:1px solid #0002;white-space:nowrap}
+  .glance{min-width:940px}
+  .glance td:nth-child(3){min-width:190px}
+  .glance td:last-child{min-width:170px}
+  .regline{margin-top:6px}
+  a.lk{color:var(--gold);font-weight:700;text-decoration:none;white-space:nowrap}
+  a.lk:hover{text-decoration:underline}
+  a.lk.car-a{white-space:normal;color:var(--fg);text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:3px}
+  .ph{padding:8px;width:120px;min-width:120px}
+  .thumb{display:block;width:104px;height:52px;max-width:none;object-fit:cover;border-radius:6px;background:var(--bg)}
+  .fnote{display:block;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:2px}
+
+  .feat{min-width:1000px}
+  .feat td,.feat th{text-align:center}
+  .feat td:first-child,.feat th:first-child{text-align:left}
+  .feat tr.grp td{background:#f3f2ea;font:700 11.5px/1.3 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--gold);text-align:left}
+  .fv{display:inline-block;min-width:1.9em;padding:1px 8px;border-radius:999px;font-size:12.5px;font-weight:700;line-height:1.7}
+  .fv.y{background:var(--good-bg);color:var(--good)}
+  .fv.l{background:var(--accent-soft);color:var(--accent);font-weight:500}
+  .fv.n{background:var(--bad-bg);color:var(--bad)}
+  .fv.q{background:var(--warn-bg);color:var(--warn);font-weight:500}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13.5px;color:var(--muted)}
+
+  /* Car cards */
+  .cars{display:grid;gap:20px}
+  .car{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;display:grid;gap:14px;box-shadow:var(--shadow)}
+  .car.top{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+  .hero{display:block;width:100%;max-width:560px;aspect-ratio:2/1;height:auto;object-fit:cover;border-radius:10px;background:var(--bg)}
+  .nophoto{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center;border:1px dashed var(--line-strong)}
+  span.hero.nophoto{height:90px}
+  .car-head{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:baseline;justify-content:space-between}
+  .car-head>div{min-width:0}
+  .car h3 .plate{vertical-align:middle;margin-left:6px}
+  .sub{color:var(--muted);font-size:14.5px;margin-top:2px}
+  .price{font:700 24px var(--f-body);color:var(--forest);font-variant-numeric:tabular-nums}
+  .facts{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14.5px;color:var(--muted)}
+  .facts b{color:var(--fg);font-weight:700}
+  .verdict{margin:0;padding:12px 16px;background:#f2ecdb;border-left:3px solid var(--gold);border-radius:6px;font-size:15.5px}
+  .checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+  .chk{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:start;align-content:start;padding:10px 12px;border-radius:10px;font-size:14.5px;min-width:0}
+  .chk .tag{font:700 11px/1.7 var(--f-body);letter-spacing:.06em;text-transform:uppercase;padding:0 8px;border-radius:999px;white-space:nowrap;color:#fff}
+  .chk strong{font-weight:700}
+  .chk p{grid-column:1/-1;margin:0;color:var(--fg);opacity:.85;line-height:1.45}
+  .ok{background:var(--good-bg)} .ok .tag{background:var(--good)}
+  .wn{background:var(--warn-bg)} .wn .tag{background:var(--warn)}
+  .no{background:var(--bad-bg)} .no .tag{background:var(--bad)}
+  .td{background:var(--todo-bg)} .td .tag{background:var(--todo)}
+  .links{display:flex;flex-wrap:wrap;gap:8px}
+  .links a{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:14px;color:var(--forest);text-decoration:none;background:var(--surface);border:1px solid var(--line-strong);border-radius:999px;padding:7px 16px}
+  .links a:hover{border-color:var(--forest)}
+  a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .phone{font-family:var(--f-mono);font-size:13.5px;color:var(--fg)}
+
+  ol.steps,ul.steps{margin:0;padding-left:1.3em;display:grid;gap:8px;max-width:70ch}
+  .dropped{color:var(--muted);font-size:14.5px;max-width:70ch;margin:0}
+
+  footer{text-align:center;color:var(--muted);font-size:13.5px}
+  .site-menu{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .site-menu a{font-size:13px;font-weight:700;letter-spacing:.04em;text-decoration:none;color:var(--muted);background:var(--surface);border:1px solid var(--line-strong);border-radius:999px;padding:9px 20px}
+  .site-menu a:hover{border-color:var(--sage);color:var(--forest)}
+
+  @media (max-width:560px){
+    .wrap{gap:30px}
+    .car{padding:16px}
+    h2{font-size:27px} h3{font-size:23px}
+    .price{font-size:21px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="quilt" id="quilt-top" aria-hidden="true"></div>
+    <h1 class="names">The Car</h1>
+    <p class="meta">
+      <span class="venue">Fabia replacement shortlist</span><br>
+      Updated 01/10/2026 · manual petrol cars checked against the brief, ranked, with what is still to do before a reservation
+    </p>
+    <div class="brief">
+      <span>Estate preferred</span><span>Manual petrol</span><span>2020 or newer</span><span>Up to ~£12.5k</span><span>Under 80k miles</span><span>Dogs on back seat</span><span>Reliability first</span>
+    </div>
+    <div class="quilt" id="quilt-bottom" aria-hidden="true"></div>
+  </header>
+
+  <section aria-labelledby="sum">
+    <h2 id="sum">At a glance</h2>
+    <div class="tablebox">
+      <table class="glance">
+        <thead><tr><th>#</th><th></th><th>Car</th><th>Year</th><th>Miles</th><th>Price</th><th>Warranty</th><th>History</th><th>Location</th></tr></thead>
+        <tbody>
+          <tr><td class="rank">1</td><td class="ph"><img class="thumb" src="img/i30.jpg" alt="DS23 ZFC" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'thumb nophoto',textContent:'Photo on listing'}))"></td><td><a class="lk car-a" href="https://www.carsa.co.uk/vehicles/used/ds23zfc" target="_blank" rel="noopener">Hyundai i30 Tourer 1.0 MHEV Premium&nbsp;↗</a><div class="regline"><span class="plate">DS23 ZFC</span></div></td><td class="num">2023</td><td class="num">62,623</td><td class="num">£10,733</td><td>Hyundai to 07/2028</td><td>6 services, clean MOT</td><td>Carsa Portsmouth<span class="fnote">599 London Road, Hilsea, PO2 9QZ</span></td></tr>
+          <tr><td class="rank">2</td><td class="ph"><img class="thumb" src="img/scala.jpg" alt="SB23 AZU" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'thumb nophoto',textContent:'Photo on listing'}))"></td><td><a class="lk car-a" href="https://www.cinch.co.uk/used-cars/skoda/scala/details/b509114a-47ca-4768-aca3-2243ad3d1d82" target="_blank" rel="noopener">Škoda Scala 1.0 TSI 110 SE&nbsp;↗</a><span class="fnote">hatchback</span><div class="regline"><span class="plate">SB23 AZU</span></div></td><td class="num">2023</td><td class="num">31,670</td><td class="num">£11,849</td><td>cinch 3 months</td><td>1 owner, spotless MOT</td><td>Marshall Honda Leicester (cinch)<span class="fnote">Coventry Road South, Narborough, LE19 2GE</span></td></tr>
+          <tr><td class="rank">3</td><td class="ph"><img class="thumb" src="img/bg22.jpg" alt="BG22 ZGJ" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'thumb nophoto',textContent:'Photo on listing'}))"></td><td><a class="lk car-a" href="https://www.carsa.co.uk/vehicles/used/bg22zgj" target="_blank" rel="noopener">Škoda Octavia Estate 1.0 SE Technology (white)&nbsp;↗</a><div class="regline"><span class="plate">BG22 ZGJ</span></div></td><td class="num">2022</td><td class="num">80,643</td><td class="num">£10,501</td><td>Carsa 90 days</td><td>8 services, clean MOT</td><td>Carsa Portsmouth<span class="fnote">599 London Road, Hilsea, PO2 9QZ</span></td></tr>
+          <tr><td class="rank">4</td><td class="ph"><img class="thumb" src="img/golf.jpg" alt="LG20 XVM" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'thumb nophoto',textContent:'Photo on listing'}))"></td><td><a class="lk car-a" href="https://www.southerncarsales.co.uk/used-volkswagen-golf-brighton-east-sussex-8151644" target="_blank" rel="noopener">VW Golf Estate 1.0 TSI Match Edition&nbsp;↗</a><span class="fnote"><a class="lk" href="https://www.autotrader.co.uk/car-details/202608115013316" target="_blank" rel="noopener">Auto&nbsp;Trader&nbsp;↗</a></span><div class="regline"><span class="plate">LG20 XVM</span></div></td><td class="num">2020</td><td class="num">55,620</td><td class="num">£11,690</td><td>Dealer, length TBC</td><td>Full, verified</td><td>Southern Car Sales<span class="fnote">Shortgate Industrial Park, The Broyle, Ringmer, Lewes, BN8 6PH · appointment only</span></td></tr>
+          <tr><td class="rank">5</td><td class="ph"><img class="thumb" src="img/bj22.jpg" alt="BJ22 GJY" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'thumb nophoto',textContent:'Photo on listing'}))"></td><td><a class="lk car-a" href="https://www.bigmotoringworld.co.uk/used-cars/skoda/octavia/se-technology-487775/" target="_blank" rel="noopener">Škoda Octavia Estate 1.0 SE Technology (white)&nbsp;↗</a><div class="regline"><span class="plate">BJ22 GJY</span></div></td><td class="num">2022</td><td class="num">66,334</td><td class="num">£10,970</td><td>Dealer 90 days</td><td>Annual, independent</td><td>Big Motoring World Enfield<span class="fnote">Great Eastern Road, Waltham Cross, EN8 8DY</span></td></tr>
+          <tr><td class="rank">6</td><td class="ph"><img class="thumb" src="img/cx71.jpg" alt="CX71 KVB" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'thumb nophoto',textContent:'Photo on listing'}))"></td><td><a class="lk car-a" href="https://www.cinch.co.uk/used-cars/skoda/octavia/details/a1477ca4-f5c1-4bb8-b0dc-281006c0f1b2" target="_blank" rel="noopener">Škoda Octavia Estate 1.0 SE Technology (blue)&nbsp;↗</a><div class="regline"><span class="plate">CX71 KVB</span></div></td><td class="num">2021</td><td class="num">74,703</td><td class="num">£10,799</td><td>cinch 3 months</td><td>None 2021–09/2024</td><td>cinch Warehouse Corby<span class="fnote">Geddington Road, NN18 8AA</span></td></tr>
+          <tr><td class="rank">7</td><td class="ph"><img class="thumb" src="img/ov70.jpg" alt="OV70 APU" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'thumb nophoto',textContent:'Photo on listing'}))"></td><td><a class="lk car-a" href="https://www.cinch.co.uk/used-cars/skoda/octavia/details/0a50dd0f-eba5-4078-bdd7-80d36d358a30" target="_blank" rel="noopener">Škoda Octavia Estate 1.5 SE First Edition (grey)&nbsp;↗</a><div class="regline"><span class="plate">OV70 APU</span></div></td><td class="num">2020</td><td class="num">70,826</td><td class="num">£11,799</td><td>cinch 3 months</td><td>None before 07/2023</td><td>cinch Warehouse Corby<span class="fnote">Geddington Road, NN18 8AA</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="feat">
+    <h2 id="feat">Features side by side</h2>
+    <div class="legend"><span><span class="fv y">Yes</span> on the listing or spec sheet</span><span><span class="fv l">Likely</span> standard on this trim, not confirmed</span><span><span class="fv n">No</span> not fitted</span><span><span class="fv q">Check</span> unclear – confirm with the dealer</span></div>
+    <div class="tablebox">
+      <table class="feat">
+        <thead><tr><th>Feature</th><th>i30 Tourer<br><span class="fnote">DS23 ZFC</span></th><th>Scala<br><span class="fnote">SB23 AZU</span></th><th>Octavia 1.0<br><span class="fnote">BG22 ZGJ</span></th><th>Golf Estate<br><span class="fnote">LG20 XVM</span></th><th>Octavia 1.0<br><span class="fnote">BJ22 GJY</span></th><th>Octavia 1.0<br><span class="fnote">CX71 KVB</span></th><th>Octavia 1.5<br><span class="fnote">OV70 APU</span></th></tr></thead>
+        <tbody>
+<tr class="grp"><td colspan="8">Parking</td></tr>
+<tr><td>Reversing camera</td><td><span class="fv y">Yes</span><span class="fnote">with guidelines</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv q">Check</span><span class="fnote">not listed</span></td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span></td></tr>
+<tr><td>Rear parking sensors</td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td><td><span class="fv y">Yes</span></td></tr>
+<tr><td>Front parking sensors</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span><span class="fnote">manoeuvre assist</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td></tr>
+<tr class="grp"><td colspan="8">Driving</td></tr>
+<tr><td>Cruise control</td><td><span class="fv y">Yes</span><span class="fnote">standard</span></td><td><span class="fv l">Likely</span><span class="fnote">+ limiter</span></td><td><span class="fv y">Yes</span><span class="fnote">+ limiter</span></td><td><span class="fv y">Yes</span><span class="fnote">adaptive</span></td><td><span class="fv y">Yes</span><span class="fnote">+ limiter</span></td><td><span class="fv y">Yes</span><span class="fnote">+ limiter</span></td><td><span class="fv y">Yes</span><span class="fnote">+ limiter</span></td></tr>
+<tr><td>Electric handbrake</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span><span class="fnote">lever</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span><span class="fnote">Auto Hold</span></td><td><span class="fv l">Likely</span></td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td></tr>
+<tr><td>Blind spot warning</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td></tr>
+<tr><td>Lane assist</td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td><td><span class="fv y">Yes</span></td><td><span class="fv q">Check</span></td><td><span class="fv l">Likely</span></td><td><span class="fv l">Likely</span></td><td><span class="fv l">Likely</span></td></tr>
+<tr><td>LED headlights</td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td><td><span class="fv l">Likely</span></td><td><span class="fv l">Likely</span></td></tr>
+<tr class="grp"><td colspan="8">Comfort</td></tr>
+<tr><td>Air conditioning</td><td><span class="fv y">Yes</span><span class="fnote">climate</span></td><td><span class="fv l">Likely</span><span class="fnote">manual</span></td><td><span class="fv y">Yes</span><span class="fnote">dual-zone</span></td><td><span class="fv y">Yes</span><span class="fnote">dual-zone</span></td><td><span class="fv y">Yes</span><span class="fnote">dual-zone</span></td><td><span class="fv l">Likely</span><span class="fnote">climate</span></td><td><span class="fv y">Yes</span></td></tr>
+<tr><td>Heated front seats</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv y">Yes</span><span class="fnote">Winter Pack</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td></tr>
+<tr><td>Heated steering wheel</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td></tr>
+<tr><td>Keyless entry and start</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span></td><td><span class="fv y">Yes</span><span class="fnote">start only</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td></tr>
+<tr><td>Rear privacy glass</td><td><span class="fv y">Yes</span></td><td><span class="fv q">Check</span></td><td><span class="fv q">Check</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv q">Check</span></td><td><span class="fv q">Check</span></td></tr>
+<tr class="grp"><td colspan="8">Tech</td></tr>
+<tr><td>DAB radio</td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td></tr>
+<tr><td>Bluetooth</td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td></tr>
+<tr><td>Apple CarPlay / Android Auto</td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span><span class="fnote">wireless</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span><span class="fnote">wireless</span></td><td><span class="fv l">Likely</span><span class="fnote">wireless</span></td><td><span class="fv y">Yes</span></td></tr>
+<tr><td>Built-in sat nav</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span><span class="fnote">use phone</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span><span class="fnote">10in</span></td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td></tr>
+<tr><td>Wireless phone charging</td><td><span class="fv y">Yes</span></td><td><span class="fv q">Check</span></td><td><span class="fv q">Check</span></td><td><span class="fv n">No</span></td><td><span class="fv q">Check</span></td><td><span class="fv q">Check</span></td><td><span class="fv q">Check</span></td></tr>
+<tr class="grp"><td colspan="8">Practical</td></tr>
+<tr><td>Body / boot</td><td><span class="fv y">Yes</span><span class="fnote">estate ~600 L</span></td><td><span class="fv n">No</span><span class="fnote">hatch ~467 L</span></td><td><span class="fv y">Yes</span><span class="fnote">estate ~640 L</span></td><td><span class="fv y">Yes</span><span class="fnote">estate ~610 L</span></td><td><span class="fv y">Yes</span><span class="fnote">estate ~640 L</span></td><td><span class="fv y">Yes</span><span class="fnote">estate ~640 L</span></td><td><span class="fv y">Yes</span><span class="fnote">estate ~640 L</span></td></tr>
+<tr><td>Spare wheel</td><td><span class="fv q">Check</span><span class="fnote">likely repair kit</span></td><td><span class="fv q">Check</span></td><td><span class="fv q">Check</span></td><td><span class="fv y">Yes</span><span class="fnote">space saver</span></td><td><span class="fv q">Check</span></td><td><span class="fv y">Yes</span><span class="fnote">space saver</span></td><td><span class="fv q">Check</span></td></tr>
+<tr><td>Roof rails</td><td><span class="fv y">Yes</span></td><td><span class="fv q">Check</span></td><td><span class="fv y">Yes</span><span class="fnote">black</span></td><td><span class="fv l">Likely</span></td><td><span class="fv l">Likely</span></td><td><span class="fv y">Yes</span><span class="fnote">black</span></td><td><span class="fv l">Likely</span></td></tr>
+<tr><td>ISOFIX (rear)</td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="det">
+    <h2 id="det">Car by car</h2>
+    <div class="cars">
+
+      <article class="car top">
+        <img class="hero" src="img/i30.jpg" alt="DS23 ZFC" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'hero nophoto',textContent:'Photo on listing'}))">
+        <div class="car-head">
+          <div><div class="eyebrow">1 · Most peace of mind</div><h3>2023 Hyundai i30 Tourer <span class="plate">DS23 ZFC</span></h3><div class="sub">1.0 T-GDi mild hybrid Premium · Carsa Portsmouth</div></div>
+          <div class="price">£10,733</div>
+        </div>
+        <div class="facts"><span><b>62,623</b> miles</span><span>Registered 17/07/2023</span><span>Price incl. admin fee</span><span>MOT to 16/07/2027</span><span>Insurance <b>£365</b> (Tesco Silver)</span></div>
+        <p class="verdict">Newest estate on the list, with Hyundai's 5-year unlimited-mileage warranty to 16/07/2028. High mileage for its age (likely ex-fleet), but six services in three years.</p>
+        <div class="checks">
+          <div class="chk ok"><span class="tag">Done</span><strong>Service record</strong><p>6 services, last 09/07/2026 at 60,368 miles.</p></div>
+          <div class="chk ok"><span class="tag">Done</span><strong>MOT history</strong><p>First MOT 03/07/2026: pass. One advisory – rear inner brake pad thin. Ask for pads (and discs if needed) before handover.</p></div>
+          <div class="chk td"><span class="tag">To do</span><strong>Test the clutch</strong><p>"Intelligent manual" clutch-by-wire with coasting – the one possible deal-breaker.</p></div>
+          <div class="chk td"><span class="tag">To do</span><strong>Hyundai warranty</strong><p>Confirm end date, schedule compliance and 48V battery cover with a Hyundai dealer.</p></div>
+          <div class="chk wn"><span class="tag">Watch</span><strong>£495 finance fee</strong><p>Applies to external finance. Confirm in writing that paying from your own funds is exempt.</p></div>
+          <div class="chk td"><span class="tag">To do</span><strong>Keepers</strong><p>Ask how many, and whether lease or fleet.</p></div>
+        </div>
+        <p class="sub" style="margin:0">Same site: <b>DL23 HZR</b>, black, 57,893 miles, £11,106 – check whether it's reserved.</p>
+        <div class="links"><a href="https://www.carsa.co.uk/vehicles/used/ds23zfc" target="_blank" rel="noopener">Carsa listing ↗</a><a href="https://www.autotrader.co.uk/car-details/202609256384997" target="_blank" rel="noopener">Auto Trader ↗</a></div>
+        <div class="sub">Carsa Portsmouth, 599 London Road, PO2 9QZ · <span class="phone">0300 303 4797</span> · portsmouth@carsa.co.uk · nearest station Hilsea</div>
+      </article>
+
+      <article class="car">
+        <img class="hero" src="img/scala.jpg" alt="SB23 AZU" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'hero nophoto',textContent:'Photo on listing'}))">
+        <div class="car-head">
+          <div><div class="eyebrow">2 · Lowest miles, cleanest record</div><h3>2023 Škoda Scala <span class="plate">SB23 AZU</span></h3><div class="sub">1.0 TSI 110 SE, hatchback · cinch (collect at Marshall Honda Leicester)</div></div>
+          <div class="price">£11,849</div>
+        </div>
+        <div class="facts"><span><b>31,670</b> miles</span><span><b>1</b> owner</span><span>Incl. £99 admin fee</span><span>Insurance group 13</span><span>MOT to 10/08/2027</span><span>~60 mpg</span></div>
+        <p class="verdict">Half the i30's mileage, one private owner and a spotless first MOT. Rear seat is roomy – close to an Octavia's – so the dogs are fine. Trade-offs: hatchback boot and no factory warranty left.</p>
+        <div class="checks">
+          <div class="chk ok"><span class="tag">Done</span><strong>MOT history</strong><p>First MOT 11/08/2026: pass, no advisories. ~10k miles a year – normal private use.</p></div>
+          <div class="chk wn"><span class="tag">Gap</span><strong>Service history</strong><p>Only 07/08/2026 shown. Ask for 2024 and 2025 records.</p></div>
+          <div class="chk wn"><span class="tag">Watch</span><strong>Hatchback</strong><p>Boot ~467 L vs ~600 L in the estates. Fine if the dogs stay on the back seat.</p></div>
+          <div class="chk wn"><span class="tag">Watch</span><strong>Basic spec</strong><p>SE trim: no camera, heated seats or built-in nav. Phone mirroring covers maps.</p></div>
+          <div class="chk td"><span class="tag">To do</span><strong>Insurance</strong><p>Quote on SB23 AZU.</p></div>
+        </div>
+        <p class="sub" style="margin:0">Alternative: <b>KM22 LCF</b>, black 2022 Scala 1.0 TSI 95 SE Technology, 33,392 miles, £12,399 – older, slower and dearer.</p>
+        <div class="links"><a href="https://www.cinch.co.uk/used-cars/skoda/scala/details/b509114a-47ca-4768-aca3-2243ad3d1d82" target="_blank" rel="noopener">cinch listing ↗</a></div>
+        <div class="sub">Collection free at Leicester · home delivery £225 · 14-day money-back</div>
+      </article>
+
+      <article class="car">
+        <img class="hero" src="img/bg22.jpg" alt="BG22 ZGJ" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'hero nophoto',textContent:'Photo on listing'}))">
+        <div class="car-head">
+          <div><div class="eyebrow">3 · Best Octavia</div><h3>2022 Škoda Octavia Estate, white <span class="plate">BG22 ZGJ</span></h3><div class="sub">1.0 TSI SE Technology · Carsa Portsmouth</div></div>
+          <div class="price">£10,501</div>
+        </div>
+        <div class="facts"><span><b>80,643</b> miles</span><span><b>1</b> owner</span><span>Incl. £99 admin fee</span><span>Insurance group 13</span><span>MOT to 28/07/2027</span></div>
+        <p class="verdict">Best-documented Octavia: eight services and a clean MOT. Biggest boot on the list. Held back by 80k miles – 28k of them in the last year – and no factory warranty.</p>
+        <div class="checks">
+          <div class="chk ok"><span class="tag">Done</span><strong>Service history</strong><p>8 services, last 24/08/2026 at 80,560 miles.</p></div>
+          <div class="chk ok"><span class="tag">Done</span><strong>MOT history</strong><p>Passes 07/2025 and 07/2026. One advisory each.</p></div>
+          <div class="chk wn"><span class="tag">Watch</span><strong>Tyre + alignment</strong><p>Offside front inner edge worn (07/2026). Ask for tyre and tracking.</p></div>
+          <div class="chk wn"><span class="tag">Watch</span><strong>Shock absorber</strong><p>Nearside front misting (2025). Ask if inspected or replaced.</p></div>
+          <div class="chk td"><span class="tag">To do</span><strong>Warranty</strong><p>Ask for the free 1-year Carsa warranty.</p></div>
+        </div>
+        <div class="links"><a href="https://www.carsa.co.uk/vehicles/used/bg22zgj" target="_blank" rel="noopener">Carsa listing ↗</a></div>
+      </article>
+
+      <article class="car">
+        <img class="hero" src="img/golf.jpg" alt="LG20 XVM" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'hero nophoto',textContent:'Photo on listing'}))">
+        <div class="car-head">
+          <div><div class="eyebrow">4 · Best verified history</div><h3>2020 VW Golf Estate <span class="plate">LG20 XVM</span></h3><div class="sub">1.0 TSI Match Edition · Southern Car Sales, Lewes</div></div>
+          <div class="price">£11,690</div>
+        </div>
+        <div class="facts"><span><b>55,620</b> miles</span><span><b>1</b> owner</span><span>No admin fee</span><span>Insurance <b>£345</b> (Churchill)</span><span>MOT to 17/03/2027</span></div>
+        <p class="verdict">Annual servicing from new and a steady MOT record, from a 5-star dealer. Oldest of the five and furthest away.</p>
+        <div class="checks">
+          <div class="chk ok"><span class="tag">Done</span><strong>Service history</strong><p>Annual from new, VW dealer then independent.</p></div>
+          <div class="chk ok"><span class="tag">Done</span><strong>MOT history</strong><p>2026 clean pass. Past advisories cleared.</p></div>
+          <div class="chk td"><span class="tag">To do</span><strong>Warranty terms</strong><p>Length, provider, claim limit.</p></div>
+          <div class="chk wn"><span class="tag">Watch</span><strong>2025 advisories</strong><p>Shock misting and windscreen chip – confirm fixed.</p></div>
+        </div>
+        <div class="links"><a href="https://www.autotrader.co.uk/car-details/202608115013316" target="_blank" rel="noopener">Auto Trader ↗</a><a href="https://www.southerncarsales.co.uk/used-volkswagen-golf-brighton-east-sussex-8151644" target="_blank" rel="noopener">Dealer listing ↗</a></div>
+        <div class="sub">Southern Car Sales: <span class="phone">01273 424931</span></div>
+      </article>
+
+    
+      <article class="car">
+        <img class="hero" src="img/bj22.jpg" alt="BJ22 GJY" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'hero nophoto',textContent:'Photo on listing'}))">
+        <div class="car-head">
+          <div><div class="eyebrow">5 · Octavia, Big Motoring World</div><h3>2022 Škoda Octavia Estate, white <span class="plate">BJ22 GJY</span></h3><div class="sub">1.0 TSI SE Technology · Big Motoring World, Waltham Cross EN8 8DY</div></div>
+          <div class="price">£10,970</div>
+        </div>
+        <div class="facts"><span><b>66,334</b> miles</span><span><b>1</b> keeper</span><span>No admin fee</span><span>Insurance group 12</span><span>MOT to 21/06/2027</span><span>Tyres 5–7 mm</span><span>Registered 29/07/2022</span></div>
+        <p class="verdict">Well documented and well specced. Held back by the dealer's weaker reviews and no factory warranty.</p>
+        <div class="checks">
+          <div class="chk ok"><span class="tag">Done</span><strong>Service history</strong><p>19,476 (08/2023), 38,294 (10/2024, brake fluid), 55,595 (11/2025) – independent garages.</p></div>
+          <div class="chk ok"><span class="tag">Done</span><strong>HPI check</strong><p>Not stolen, scrapped or written off. No mileage discrepancies.</p></div>
+          <div class="chk wn"><span class="tag">Watch</span><strong>Service due now</strong><p>~11k miles since 11/2025. Ask them to do it, or budget ~£200.</p></div>
+          <div class="chk wn"><span class="tag">Watch</span><strong>Dealer reviews</strong><p>Trustpilot 3.9. Complaints: prep, post-sale faults, add-on pressure. Decline the extras.</p></div>
+          <div class="chk ok"><span class="tag">Done</span><strong>MOT history</strong><p>Passes 07/2025 (after a missing wheel bolt was fitted) and 06/2026. Mileage steady.</p></div>
+          <div class="chk wn"><span class="tag">Watch</span><strong>Brakes + tyre</strong><p>Discs lipped front and rear, cut in front tyre (06/2026). Ask what was replaced in prep.</p></div>
+          <div class="chk td"><span class="tag">To do</span><strong>Insurance</strong><p>Quote on BJ22 GJY.</p></div>
+        </div>
+        <div class="links"><a href="https://www.bigmotoringworld.co.uk/used-cars/skoda/octavia/se-technology-487775/" target="_blank" rel="noopener">Dealer listing ↗</a><a href="https://www.cazoo.co.uk/cars-for-sale/79693082/" target="_blank" rel="noopener">Cazoo listing ↗</a></div>
+        <div class="sub">Extras fitted: heated windscreen, privacy glass, gesture control · £99 refundable reservation</div>
+      </article>
+
+      <article class="car">
+        <img class="hero" src="img/cx71.jpg" alt="CX71 KVB" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'hero nophoto',textContent:'Photo on listing'}))">
+        <div class="car-head">
+          <div><div class="eyebrow">6 · Octavia, cinch</div><h3>2021 Škoda Octavia Estate, blue <span class="plate">CX71 KVB</span></h3><div class="sub">1.0 TSI SE Technology · cinch Warehouse Corby, NN18 8AA</div></div>
+          <div class="price">£10,799</div>
+        </div>
+        <div class="facts"><span><b>74,703</b> miles</span><span><b>1</b> owner</span><span>Insurance <b>£357</b> (Churchill, £150 excess)</span><span>MOT to 16/07/2027</span><span>Reversing camera, sat nav</span></div>
+        <p class="verdict">Biggest back seat and boot on the list. Recent Škoda-dealer servicing is on time, but nothing is recorded for the first three years.</p>
+        <div class="checks">
+          <div class="chk wn"><span class="tag">Gap</span><strong>Service history</strong><p>None 2021–09/2024 (~50k miles). On time since.</p></div>
+          <div class="chk ok"><span class="tag">Done</span><strong>MOT history</strong><p>Three passes, steady mileage.</p></div>
+          <div class="chk wn"><span class="tag">Watch</span><strong>Pads + tyres</strong><p>Front pads thin, tyre worn (07/2026). Inner-edge wear suggests alignment.</p></div>
+          <div class="chk td"><span class="tag">To do</span><strong>Fill the gap</strong><p>Škoda dealer lookup on CX71 KVB.</p></div>
+        </div>
+        <div class="links"><a href="https://www.cinch.co.uk/used-cars/skoda/octavia/details/a1477ca4-f5c1-4bb8-b0dc-281006c0f1b2" target="_blank" rel="noopener">cinch listing ↗</a></div>
+        <div class="sub">£99 admin fee incl. · Corby collection free, store £149, home £225</div>
+      </article>
+
+      <article class="car">
+        <img class="hero" src="img/ov70.jpg" alt="OV70 APU" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'hero nophoto',textContent:'Photo on listing'}))">
+        <div class="car-head">
+          <div><div class="eyebrow">7 · Octavia 1.5, cinch</div><h3>2020 Škoda Octavia Estate, grey <span class="plate">OV70 APU</span></h3><div class="sub">1.5 TSI SE First Edition · cinch Warehouse Corby, NN18 8AA</div></div>
+          <div class="price">£11,799</div>
+        </div>
+        <div class="facts"><span><b>70,826</b> miles</span><span><b>1</b> owner</span><span>Insurance <b>£349</b> (Churchill, £100 excess)</span><span>MOT to 29/09/2027</span><span>150bhp</span></div>
+        <p class="verdict">Stronger engine and nothing outstanding on the MOT, but no early records and one missed service in 2025.</p>
+        <div class="checks">
+          <div class="chk no"><span class="tag">Gap</span><strong>Service history</strong><p>None before 07/2023. Missed one 2024–26.</p></div>
+          <div class="chk ok"><span class="tag">Done</span><strong>MOT history</strong><p>No advisories for three years. Headlamp aim fixed same day.</p></div>
+          <div class="chk td"><span class="tag">To do</span><strong>Fill the gap</strong><p>Škoda dealer lookup on OV70 APU.</p></div>
+        </div>
+        <div class="links"><a href="https://www.cinch.co.uk/used-cars/skoda/octavia/details/0a50dd0f-eba5-4078-bdd7-80d36d358a30" target="_blank" rel="noopener">cinch listing ↗</a></div>
+        <div class="sub">£99 admin fee incl. · Corby collection free, store £149, home £225</div>
+      </article>
+
+    </div>
+  </section>
+
+
+  <section aria-labelledby="fin">
+    <h2 id="fin">Paying for it</h2>
+    <p class="dropped" style="color:var(--fg)">Plan: borrow £8,000–9,000 on a personal loan, put up to £1,000 on a credit card for Section 75 cover (clear it in full that month), and pay the rest from savings. Tell the dealer you're paying in full – no dealer finance.</p>
+    <div class="tablebox">
+      <table>
+        <thead><tr><th>Option</th><th>APR</th><th>£8,000 over 3 yrs</th><th>£8,000 over 4 yrs</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><b>Nationwide personal loan</b></td><td class="num">5.9%</td><td class="num">£242/mo · £728 interest</td><td class="num">£187/mo · £974 interest</td><td>Best rate seen. Applies at £7,500+ (6.9% below). Usually needs a Nationwide current account.</td></tr>
+          <tr><td>NatWest personal loan</td><td class="num">7.2%</td><td class="num">£247/mo · £889</td><td class="num">£191/mo · £1,191</td><td>Fallback if Nationwide says no.</td></tr>
+          <tr><td>Carsa HP / PCP</td><td class="num">10.9%</td><td class="num">£260/mo · £1,346</td><td class="num">£204/mo · £1,811</td><td>Representative rate – yours could be higher. Car isn't yours until paid off.</td></tr>
+          <tr><td>cinch PCP</td><td class="num">12.4%</td><td class="num">£265/mo · £1,531</td><td class="num">£210/mo · £2,064</td><td>Representative rate. Balloon payment at the end on PCP.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="steps" style="margin:0;padding-left:1.2em;display:grid;gap:6px;max-width:70ch">
+      <li><b>Soft-search first.</b> Eligibility checkers show your real rate without marking your credit file.</li>
+      <li><b>Loan paid to you, then bank transfer</b> – the car is yours outright from day one. Confirm Carsa's £495 "external finance" fee doesn't apply.</li>
+      <li><b>Credit card for part of the price</b> gives Section 75 protection on the whole car (price £100–£30,000).</li>
+      <li>Rates checked 09/2026 – they change; recheck before applying. Not financial advice.</li>
+    </ul>
+    <div class="links"><a href="https://www.nationwide.co.uk/loans/" target="_blank" rel="noopener">Nationwide loans ↗</a><a href="https://www.natwest.com/loans.html" target="_blank" rel="noopener">NatWest loans ↗</a><a href="https://www.moneysavingexpert.com/loans/cheap-personal-loans/" target="_blank" rel="noopener">MoneySavingExpert loan eligibility ↗</a></div>
+  </section>
+
+  <section aria-labelledby="next">
+    <h2 id="next">Next steps</h2>
+    <ol class="steps">
+      <li>Send the Carsa Portsmouth email (i30 + Octavia BG22 ZGJ): £495 fee, pads, tyre, warranty offer.</li>
+      <li>Ask cinch for the Scala's 2024–25 service records; get an insurance quote on SB23 AZU.</li>
+      <li>Test drive an i30 locally (Hyundai dealer in Oxford, Reading or Swindon) to settle the clutch question.</li>
+      <li>Nationwide soft-search loan quote (see "Paying for it").</li>
+      <li>Visit Portsmouth with the dogs: drive the i30 and Octavia back to back.</li>
+      <li>Pay up to £1,000 on credit card for Section 75, balance by transfer. Get any agreed work written on the order form.</li>
+    </ol>
+    <p class="dropped"><b>Ruled out:</b> Kia ProCeed KO23 VWD (over budget, low rear doors), Kia Ceed YR70 OTJ (MOT fails, poor upkeep), MG5 EV (no home charging), Octavia iV plug-in hybrid AJ22 UAM (DSG, smaller boot), Rapid Spaceback CT19 GKE (DSG, 2019), Motorpoint and Arnold Clark Octavias, Fabias, Polo, Qashqai, B-Class.</p>
+  </section>
+
+  <footer>
+    <p>Prices and availability as listed on 01/10/2026 and may have changed.</p>
+    <nav class="site-menu">
+      <a href="/menu/">Menu</a>
+      <a href="/tracker/">Tracker</a>
+      <a href="/rings/">Rings</a>
+      <a href="/stationery/">Stationery</a>
+      <a href="/music/">Music</a>
+    </nav>
+  </footer>
+</div>
+
+<script>
+/* Quilt bands, same builders as the tracker */
+(function quilt(){
+  const CREAM = "#efe6d3";
+  function hstBg(dir, a, b){
+    switch(dir){
+      case "tl": return "linear-gradient(to bottom right, " + a + " 0 50%, " + b + " 50% 100%)";
+      case "br": return "linear-gradient(to bottom right, " + b + " 0 50%, " + a + " 50% 100%)";
+      case "tr": return "linear-gradient(to bottom left, " + a + " 0 50%, " + b + " 50% 100%)";
+      case "bl": return "linear-gradient(to bottom left, " + b + " 0 50%, " + a + " 50% 100%)";
+    }
+  }
+  function grid(c, r){
+    return { display:"grid", gridTemplateColumns:"repeat(" + c + ",1fr)", gridTemplateRows:"repeat(" + r + ",1fr)" };
+  }
+  const builders = [
+    ()=>({ wrap:grid(2,2), cells:["tr","tl","tr","tl"].map(d=>hstBg(d, "#a34a2c", CREAM)) }),
+    ()=>({ wrap:grid(2,2), cells:["tr","br","tl","bl"].map(d=>hstBg(d, "#7a7c47", CREAM)) }),
+    ()=>({ wrap:grid(2,2), cells:["br","bl","tr","tl"].map(d=>hstBg(d, "#c99a3f", CREAM)) }),
+    ()=>({ wrap:grid(3,3), cells:["#bf6a43",CREAM,"#bf6a43",CREAM,"#bf6a43",CREAM,"#bf6a43",CREAM,"#bf6a43"] }),
+    ()=>({ wrap:grid(1,1), cells:["conic-gradient(#4a3f2f 0 45deg, " + CREAM + " 45deg 135deg, #4a3f2f 135deg 225deg, " + CREAM + " 225deg 315deg, #4a3f2f 315deg)"] }),
+  ];
+  function fill(el, offset){
+    if(!el) return;
+    const px = 34;
+    for(let i = 0; i < 40; i++){
+      const blk = builders[(i + offset) % builders.length]();
+      const wrap = document.createElement("div");
+      wrap.className = "block";
+      Object.assign(wrap.style, blk.wrap, { width:px + "px", height:px + "px" });
+      blk.cells.forEach(bg=>{
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.style.background = bg;
+        wrap.appendChild(cell);
+      });
+      el.appendChild(wrap);
+    }
+  }
+  fill(document.getElementById("quilt-top"), 2);
+  fill(document.getElementById("quilt-bottom"), 4);
+})();
+</script>
+</body>
+</html>
