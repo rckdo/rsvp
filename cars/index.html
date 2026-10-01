@@ -17,6 +17,9 @@
   v1.0 (01/10/2026): Initial build, from the standalone shortlist page.
   v1.1 (01/10/2026): Behind the DOGS / EGGS passcode, same splash and
     unlock key as the menu, so a phone that is already in skips it.
+  v1.2 (01/10/2026): Header subtitle removed. Features table: first
+    column stays put when scrolling sideways, small photo of each car
+    above its column.
 -->
 <html lang="en-GB">
 <head>
@@ -102,6 +105,17 @@
   .feat{min-width:1000px}
   .feat td,.feat th{text-align:center}
   .feat td:first-child,.feat th:first-child{text-align:left}
+  /* first column pinned so the feature name stays in view while the
+     cars scroll sideways; needs its own background to cover what
+     slides underneath, and a hairline shadow to mark the edge */
+  .feat td:first-child,.feat th:first-child{position:sticky;left:0;z-index:1;background:var(--surface);box-shadow:inset -1px 0 0 var(--line);min-width:150px;max-width:170px}
+  .feat th:first-child{background:#f3f2ea;vertical-align:bottom}
+  .feat th{vertical-align:bottom}
+  .fthumb{display:block;width:76px;height:38px;object-fit:cover;border-radius:5px;margin:0 auto 6px;background:var(--bg)}
+  /* group rows span the whole table, so pin the label inside them instead */
+  .feat tr.grp td{position:static;max-width:none;box-shadow:none}
+  .feat tr.grp td span{position:sticky;left:12px}
+  @media (max-width:560px){.feat td:first-child,.feat th:first-child{min-width:118px;max-width:130px}}
   .feat tr.grp td{background:#f3f2ea;font:700 11.5px/1.3 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--gold);text-align:left}
   .fv{display:inline-block;min-width:1.9em;padding:1px 8px;border-radius:999px;font-size:12.5px;font-weight:700;line-height:1.7}
   .fv.y{background:var(--good-bg);color:var(--good)}
@@ -188,10 +202,6 @@
   <header>
     <div class="quilt" id="quilt-top" aria-hidden="true"></div>
     <h1 class="names">The Car</h1>
-    <p class="meta">
-      <span class="venue">Fabia replacement shortlist</span><br>
-      Updated 01/10/2026 · manual petrol cars checked against the brief, ranked, with what is still to do before a reservation
-    </p>
     <div class="brief">
       <span>Estate preferred</span><span>Manual petrol</span><span>2020 or newer</span><span>Up to ~£12.5k</span><span>Under 80k miles</span><span>Dogs on back seat</span><span>Reliability first</span>
     </div>
@@ -221,31 +231,31 @@
     <div class="legend"><span><span class="fv y">Yes</span> on the listing or spec sheet</span><span><span class="fv l">Likely</span> standard on this trim, not confirmed</span><span><span class="fv n">No</span> not fitted</span><span><span class="fv q">Check</span> unclear – confirm with the dealer</span></div>
     <div class="tablebox">
       <table class="feat">
-        <thead><tr><th>Feature</th><th>i30 Tourer<br><span class="fnote">DS23 ZFC</span></th><th>Scala<br><span class="fnote">SB23 AZU</span></th><th>Octavia 1.0<br><span class="fnote">BG22 ZGJ</span></th><th>Golf Estate<br><span class="fnote">LG20 XVM</span></th><th>Octavia 1.0<br><span class="fnote">BJ22 GJY</span></th><th>Octavia 1.0<br><span class="fnote">CX71 KVB</span></th><th>Octavia 1.5<br><span class="fnote">OV70 APU</span></th></tr></thead>
+        <thead><tr><th>Feature</th><th><img class="fthumb" src="img/i30.jpg" alt="" loading="lazy">i30 Tourer<br><span class="fnote">DS23 ZFC</span></th><th><img class="fthumb" src="img/scala.jpg" alt="" loading="lazy">Scala<br><span class="fnote">SB23 AZU</span></th><th><img class="fthumb" src="img/bg22.jpg" alt="" loading="lazy">Octavia 1.0<br><span class="fnote">BG22 ZGJ</span></th><th><img class="fthumb" src="img/golf.jpg" alt="" loading="lazy">Golf Estate<br><span class="fnote">LG20 XVM</span></th><th><img class="fthumb" src="img/bj22.jpg" alt="" loading="lazy">Octavia 1.0<br><span class="fnote">BJ22 GJY</span></th><th><img class="fthumb" src="img/cx71.jpg" alt="" loading="lazy">Octavia 1.0<br><span class="fnote">CX71 KVB</span></th><th><img class="fthumb" src="img/ov70.jpg" alt="" loading="lazy">Octavia 1.5<br><span class="fnote">OV70 APU</span></th></tr></thead>
         <tbody>
-<tr class="grp"><td colspan="8">Parking</td></tr>
+<tr class="grp"><td colspan="8"><span>Parking</span></td></tr>
 <tr><td>Reversing camera</td><td><span class="fv y">Yes</span><span class="fnote">with guidelines</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv q">Check</span><span class="fnote">not listed</span></td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span></td></tr>
 <tr><td>Rear parking sensors</td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td><td><span class="fv y">Yes</span></td></tr>
 <tr><td>Front parking sensors</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span><span class="fnote">manoeuvre assist</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td></tr>
-<tr class="grp"><td colspan="8">Driving</td></tr>
+<tr class="grp"><td colspan="8"><span>Driving</span></td></tr>
 <tr><td>Cruise control</td><td><span class="fv y">Yes</span><span class="fnote">standard</span></td><td><span class="fv l">Likely</span><span class="fnote">+ limiter</span></td><td><span class="fv y">Yes</span><span class="fnote">+ limiter</span></td><td><span class="fv y">Yes</span><span class="fnote">adaptive</span></td><td><span class="fv y">Yes</span><span class="fnote">+ limiter</span></td><td><span class="fv y">Yes</span><span class="fnote">+ limiter</span></td><td><span class="fv y">Yes</span><span class="fnote">+ limiter</span></td></tr>
 <tr><td>Electric handbrake</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span><span class="fnote">lever</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span><span class="fnote">Auto Hold</span></td><td><span class="fv l">Likely</span></td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td></tr>
 <tr><td>Blind spot warning</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td></tr>
 <tr><td>Lane assist</td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td><td><span class="fv y">Yes</span></td><td><span class="fv q">Check</span></td><td><span class="fv l">Likely</span></td><td><span class="fv l">Likely</span></td><td><span class="fv l">Likely</span></td></tr>
 <tr><td>LED headlights</td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td><td><span class="fv l">Likely</span></td><td><span class="fv l">Likely</span></td></tr>
-<tr class="grp"><td colspan="8">Comfort</td></tr>
+<tr class="grp"><td colspan="8"><span>Comfort</span></td></tr>
 <tr><td>Air conditioning</td><td><span class="fv y">Yes</span><span class="fnote">climate</span></td><td><span class="fv l">Likely</span><span class="fnote">manual</span></td><td><span class="fv y">Yes</span><span class="fnote">dual-zone</span></td><td><span class="fv y">Yes</span><span class="fnote">dual-zone</span></td><td><span class="fv y">Yes</span><span class="fnote">dual-zone</span></td><td><span class="fv l">Likely</span><span class="fnote">climate</span></td><td><span class="fv y">Yes</span></td></tr>
 <tr><td>Heated front seats</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv y">Yes</span><span class="fnote">Winter Pack</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td></tr>
 <tr><td>Heated steering wheel</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td></tr>
 <tr><td>Keyless entry and start</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span></td><td><span class="fv y">Yes</span><span class="fnote">start only</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td><td><span class="fv n">No</span></td></tr>
 <tr><td>Rear privacy glass</td><td><span class="fv y">Yes</span></td><td><span class="fv q">Check</span></td><td><span class="fv q">Check</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv q">Check</span></td><td><span class="fv q">Check</span></td></tr>
-<tr class="grp"><td colspan="8">Tech</td></tr>
+<tr class="grp"><td colspan="8"><span>Tech</span></td></tr>
 <tr><td>DAB radio</td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td></tr>
 <tr><td>Bluetooth</td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td></tr>
 <tr><td>Apple CarPlay / Android Auto</td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span><span class="fnote">wireless</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span><span class="fnote">wireless</span></td><td><span class="fv l">Likely</span><span class="fnote">wireless</span></td><td><span class="fv y">Yes</span></td></tr>
 <tr><td>Built-in sat nav</td><td><span class="fv y">Yes</span></td><td><span class="fv n">No</span><span class="fnote">use phone</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span></td><td><span class="fv y">Yes</span><span class="fnote">10in</span></td><td><span class="fv y">Yes</span></td><td><span class="fv l">Likely</span></td></tr>
 <tr><td>Wireless phone charging</td><td><span class="fv y">Yes</span></td><td><span class="fv q">Check</span></td><td><span class="fv q">Check</span></td><td><span class="fv n">No</span></td><td><span class="fv q">Check</span></td><td><span class="fv q">Check</span></td><td><span class="fv q">Check</span></td></tr>
-<tr class="grp"><td colspan="8">Practical</td></tr>
+<tr class="grp"><td colspan="8"><span>Practical</span></td></tr>
 <tr><td>Body / boot</td><td><span class="fv y">Yes</span><span class="fnote">estate ~600 L</span></td><td><span class="fv n">No</span><span class="fnote">hatch ~467 L</span></td><td><span class="fv y">Yes</span><span class="fnote">estate ~640 L</span></td><td><span class="fv y">Yes</span><span class="fnote">estate ~610 L</span></td><td><span class="fv y">Yes</span><span class="fnote">estate ~640 L</span></td><td><span class="fv y">Yes</span><span class="fnote">estate ~640 L</span></td><td><span class="fv y">Yes</span><span class="fnote">estate ~640 L</span></td></tr>
 <tr><td>Spare wheel</td><td><span class="fv q">Check</span><span class="fnote">likely repair kit</span></td><td><span class="fv q">Check</span></td><td><span class="fv q">Check</span></td><td><span class="fv y">Yes</span><span class="fnote">space saver</span></td><td><span class="fv q">Check</span></td><td><span class="fv y">Yes</span><span class="fnote">space saver</span></td><td><span class="fv q">Check</span></td></tr>
 <tr><td>Roof rails</td><td><span class="fv y">Yes</span></td><td><span class="fv q">Check</span></td><td><span class="fv y">Yes</span><span class="fnote">black</span></td><td><span class="fv l">Likely</span></td><td><span class="fv l">Likely</span></td><td><span class="fv y">Yes</span><span class="fnote">black</span></td><td><span class="fv l">Likely</span></td></tr>
