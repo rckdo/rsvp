@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<!--
+  Jobs : a private job-search home base
+  Single-file HTML. Inline CSS + JS. No build step. Data lives in Firebase Realtime Database
+  under /jobs (separate from the wedding tracker).
+
+  Changelog
+  v1.0 (20/11/2026): Initial build. This Week (only dates she sets) and Pipeline home screen;
+          role pages with details, dates, advert, research, notes and to-do list; one-tap
+          status changes; Close this role (Not for me / Unsuccessful / Remove) with a buried,
+          uncounted Past roles toggle; Notebook; Settings (look, statuses, AI switch, backup,
+          recently removed, lock device); search; "Prepare this role" copy-a-prompt round trip
+          for ChatGPT with reply filing. Evidence page: her own examples in Situation / Task /
+          Action / Result form, with a Rehearse mode that hides the answer until she has said it. Three looks: Allotment, Lido, Blossom. Passcode is
+          checked by the database rules, not stored in this page.
+
+  HOW ACCESS WORKS
+  The passcode is NOT in this file. The database holds a list at jobs/access, one entry per
+  passcode. The page can look up one passcode at a time but can never list them. When a
+  passcode matches, this device is recorded at jobs/grants and the rules then open jobs/data
+  to it. Change or delete the entry in the Firebase console and every device is locked out
+  until the new passcode is typed.
+
+  SETUP (one-off): see game/firebase-rules.json for the rules (jobs block), then in the
+  Firebase console create jobs/access/<passcode>/name = "<her name>". The passcode key must
+  be lower-case letters and digits only, no spaces (she can type it with spaces, capitals or
+  hyphens; they are stripped before the lookup).
+
+  Add ?demo to the address to try it with example roles and no database.
+-->
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Jobs</title>
+<link rel="manifest" href="/jobs/app.webmanifest">
+<meta name="theme-color" content="#1F5F3F">
+<link rel="icon" type="image/png" sizes="192x192" href="/jobs/icon-192.png">
+<link rel="apple-touch-icon" href="/jobs/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;700&family=Karla:wght@400;500;700&family=Nunito:wght@400;600;800&family=Young+Serif&display=swap">
+<style>
+/* Each look is a complete palette plus lettering and corner shape. Components only use tokens. */
+:root{
+  --bg:#E4EBDD; --surface:#F5F8F0; --ink:#1E2E22; --muted:#55675A; --line:#C3CFBB;
+  --accent:#1F5F3F; --on-accent:#F5F8F0; --hi:#F2B632; --on-hi:#2B2206;
+  --display:"Bricolage Grotesque","Trebuchet MS",sans-serif; --body:"Figtree","Segoe UI",sans-serif;
+  --display-weight:700; --radius:10px; --pill:999px; --rule:1px solid var(--line);
+  color-scheme:light;
+}
+:root[data-look="lido"]{
+  --bg:#FFFFFF; --surface:#EAF2FF; --ink:#0A2A5E; --muted:#44597F; --line:#B4CCF2;
+  --accent:#1456D9; --on-accent:#FFFFFF; --hi:#FF9A85; --on-hi:#3A0E05;
+  --display:"Baloo 2","Trebuchet MS",sans-serif; --body:"Nunito","Segoe UI",sans-serif;
+  --display-weight:700; --radius:14px;
+}
+:root[data-look="blossom"]{
+  --bg:#F6E4E6; --surface:#FFF7F7; --ink:#3A1730; --muted:#76536A; --line:#E3C3CB;
+  --accent:#8A2A5B; --on-accent:#FFFFFF; --hi:#F9D3AE; --on-hi:#3A1730;
+  --display:"Young Serif","Georgia",serif; --body:"Karla","Segoe UI",sans-serif;
+  --display-weight:400; --radius:6px;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+h1,h2,h3,p,ul,ol{margin:0}
+h1,h2,h3{font-family:var(--display);font-weight:var(--display-weight);line-height:1.15;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding-block:max(20px,env(safe-area-inset-top,0px)) 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:18px}
+
+/* buttons */
+.add{background:var(--accent);color:var(--on-accent);border:0;border-radius:var(--pill);padding:10px 18px;font-weight:700}
+.ghost{background:transparent;border:var(--rule);border-radius:var(--pill);padding:6px 14px;font-size:.9rem;text-decoration:none;display:inline-block}
+.ghost[aria-pressed="true"],.ghost[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.lnk{background:none;border:0;padding:0;text-align:left;text-decoration:underline;text-underline-offset:3px;color:var(--muted);font-size:.9rem}
+.x{background:none;border:0;color:var(--muted);font-size:.85rem;text-decoration:underline;padding:4px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* gate */
+#gate{min-height:70vh;display:grid;place-items:center}
+#gate form{background:var(--surface);border:var(--rule);border-radius:var(--radius);padding:24px;width:min(100%,380px);display:flex;flex-direction:column;gap:12px}
+#gate h1{font-size:1.8rem}
+#gate p{color:var(--muted);font-size:.95rem}
+#gate p:empty{display:none}
+
+/* header */
+#app{display:flex;flex-direction:column;gap:18px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.top h1{font-size:1.7rem}
+.top h1 span{display:block;color:var(--muted);font-size:.85rem;font-family:var(--body);font-weight:400;margin-top:2px}
+.search{flex:1 1 180px;max-width:320px}
+input[type=text],input[type=search],input[type=url],input[type=date],input[type=time],input[type=password],textarea,select{
+  width:100%;background:var(--bg);border:var(--rule);border-radius:calc(var(--radius) * .6);padding:8px 10px;min-width:0}
+.panel input[type=text],.panel input[type=url],.panel textarea,.panel input[type=date],.panel input[type=time]{background:var(--bg)}
+textarea{resize:vertical;line-height:1.5;min-height:2.8em}
+#banner{background:var(--hi);color:var(--on-hi);border-radius:var(--radius);padding:8px 14px;font-size:.9rem}
+
+/* layout: one pane at a time on a phone, list and detail side by side on a laptop */
+.shell{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
+#home,#pane{display:flex;flex-direction:column;gap:20px;min-width:0}
+@media (max-width:979px){
+  body[data-view="home"] #pane{display:none}
+  body:not([data-view="home"]) #home{display:none}
+}
+@media (min-width:980px){
+  .shell{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr)}
+  .back{display:none}
+}
+.panel{background:var(--surface);border:var(--rule);border-radius:var(--radius);padding:18px;min-width:0}
+.panel>h2{font-size:1.2rem;margin-bottom:4px}
+.hint{color:var(--muted);font-size:.85rem}
+.empty{color:var(--muted);padding:10px 0}
+
+/* this week */
+.week{list-style:none;padding:0;margin-top:10px}
+.week li{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:start;padding:11px 0;border-top:var(--rule)}
+.day{background:var(--hi);color:var(--on-hi);border-radius:var(--radius);text-align:center;padding:5px 4px;font-size:.78rem;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
+.day b{display:block;font-family:var(--display);font-size:1.15rem;font-weight:var(--display-weight)}
+.week strong{display:block}
+.when{display:block;color:var(--muted);font-size:.8rem;font-weight:700;margin-top:2px}
+
+/* pipeline */
+.stage{margin-top:16px}
+.stage h3{font-size:.95rem;display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding-bottom:6px;border-bottom:2px solid var(--ink)}
+.stage h3 em{font-style:normal;font-family:var(--body);font-weight:400;color:var(--muted);font-size:.85rem}
+.role{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:var(--rule)}
+.rowmain{flex:1;min-width:0;background:none;border:0;text-align:left;padding:2px 0;display:block}
+.rowmain strong,.rowmain span{display:block;overflow-wrap:anywhere}
+.rowmain span{color:var(--muted);font-size:.9rem}
+.role.sel .rowmain strong{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+.role select{width:auto;max-width:42%;font-size:.85rem;padding:6px 8px;background:var(--surface)}
+.past{margin-top:22px}
+.past>button{color:var(--muted)}
+
+/* role page */
+.back{align-self:flex-start}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld>span{color:var(--muted);font-size:.82rem}
+.big input{font-family:var(--display);font-weight:var(--display-weight);font-size:1.2rem}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.chip{background:transparent;border:var(--rule);border-radius:var(--pill);padding:5px 13px;font-size:.88rem;color:var(--muted)}
+.chip.on{background:var(--ink);color:var(--surface);border-color:var(--ink);font-weight:700}
+.sec{margin-top:20px;padding-top:16px;border-top:var(--rule);display:flex;flex-direction:column;gap:10px}
+.sec>h3{font-size:1.05rem}
+.closed{background:var(--bg);border-radius:var(--radius);padding:10px 12px;font-size:.92rem;margin-bottom:12px}
+.list{list-style:none;padding:0;display:flex;flex-direction:column}
+.list li{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:var(--rule)}
+.list input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:none}
+.list label{flex:1;min-width:0;overflow-wrap:anywhere}
+.list label span{display:block;color:var(--muted);font-size:.85rem}
+.list input:checked+label{color:var(--muted);text-decoration:line-through}
+.inline{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.inline.d3{grid-template-columns:minmax(0,1fr)}
+@media (min-width:520px){.inline.d3{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr) auto}}
+.srcs a{color:var(--accent);overflow-wrap:anywhere;font-size:.9rem;display:block}
+.page{padding:14px 0;border-top:var(--rule);display:flex;flex-direction:column;gap:8px}
+.looks{display:flex;gap:8px;flex-wrap:wrap}
+.strow{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:6px;align-items:center;margin-bottom:6px}
+.check{display:flex;gap:10px;align-items:flex-start}
+.check input{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:none}
+
+/* dialog and toast */
+dialog{border:var(--rule);border-radius:var(--radius);background:var(--surface);color:var(--ink);padding:22px;width:min(560px,calc(100vw - 32px));max-height:calc(100dvh - 32px)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h2{font-size:1.3rem;margin-bottom:10px}
+dialog form,.dbody{display:flex;flex-direction:column;gap:12px}
+.steps{padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.choice{display:block;width:100%;text-align:left;background:var(--bg);border:var(--rule);border-radius:var(--radius);padding:12px 14px}
+.choice b{display:block}
+.choice span{color:var(--muted);font-size:.9rem}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);
+  border-radius:var(--radius);padding:10px 16px;font-size:.92rem;display:flex;gap:14px;align-items:center;max-width:calc(100vw - 32px);z-index:20}
+#toast button{background:none;border:0;color:inherit;font-weight:700;text-decoration:underline;padding:0}
+</style>
+</head>
+<body data-view="home">
+<div class="wrap">
+  <div id="gate" hidden>
+    <form id="gate-form" autocomplete="off">
+      <h1>Jobs</h1>
+      <p id="gate-msg" role="alert"></p>
+      <label class="fld"><span>Passcode</span><input type="password" id="gate-code" autocomplete="off" autocapitalize="none" spellcheck="false" required></label>
+      <button class="add" id="gate-go">Open</button>
+    </form>
+  </div>
+
+  <div id="app" hidden>
+    <header class="top">
+      <h1>Jobs<span id="today"></span></h1>
+      <input type="search" class="search" id="search" placeholder="Search everything" aria-label="Search roles, notes and evidence">
+      <nav class="row" aria-label="Sections">
+        <button class="ghost" data-act="nav" data-v="evidence" id="nav-evidence">Evidence</button>
+        <button class="ghost" data-act="nav" data-v="notebook" id="nav-notebook">Notebook</button>
+        <button class="ghost" data-act="nav" data-v="settings" id="nav-settings">Settings</button>
+        <button class="add" data-act="add-role" id="add-role">+ Add a role</button>
+      </nav>
+    </header>
+    <p id="banner" hidden></p>
+    <div class="shell">
+      <main id="home"></main>
+      <section id="pane" aria-live="off"></section>
+    </div>
+  </div>
+</div>
+<dialog id="dlg"></dialog>
+<div id="toast" role="status" hidden></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>
+"use strict";
+/* =====================================================================
+   CONFIG
+   ===================================================================== */
+// Web config for the existing Firebase project. Public by design; the security
+// lives in the database rules (see game/firebase-rules.json, "jobs" block).
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBI-BFXh8BzvsaDw3Mm0Mxi7UmqyU1Y_g8",
+  authDomain: "rl-wedding-fe94a.firebaseapp.com",
+  databaseURL: "https://rl-wedding-fe94a-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "rl-wedding-fe94a",
+  storageBucket: "rl-wedding-fe94a.firebasestorage.app",
+  messagingSenderId: "54300603401",
+  appId: "1:54300603401:web:b743cdc18f80b9626874d8"
+};
+
+const BASE = "jobs/data/";
+const DEMO = /[?&]demo\b/.test(location.search);
+const DEFAULT_STATUSES = ["Spotted","Preparing","Applied","Interview","Offer"];
+const STARTER_PAGES = ["Questions I always ask","Places to look","Things to remember"];
+const STAR = [["s","Situation","Context"],["t","Task","Your part"],["a","Action","What you did"],["r","Result","What changed"]];
+const LOOKS = [["allotment","Allotment"],["lido","Lido"],["blossom","Blossom"]];
+const CLOSED = { notforme:"Not for me", unsuccessful:"Unsuccessful" };
+const RESEARCH = [["summary","Advert summary"],["requirements","Key requirements"],["company","Company"],
+  ["department","Department"],["questions","Questions to ask"],["fit","How I fit"],["sources","Sources"],["raw","Reply (unsorted)"]];
+const HEADINGS = { "KEY FACTS":"facts","ADVERT SUMMARY":"summary","KEY REQUIREMENTS":"requirements","COMPANY":"company",
+  "DEPARTMENT":"department","QUESTIONS TO ASK":"questions","HOW I FIT":"fit","SOURCES":"sources" };
+const KEEP_REMOVED_DAYS = 30;
+
+/* =====================================================================
+   STATE AND HELPERS
+   ===================================================================== */
+let D = blank(), db = null, uid = null, who = "", readOnly = false, pending = false, live = false;
+let q = "", ui = { past:false, later:false, reh:null }, view = { name:"home", id:null }, bootTimer = null, purged = false;
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+function blank(){ return { roles:{}, statuses:{}, notebook:{}, evidence:{}, settings:{} }; }
+function norm(v){ v = v || {}; return { roles:v.roles||{}, statuses:v.statuses||{}, notebook:v.notebook||{}, evidence:v.evidence||{}, settings:v.settings||{} }; }
+function ls(k, v){ try{ if(v === undefined) return localStorage.getItem(k); v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); }catch(e){} return null; }
+
+// Dates are never shown as bare numbers: always weekday, day and month name,
+// plus the year whenever it is not the current one.
+const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const pad = n => String(n).padStart(2,"0");
+const iso = d => d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+const parseIso = s => { const m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(s || ""); return m ? new Date(+m[1], m[2]-1, +m[3]) : null; };
+const otherYear = d => d.getFullYear() !== new Date().getFullYear();
+function fmtDate(s){ const d = parseIso(s); return d ? DAYS[d.getDay()] + " " + d.getDate() + " " + MONTHS[d.getMonth()] + (otherYear(d) ? " " + d.getFullYear() : "") : ""; }
+const fmtStamp = ms => fmtDate(iso(new Date(ms)));
+function daysFrom(s){ return Math.round((parseIso(s) - parseIso(iso(new Date()))) / 864e5); }
+function rel(s){ const n = daysFrom(s); return n === 0 ? "Today" : n === 1 ? "Tomorrow" : n > 1 ? "In " + n + " days" : n === -1 ? "Yesterday" : (-n) + " days ago"; }
+
+function localSet(path, val){
+  const parts = path.split("/").filter(Boolean); let o = D;
+  for(let i = 0; i < parts.length - 1; i++){ if(typeof o[parts[i]] !== "object" || o[parts[i]] === null) o[parts[i]] = {}; o = o[parts[i]]; }
+  const k = parts[parts.length - 1];
+  if(val === null || val === undefined) delete o[k]; else o[k] = val;
+}
+function saveErr(){ toast("Couldn't save."); }
+const store = {
+  ok(){ if(readOnly){ toast("Offline. Can't save."); return false; } return true; },
+  set(p, v){ if(!this.ok()) return; if(DEMO){ localSet(p, v); return; } db.ref(BASE + p).set(v).catch(saveErr); },
+  update(p, o){ if(!this.ok()) return; if(DEMO){ Object.keys(o).forEach(k => localSet(p + "/" + k, o[k])); return; } db.ref(BASE + p).update(o).catch(saveErr); },
+  remove(p){ this.set(p, null); }
+};
+
+const roleList = () => Object.keys(D.roles).map(id => Object.assign({ id }, D.roles[id]));
+const isLive = r => !r.removedAt && !r.closed;
+function statusList(){ return Object.keys(D.statuses).map(id => ({ id, name:D.statuses[id].name || "", order:D.statuses[id].order || 0 })).sort((a,b) => a.order - b.order); }
+function statusOf(r){ const s = statusList(); return s.find(x => x.id === r.status) || s[0] || { id:"", name:"" }; }
+function dateList(r){ return Object.keys(r.dates || {}).map(id => Object.assign({ id }, r.dates[id])).sort((a,b) => ((a.date||"") + (a.time||"")).localeCompare((b.date||"") + (b.time||""))); }
+function todoList(r){ return Object.keys(r.todos || {}).map(id => Object.assign({ id }, r.todos[id])).sort((a,b) => (a.at||0) - (b.at||0)); }
+const roleName = r => (r.company || "Untitled") + (r.title ? ", " + r.title : "");
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+function editing(){
+  const a = document.activeElement;
+  return !!(a && a.closest && a.closest("#home,#pane") && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== "checkbox");
+}
+// Remote or local data changed. Never rebuild the page under someone who is typing.
+function onData(){ if(editing()){ pending = true; return; } render(); }
+function render(focusId){
+  pending = false;
+  document.body.dataset.view = view.name;
+  ["evidence","notebook","settings"].forEach(v => $("nav-" + v).setAttribute("aria-current", view.name === v ? "page" : "false"));
+  $("home").innerHTML = homeHtml();
+  $("pane").innerHTML = view.name === "role" ? roleHtml(view.id) : view.name === "notebook" ? notebookHtml() : view.name === "evidence" ? evidenceHtml() : view.name === "settings" ? settingsHtml() : paneEmpty();
+  document.querySelectorAll("textarea").forEach(grow);
+  if(focusId && $(focusId)) $(focusId).focus();
+}
+function grow(t){ if(!t.offsetParent) return; t.style.height = "auto"; t.style.height = (t.scrollHeight + 2) + "px"; }
+function paneEmpty(){ return `<div class="panel"><p class="empty">No role selected.</p></div>`; }
+
+function dayChip(s){
+  const d = parseIso(s);
+  return `<div class="day">${DAYS[d.getDay()]}<b>${d.getDate()}</b>${MONTHS[d.getMonth()]}${otherYear(d) ? " " + d.getFullYear() : ""}</div>`;
+}
+function homeHtml(){
+  const roles = roleList().filter(r => !r.removedAt);
+  if(q) return searchHtml(roles);
+  const act = roles.filter(isLive), lim = iso(new Date(Date.now() + 7 * 864e5));
+  let items = [];
+  act.forEach(r => dateList(r).forEach(d => { if(!d.done && d.date) items.push({ r, d }); }));
+  items.sort((a,b) => (a.d.date + (a.d.time||"")).localeCompare(b.d.date + (b.d.time||"")));
+  const soon = items.filter(x => x.d.date <= lim), later = items.filter(x => x.d.date > lim);
+  const li = x => `<li>${dayChip(x.d.date)}<div><strong>${esc(x.d.label || "Date")}${x.d.time ? ", " + esc(x.d.time) : ""}</strong>
+    <button class="lnk" data-act="open" data-id="${x.r.id}">${esc(roleName(x.r))}</button><span class="when">${rel(x.d.date)}</span></div>
+    <button class="ghost" data-act="date-done" data-id="${x.r.id}" data-d="${x.d.id}">Done</button></li>`;
+  let h = `<div class="panel"><h2>This week</h2>`;
+  h += soon.length ? `<ul class="week">${soon.map(li).join("")}</ul>` : `<p class="empty">No dates this week.</p>`;
+  if(later.length) h += `<p style="margin-top:10px"><button class="lnk" data-act="toggle-later" aria-expanded="${ui.later}">Later</button></p>` + (ui.later ? `<ul class="week">${later.map(li).join("")}</ul>` : "");
+  h += `</div><div class="panel"><h2>Pipeline</h2>`;
+  if(!roles.length) h += `<p class="empty">No roles yet.</p>`;
+  const sts = statusList();
+  if(roles.length) sts.forEach(s => {
+    const rs = act.filter(r => statusOf(r).id === s.id).sort((a,b) => (b.created||0) - (a.created||0));
+    h += `<div class="stage"><h3>${esc(s.name)} <em>${rs.length}</em></h3>${rs.map(r => rowHtml(r, sts)).join("")}</div>`;
+  });
+  const past = roles.filter(r => r.closed).sort((a,b) => (b.closed.at||0) - (a.closed.at||0));
+  if(past.length){
+    h += `<div class="past"><button class="lnk" data-act="toggle-past" aria-expanded="${ui.past}">Past roles</button>`;
+    if(ui.past) h += past.map(r => `<div class="role${view.id === r.id ? " sel" : ""}"><button class="rowmain" data-act="open" data-id="${r.id}"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>${CLOSED[r.closed.type] || "Closed"}, ${fmtStamp(r.closed.at)}</span></button></div>`).join("");
+    h += `</div>`;
+  }
+  return h + `</div>`;
+}
+function rowHtml(r, sts){
+  const nd = dateList(r).find(d => !d.done && d.date), cur = statusOf(r).id;
+  const meta = nd ? (nd.label || "Date") + " " + fmtDate(nd.date) : (r.salary || "");
+  return `<div class="role${view.id === r.id ? " sel" : ""}"><button class="rowmain" data-act="open" data-id="${r.id}"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span>${meta ? `<span>${esc(meta)}</span>` : ""}</button>
+    <select aria-label="Status for ${esc(r.company || "this role")}" data-chg="status" data-id="${r.id}">${sts.map(s => `<option value="${s.id}"${s.id === cur ? " selected" : ""}>${esc(s.name)}</option>`).join("")}<option value="__close">Close this role…</option></select></div>`;
+}
+function searchHtml(roles){
+  const n = q.toLowerCase();
+  const hit = r => [r.company, r.title, r.location, r.salary, r.notes, r.advert].concat(Object.values(r.research || {}), todoList(r).map(t => t.t), dateList(r).map(d => d.label)).some(v => v && String(v).toLowerCase().includes(n));
+  const rs = roles.filter(hit), ps = Object.keys(D.notebook).map(id => D.notebook[id]).filter(p => ((p.title||"") + " " + (p.body||"")).toLowerCase().includes(n));
+  let h = `<div class="panel"><h2>Search results</h2>`;
+  const es = evList().filter(e => [e.q].concat(STAR.map(x => e[x[0]])).some(v => v && String(v).toLowerCase().includes(n)));
+  if(!rs.length && !ps.length && !es.length) h += `<p class="empty">No results.</p>`;
+  h += rs.map(r => `<div class="role"><button class="rowmain" data-act="open" data-id="${r.id}"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>${esc(r.closed ? (CLOSED[r.closed.type] || "Closed") : statusOf(r).name)}</span></button></div>`).join("");
+  h += ps.map(p => `<div class="role"><button class="rowmain" data-act="nav" data-v="notebook"><strong>${esc(p.title || "Untitled page")}</strong><span>Notebook</span></button></div>`).join("");
+  h += es.map(e => `<div class="role"><button class="rowmain" data-act="nav" data-v="evidence"><strong>${esc(e.q || "Untitled example")}</strong><span>Evidence</span></button></div>`).join("");
+  return h + `</div>`;
+}
+
+const fld = (label, path, f, val, type, ph) => `<label class="fld"><span>${label}</span><input type="${type || "text"}" id="f-${f}" data-path="${path}" data-f="${f}" value="${esc(val)}" placeholder="${esc(ph || "")}"></label>`;
+const area = (label, path, f, val, ph, id) => `<label class="fld">${label ? `<span>${label}</span>` : ""}<textarea id="t-${id || f}" data-path="${path}" data-f="${f}" rows="2" aria-label="${esc(label || ph || f)}" placeholder="${esc(ph || "")}">${esc(val)}</textarea></label>`;
+
+function roleHtml(id){
+  const r = D.roles[id];
+  if(!r || r.removedAt) return `<div class="panel"><button class="ghost back" data-act="nav" data-v="home">Back</button><p class="empty">Role not found.</p></div>`;
+  const p = "roles/" + id, cur = statusOf(r).id, res = r.research || {};
+  let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home" style="margin-bottom:14px">Back</button>`;
+  if(r.closed) h += `<p class="closed">${CLOSED[r.closed.type] || "Closed"}, ${fmtStamp(r.closed.at)} <button class="ghost" data-act="reopen" data-id="${id}">Reopen</button></p>`;
+  h += `<div class="pair big">${fld("Company", p, "company", r.company)}${fld("Job title", p, "title", r.title)}</div>`;
+  if(!r.closed) h += `<div class="chips" role="group" aria-label="Status">${statusList().map(s => `<button class="chip${s.id === cur ? " on" : ""}" data-act="set-status" data-id="${id}" data-s="${s.id}" aria-pressed="${s.id === cur}">${esc(s.name)}</button>`).join("")}</div>`;
+
+  h += `<div class="sec"><h3>Details</h3>${fld("Advert link", p, "link", r.link, "url", "https://")}`;
+  if(/^https?:\/\//i.test(r.link || "")) h += `<div><a class="ghost" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">Open advert</a></div>`;
+  h += `<div class="pair">${fld("Salary", p, "salary", r.salary, "text", "e.g. £29,500 a year")}${fld("Location", p, "location", r.location)}</div></div>`;
+
+  const ds = dateList(r);
+  h += `<div class="sec"><h3>Dates</h3>`;
+  if(ds.length) h += `<ul class="list">${ds.map(d => `<li><input type="checkbox" id="d-${d.id}" data-path="${p}/dates/${d.id}" data-f="done"${d.done ? " checked" : ""}><label for="d-${d.id}">${esc(d.label || "Date")}<span>${fmtDate(d.date)}${d.time ? " at " + esc(d.time) : ""}${d.done ? "" : " · " + rel(d.date)}</span></label><button class="x" data-act="del-date" data-id="${id}" data-d="${d.id}">Delete</button></li>`).join("")}</ul>`;
+  h += `<form class="inline d3" data-form="new-date" data-id="${id}"><input type="text" name="label" id="date-new" placeholder="e.g. Interview" aria-label="What the date is for" required><input type="date" name="date" aria-label="Date" required><input type="time" name="time" aria-label="Time (optional)"><button class="ghost">Add date</button></form></div>`;
+
+  h += `<div class="sec"><h3>Advert</h3>${area("", p, "advert", r.advert, "Paste advert text")}</div>`;
+
+  h += `<div class="sec"><h3>Research</h3><div class="row"><button class="add" data-act="prepare" data-id="${id}">Prepare this role</button><button class="ghost" data-act="help" aria-label="How it works">?</button></div>`;
+  const got = RESEARCH.filter(x => res[x[0]]);
+  got.forEach(x => { h += area(x[1], p + "/research", x[0], res[x[0]], "", "r-" + x[0]); });
+  const urls = (res.sources || "").match(/https?:\/\/[^\s)>\]]+/g);
+  if(urls) h += `<div class="srcs">${urls.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`).join("")}</div>`;
+  if(got.length) h += `<p class="hint">AI draft. Check against sources. <button class="x" data-act="clear-research" data-id="${id}">Clear research</button></p>`;
+  h += `</div>`;
+
+  h += `<div class="sec"><h3>Notes</h3>${area("", p, "notes", r.notes, "Notes")}</div>`;
+
+  const ts = todoList(r);
+  h += `<div class="sec"><h3>To do</h3>`;
+  if(ts.length) h += `<ul class="list">${ts.map(t => `<li><input type="checkbox" id="td-${t.id}" data-path="${p}/todos/${t.id}" data-f="done"${t.done ? " checked" : ""}><label for="td-${t.id}">${esc(t.t)}</label><button class="x" data-act="del-todo" data-id="${id}" data-d="${t.id}">Delete</button></li>`).join("")}</ul>`;
+  h += `<form class="inline" data-form="new-todo" data-id="${id}"><input type="text" name="t" id="todo-new" placeholder="Add a task" aria-label="Add a task" required><button class="ghost">Add</button></form></div>`;
+
+  if(!r.closed) h += `<div class="sec"><div><button class="ghost" data-act="close-role" data-id="${id}">Close this role</button></div></div>`;
+  return h + `</div>`;
+}
+
+function notebookHtml(){
+  const pages = Object.keys(D.notebook).map(id => Object.assign({ id }, D.notebook[id])).sort((a,b) => (a.at||0) - (b.at||0));
+  let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home" style="margin-bottom:14px">Back</button><h2>Notebook</h2>`;
+  if(!pages.length) h += `<p class="empty">No pages yet.</p>`;
+  h += pages.map(pg => `<div class="page"><label class="fld big"><span>Page title</span><input type="text" id="nt-${pg.id}" data-path="notebook/${pg.id}" data-f="title" value="${esc(pg.title)}"></label>${area("Notes", "notebook/" + pg.id, "body", pg.body, "", "nb-" + pg.id)}<div><button class="x" data-act="del-page" data-id="${pg.id}">Delete</button></div></div>`).join("");
+  return h + `<div class="sec"><div><button class="ghost" data-act="add-page">Add a page</button></div></div></div>`;
+}
+
+const evList = () => Object.keys(D.evidence).map(id => Object.assign({ id }, D.evidence[id])).sort((a,b) => (a.at||0) - (b.at||0));
+const evReady = e => e.q && STAR.some(x => e[x[0]]);
+function evidenceHtml(){
+  const back = `<button class="ghost back" data-act="nav" data-v="home" style="margin-bottom:14px">Back</button>`;
+  const all = evList(), ready = all.filter(evReady);
+  if(ui.reh){
+    const e = D.evidence[ui.reh.id];
+    if(e) return `<div class="panel">${back}<p class="hint">Rehearsing</p><h2 style="font-size:1.5rem;margin:6px 0 12px">${esc(e.q)}</h2>
+      ${ui.reh.shown ? STAR.filter(x => e[x[0]]).map(x => `<div class="sec"><h3>${x[1]}</h3><p style="white-space:pre-wrap">${esc(e[x[0]])}</p></div>`).join("")
+        : `<p class="hint">Answer out loud, then check.</p>`}
+      <div class="sec"><div class="row">${ui.reh.shown ? "" : `<button class="add" data-act="reh-show">Show my answer</button>`}${ready.length > 1 ? `<button class="${ui.reh.shown ? "add" : "ghost"}" data-act="reh-next">Next question</button>` : ""}<button class="ghost" data-act="reh-stop">Finish</button></div></div></div>`;
+    ui.reh = null;
+  }
+  let h = `<div class="panel">${back}<h2>Evidence</h2>
+    <div class="row" style="margin-top:12px"><button class="add" data-act="add-ev">Add example</button>${ready.length ? `<button class="ghost" data-act="rehearse">Rehearse</button>` : ""}</div>`;
+  if(!all.length) h += `<p class="empty">No examples yet.</p>`;
+  h += all.map(e => `<div class="page"><label class="fld big"><span>Question or skill</span><input type="text" id="ev-${e.id}" data-path="evidence/${e.id}" data-f="q" value="${esc(e.q)}" placeholder="e.g. Led a project"></label>
+    ${STAR.map(x => area(x[1], "evidence/" + e.id, x[0], e[x[0]], x[2], "ev-" + e.id + "-" + x[0])).join("")}<div><button class="x" data-act="del-ev" data-id="${e.id}">Delete</button></div></div>`).join("");
+  return h + `</div>`;
+}
+function pickEv(not){ const r = evList().filter(evReady).filter(e => e.id !== not); return r.length ? r[Math.floor(Math.random() * r.length)].id : null; }
+
+function settingsHtml(){
+  const sts = statusList(), look = D.settings.theme || "allotment";
+  const removed = roleList().filter(r => r.removedAt).sort((a,b) => b.removedAt - a.removedAt);
+  let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home" style="margin-bottom:14px">Back</button><h2>Settings</h2>`;
+  h += `<div class="sec"><h3>Look</h3><div class="looks">${LOOKS.map(l => `<button class="ghost" data-act="look" data-l="${l[0]}" aria-pressed="${l[0] === look}">${l[1]}</button>`).join("")}</div></div>`;
+  h += `<div class="sec"><h3>Statuses</h3><div>${sts.map((s,i) => `<div class="strow"><input type="text" id="st-${s.id}" aria-label="Status name" data-path="statuses/${s.id}" data-f="name" value="${esc(s.name)}"><button class="ghost" data-act="st-move" data-id="${s.id}" data-dir="-1" aria-label="Move ${esc(s.name)} up"${i === 0 ? " disabled" : ""}>Up</button><button class="ghost" data-act="st-move" data-id="${s.id}" data-dir="1" aria-label="Move ${esc(s.name)} down"${i === sts.length - 1 ? " disabled" : ""}>Down</button><button class="x" data-act="st-del" data-id="${s.id}"${sts.length < 2 ? " disabled" : ""}>Delete</button></div>`).join("")}</div>
+    <form class="inline" data-form="new-status"><input type="text" name="name" id="status-new" placeholder="New status" aria-label="New status" required><button class="ghost">Add</button></form></div>`;
+  h += `<div class="sec"><h3>AI research</h3><div class="check"><input type="checkbox" id="set-cv" data-path="settings" data-f="cv"${D.settings.cv ? " checked" : ""}><label for="set-cv">My AI has my CV<span class="hint" style="display:block">Needs a ChatGPT project holding your CV. <button class="lnk" data-act="help">Setup</button></span></label></div></div>`;
+  h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">Download backup</button><button class="ghost" data-act="export-csv">Download spreadsheet</button></div></div>`;
+  h += `<div class="sec"><h3>Recently removed</h3>`;
+  h += removed.length ? `<p class="hint">Deleted after ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Removed ${fmtStamp(r.removedAt)}</span></div><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button></div>`).join("") : `<p class="empty">None.</p>`;
+  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">Lock</button></div><p class="hint">Jobs v1.0</p></div>`;
+  return h + `</div>`;
+}
+
+/* =====================================================================
+   DIALOGS AND TOAST
+   ===================================================================== */
+function openDlg(html){ const d = $("dlg"); d.innerHTML = html; if(!d.open) d.showModal(); }
+function closeDlg(){ const d = $("dlg"); if(d.open) d.close(); d.innerHTML = ""; }
+let toastTimer = null, toastUndo = null;
+function toast(msg, undo){
+  const t = $("toast"); toastUndo = undo || null;
+  t.innerHTML = `<span>${esc(msg)}</span>` + (undo ? `<button data-act="undo">Undo</button>` : "");
+  t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, undo ? 8000 : 4000);
+}
+function banner(msg){ const b = $("banner"); b.textContent = msg || ""; b.hidden = !msg; }
+
+function addRoleDlg(){
+  openDlg(`<h2>Add a role</h2><form data-form="new-role">
+    <label class="fld"><span>Company</span><input type="text" name="company" id="new-company" required></label>
+    <label class="fld"><span>Job title</span><input type="text" name="title" required></label>
+    <label class="fld"><span>Advert link (optional)</span><input type="url" name="link" placeholder="https://"></label>
+    <div class="row"><button class="add">Add role</button><button type="button" class="ghost" data-act="dlg-close">Cancel</button></div></form>`);
+  $("new-company").focus();
+}
+function closeRoleDlg(id){
+  const r = D.roles[id]; if(!r) return;
+  openDlg(`<h2>Close this role</h2><div class="dbody"><p>${esc(roleName(r))}</p>
+    <button class="choice" data-act="close-as" data-id="${id}" data-t="notforme"><b>Not for me</b><span>Kept in Past roles</span></button>
+    <button class="choice" data-act="close-as" data-id="${id}" data-t="unsuccessful"><b>Unsuccessful</b><span>Kept in Past roles</span></button>
+    <button class="choice" data-act="remove" data-id="${id}"><b>Remove</b><span>Deleted after ${KEEP_REMOVED_DAYS} days</span></button>
+    <div><button class="ghost" data-act="dlg-close">Cancel</button></div></div>`);
+}
+function helpDlg(){
+  openDlg(`<h2>Prepare this role</h2><div class="dbody">
+    <ol class="steps"><li>Copy prompt.</li><li>Paste into a new ChatGPT chat. Send.</li><li>Copy ChatGPT's reply (button on its answer box).</li><li>Paste reply here. File it.</li></ol>
+    <p class="hint">Paste the advert text into the role first. For interviews, switch on Deep research in ChatGPT.</p>
+    <h2 style="font-size:1.05rem;margin:6px 0 0">Optional: use your CV</h2>
+    <ol class="steps"><li>ChatGPT sidebar: New project.</li><li>Add your CV as a file.</li><li>Start role chats inside that project.</li><li>Here: Settings, My AI has my CV.</li></ol>
+    <div><button class="ghost" data-act="dlg-close">Close</button></div></div>`);
+}
+
+/* =====================================================================
+   PREPARE THIS ROLE: prompt out, reply back in
+   ===================================================================== */
+function buildPrompt(r){
+  const cv = !!D.settings.cv, L = [];
+  L.push("I am applying for a job and need help preparing. Use web search for anything about the employer, and only state things you can support with a source. If you cannot find reliable information for a section, write \"Nothing reliable found\" instead of guessing. Never invent names of people.");
+  L.push("", "THE ROLE", "Company: " + (r.company || "not given"), "Job title: " + (r.title || "not given"));
+  if(r.link) L.push("Advert link: " + r.link);
+  if(r.location) L.push("Location: " + r.location);
+  if(r.advert) L.push("", "ADVERT TEXT", '"""', r.advert.trim(), '"""');
+  else L.push("", "I have not pasted the advert text. If you cannot open the link, say so under ADVERT SUMMARY and carry on with the other sections.");
+  L.push("", "HOW TO REPLY",
+    "Reply with ONE code block and nothing before or after it, so I can copy the whole reply in one go.",
+    "Inside the code block use exactly these headings, in this order, each on its own line starting with ##.",
+    "Under each heading write plain text in short bullet points starting with \"- \". No bold, no tables, no extra headings. Use British English.",
+    "", "## KEY FACTS", "Salary: (as stated in the advert, or \"not stated\")", "Closing date: (as YYYY-MM-DD, or \"not stated\")", "Location: (as stated in the advert, or \"not stated\")",
+    "## ADVERT SUMMARY", "(3 to 5 bullets on what the job involves day to day)",
+    "## KEY REQUIREMENTS", "(must-haves first, then nice-to-haves, each labelled)",
+    "## COMPANY", "(what they do, size, anything notable from the last 12 months, what they say about their culture)",
+    "## DEPARTMENT", "(the team this role sits in: what it does, how it fits the organisation, anything public about its current priorities)",
+    "## QUESTIONS TO ASK", "(5 questions I could ask at interview, specific to this employer and role)");
+  if(cv) L.push("## HOW I FIT", "(using my CV in this project: my strongest matches, any gaps and how to address them, and 3 examples from my experience worth preparing)");
+  L.push("## SOURCES", "(one full web address per line for each source you used)");
+  return L.join("\n");
+}
+function parseReply(txt){
+  const out = {}, lines = String(txt || "").replace(/\r/g, "").split("\n");
+  let key = null, found = 0;
+  lines.forEach(line => {
+    if(/^\s*```/.test(line)) return;                       // drop code-fence lines
+    const m = /^\s*#{1,4}\s*\**\s*([A-Za-z ]+?)\s*\**\s*:?\s*$/.exec(line), k = m && HEADINGS[m[1].toUpperCase().replace(/\s+/g, " ")];
+    if(k){ key = k; found++; out[key] = out[key] || ""; return; }
+    if(key) out[key] += line + "\n";
+  });
+  if(!found) return { research:{ raw:String(txt).trim() }, facts:{} };
+  const facts = {}, stated = v => v && !/^\(?\s*not stated/i.test(v) ? v.trim() : "";
+  (out.facts || "").split("\n").forEach(l => {
+    const m = /^\s*[-*]?\s*(salary|closing date|location)\s*:\s*(.+)$/i.exec(l); if(!m) return;
+    const f = m[1].toLowerCase(), v = stated(m[2]); if(!v) return;
+    if(f === "closing date"){ const d = /(\d{4}-\d\d-\d\d)/.exec(v); if(d && parseIso(d[1])) facts.closes = d[1]; }
+    else facts[f] = v;
+  });
+  const research = {};
+  Object.keys(out).forEach(k => { if(k !== "facts" && out[k].trim()) research[k] = out[k].trim(); });
+  return { research, facts };
+}
+function prepareDlg(id){
+  const r = D.roles[id]; if(!r) return;
+  openDlg(`<h2>Prepare this role</h2><div class="dbody">
+    ${r.advert ? "" : `<p class="hint">No advert text on this role. The summary will be weaker.</p>`}
+    <textarea id="prompt-text" readonly rows="5" aria-label="Prompt to copy">${esc(buildPrompt(r))}</textarea>
+    <div><button class="add" data-act="copy-prompt">Copy prompt</button></div>
+    <form data-form="file-reply" data-id="${id}"><textarea name="reply" id="reply-text" rows="5" placeholder="Paste reply" aria-label="ChatGPT's reply" required></textarea>
+    <div class="row"><button class="add">File it</button><button type="button" class="ghost" data-act="dlg-close">Not now</button></div></form></div>`);
+}
+function fileReply(id, txt){
+  const r = D.roles[id]; if(!r) return;
+  const p = parseReply(txt), merged = Object.assign({}, r.research || {}, p.research);
+  store.set("roles/" + id + "/research", merged);
+  const offers = [];
+  if(p.facts.salary && !r.salary) offers.push(["salary", "Salary: " + p.facts.salary, p.facts.salary, true]);
+  if(p.facts.location && !r.location) offers.push(["location", "Location: " + p.facts.location, p.facts.location, true]);
+  if(p.facts.closes && !dateList(r).some(d => d.date === p.facts.closes)) offers.push(["closes", "Closing date: " + fmtDate(p.facts.closes), p.facts.closes, false]);
+  if(!offers.length){ closeDlg(); toast(p.research.raw ? "Filed unsorted." : "Filed."); return; }
+  openDlg(`<h2>Add from reply?</h2><form data-form="apply-facts" data-id="${id}">    ${offers.map(o => `<div class="check"><input type="checkbox" id="of-${o[0]}" name="${o[0]}" value="${esc(o[2])}"${o[3] ? " checked" : ""}><label for="of-${o[0]}">${esc(o[1])}</label></div>`).join("")}
+    <div class="row"><button class="add">Add ticked</button><button type="button" class="ghost" data-act="dlg-close">Skip</button></div></form>`);
+}
+
+/* =====================================================================
+   ACTIONS
+   ===================================================================== */
+function go(name, id){ location.hash = name === "role" ? "role-" + id : name; }
+function route(){
+  const hsh = location.hash.replace(/^#/, ""), m = /^role-(.+)$/.exec(hsh);
+  view = m ? { name:"role", id:m[1] } : (hsh === "notebook" || hsh === "settings" || hsh === "evidence") ? { name:hsh, id:null } : { name:"home", id:null };
+  render(); window.scrollTo(0, 0);
+}
+function download(name, text, type){
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function applyLook(l){ if(!LOOKS.some(x => x[0] === l)) l = "allotment"; document.documentElement.dataset.look = l; ls("jobs-look", l); }
+
+const ACT = {
+  "nav": el => go(el.dataset.v),
+  "open": el => go("role", el.dataset.id),
+  "add-role": addRoleDlg,
+  "dlg-close": closeDlg,
+  "help": helpDlg,
+  "undo": () => { const u = toastUndo; $("toast").hidden = true; toastUndo = null; if(u){ u(); render(); } },
+  "toggle-past": () => { ui.past = !ui.past; render(); },
+  "toggle-later": () => { ui.later = !ui.later; render(); },
+  "set-status": el => { store.update("roles/" + el.dataset.id, { status:el.dataset.s }); render(); },
+  "date-done": el => { const p = "roles/" + el.dataset.id + "/dates/" + el.dataset.d; store.update(p, { done:true }); render(); toast("Done.", () => store.update(p, { done:false })); },
+  "del-date": el => { store.remove("roles/" + el.dataset.id + "/dates/" + el.dataset.d); render(); },
+  "del-todo": el => { store.remove("roles/" + el.dataset.id + "/todos/" + el.dataset.d); render(); },
+  "close-role": el => closeRoleDlg(el.dataset.id),
+  "close-as": el => { const id = el.dataset.id; store.update("roles/" + id, { closed:{ type:el.dataset.t, at:Date.now() } }); closeDlg(); go("home"); render(); toast("Moved to Past roles.", () => store.update("roles/" + id, { closed:null })); },
+  "remove": el => { const id = el.dataset.id; store.update("roles/" + id, { removedAt:Date.now() }); closeDlg(); go("home"); render(); toast("Removed.", () => store.update("roles/" + id, { removedAt:null })); },
+  "reopen": el => { store.update("roles/" + el.dataset.id, { closed:null }); render(); },
+  "restore": el => { store.update("roles/" + el.dataset.id, { removedAt:null }); render(); toast("Restored."); },
+  "prepare": el => prepareDlg(el.dataset.id),
+  "copy-prompt": () => {
+    const t = $("prompt-text"), done = () => toast("Copied.");
+    const manual = () => { t.focus(); t.select(); try{ document.execCommand("copy") ? done() : toast("Copy failed. Select the text and copy it."); }catch(e){ toast("Copy failed. Select the text and copy it."); } };
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done, manual); else manual();
+  },
+  "clear-research": el => { const id = el.dataset.id, old = (D.roles[id] || {}).research || null; store.remove("roles/" + id + "/research"); render(); toast("Research cleared.", () => store.set("roles/" + id + "/research", old)); },
+  "add-ev": () => { const id = newId(); store.set("evidence/" + id, { q:"", at:Date.now() }); render("ev-" + id); },
+  "del-ev": el => { const id = el.dataset.id, old = D.evidence[id]; store.remove("evidence/" + id); render(); toast("Example deleted.", () => store.set("evidence/" + id, old)); },
+  "rehearse": () => { const id = pickEv(null); if(id){ ui.reh = { id, shown:false }; render(); window.scrollTo(0, 0); } },
+  "reh-show": () => { ui.reh.shown = true; render(); },
+  "reh-next": () => { const id = pickEv(ui.reh.id); if(id){ ui.reh = { id, shown:false }; render(); window.scrollTo(0, 0); } },
+  "reh-stop": () => { ui.reh = null; render(); },
+  "add-page": () => { const id = newId(); store.set("notebook/" + id, { title:"", body:"", at:Date.now() }); render("nt-" + id); },
+  "del-page": el => { const id = el.dataset.id, old = D.notebook[id]; store.remove("notebook/" + id); render(); toast("Page deleted.", () => store.set("notebook/" + id, old)); },
+  "look": el => { store.update("settings", { theme:el.dataset.l }); applyLook(el.dataset.l); render(); },
+  "st-move": el => {
+    const s = statusList(), i = s.findIndex(x => x.id === el.dataset.id), j = i + (+el.dataset.dir);
+    if(i < 0 || j < 0 || j >= s.length) return;
+    [s[i], s[j]] = [s[j], s[i]];
+    s.forEach((x, n) => store.update("statuses/" + x.id, { order:(n + 1) * 10 })); render();
+  },
+  "st-del": el => {
+    const s = statusList(), id = el.dataset.id, t = s.find(x => x.id === id), other = s.find(x => x.id !== id);
+    if(!t || !other) return;
+    const used = roleList().filter(r => r.status === id);
+    if(used.length && !confirm("Delete \"" + t.name + "\"? " + used.length + (used.length === 1 ? " role" : " roles") + " will move to \"" + other.name + "\".")) return;
+    used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
+    store.remove("statuses/" + id); render();
+  },
+  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.0", data:D }, null, 2), "application/json"),
+  "export-csv": () => {
+    const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+    const rows = [["Company","Job title","Status","Salary","Location","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
+      [r.company, r.title, r.closed ? "" : statusOf(r).name, r.salary, r.location, r.link, r.created ? iso(new Date(r.created)) : "", r.closed ? (CLOSED[r.closed.type] || "Closed") : "", r.notes]));
+    download("jobs-roles-" + iso(new Date()) + ".csv", "﻿" + rows.map(r => r.map(cell).join(",")).join("\r\n"), "text/csv");
+  },
+  "lock": () => {
+    if(DEMO){ toast("Demo."); return; }
+    if(!confirm("Lock this device?")) return;
+    ls("jobs-cache", null);
+    const done = () => location.reload();
+    if(db && uid) db.ref("jobs/grants/" + uid).remove().then(done, done); else done();
+  }
+};
+
+const FORMS = {
+  "new-role": f => {
+    const id = newId(), s = statusList()[0];
+    store.set("roles/" + id, { company:f.company.value.trim(), title:f.title.value.trim(), link:f.link.value.trim() || null, status:s ? s.id : null, created:Date.now() });
+    closeDlg(); $("search").value = ""; q = ""; go("role", id); render();
+  },
+  "new-date": f => { store.set("roles/" + f.dataset.id + "/dates/" + newId(), { label:f.label.value.trim(), date:f.date.value, time:f.time.value || null }); render("date-new"); },
+  "new-todo": f => { store.set("roles/" + f.dataset.id + "/todos/" + newId(), { t:f.t.value.trim(), at:Date.now() }); render("todo-new"); },
+  "new-status": f => { const s = statusList(); store.set("statuses/" + newId(), { name:f.name.value.trim(), order:(s.length ? s[s.length - 1].order : 0) + 10 }); render("status-new"); },
+  "file-reply": f => { fileReply(f.dataset.id, f.reply.value); render(); },
+  "apply-facts": f => {
+    const id = f.dataset.id, o = {};
+    if(f.salary && f.salary.checked) o.salary = f.salary.value;
+    if(f.location && f.location.checked) o.location = f.location.value;
+    if(Object.keys(o).length) store.update("roles/" + id, o);
+    if(f.closes && f.closes.checked) store.set("roles/" + id + "/dates/" + newId(), { label:"Application closes", date:f.closes.value });
+    closeDlg(); render(); toast("Filed.");
+  }
+};
+
+const timers = {};
+function saveField(el, now){
+  const path = el.dataset.path, f = el.dataset.f; if(!path || !f) return;
+  const key = path + "/" + f; clearTimeout(timers[key]);
+  const run = () => { const v = el.type === "checkbox" ? el.checked : el.value, o = {}; o[f] = (v === "" || v === false) ? null : v; store.update(path, o); };
+  if(now) run(); else timers[key] = setTimeout(run, 600);
+}
+
+document.addEventListener("click", e => {
+  if(e.target === $("dlg")){ closeDlg(); return; }             // tap on the backdrop
+  const el = e.target.closest("[data-act]"); if(!el || el.disabled) return;
+  const fn = ACT[el.dataset.act]; if(fn){ if(el.tagName === "BUTTON" && el.type !== "submit") e.preventDefault(); fn(el); }
+});
+document.addEventListener("submit", e => {
+  e.preventDefault();
+  const f = e.target, fn = FORMS[f.dataset.form]; if(fn) fn(f);
+});
+document.addEventListener("input", e => {
+  const el = e.target;
+  if(el.id === "search"){ q = el.value.trim(); if(q && view.name !== "home") go("home"); else render(); return; }
+  if(el.tagName === "TEXTAREA") grow(el);
+  if(el.dataset.f && el.type !== "checkbox") saveField(el, false);
+});
+document.addEventListener("change", e => {
+  const el = e.target;
+  if(el.dataset.chg === "status"){
+    if(el.value === "__close"){ closeRoleDlg(el.dataset.id); render(); } else { store.update("roles/" + el.dataset.id, { status:el.value }); render(); }
+    return;
+  }
+  if(el.dataset.f){ saveField(el, true); if(el.type === "checkbox") render(); }
+});
+document.addEventListener("focusout", () => setTimeout(() => { if(pending && !editing()) render(); }, 0));
+window.addEventListener("hashchange", route);
+
+/* =====================================================================
+   BOOT: demo, offline copy, or passcode lookup then live data
+   ===================================================================== */
+function showApp(){
+  $("gate").hidden = true; $("app").hidden = false;
+  const d = new Date();
+  $("today").textContent = d.toLocaleDateString("en-GB", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+  route();
+}
+function showGate(msg){
+  clearTimeout(bootTimer); $("app").hidden = true; $("gate").hidden = false;
+  if(msg) $("gate-msg").textContent = msg;
+  $("gate-code").focus();
+}
+function showCached(reason){
+  let c = null; try{ c = JSON.parse(ls("jobs-cache") || "null"); }catch(e){}
+  if(!c){ showGate(reason); $("gate-go").disabled = true; return; }
+  D = norm(c); readOnly = true; applyLook(D.settings.theme); showApp();
+  banner("Offline. Read only.");
+}
+function seedIfNew(){
+  if(D.settings.seeded || Object.keys(D.statuses).length) return;
+  const up = {}; let t = Date.now();
+  DEFAULT_STATUSES.forEach((n, i) => { up["statuses/s" + (i + 1)] = { name:n, order:(i + 1) * 10 }; });
+  STARTER_PAGES.forEach((n, i) => { up["notebook/n" + (i + 1)] = { title:n, body:"", at:t + i }; });
+  up["settings/seeded"] = true;
+  db.ref("jobs/data").update(up).catch(saveErr);
+}
+function purgeOld(){
+  if(purged) return; purged = true;
+  const cut = Date.now() - KEEP_REMOVED_DAYS * 864e5;
+  roleList().forEach(r => { if(r.removedAt && r.removedAt < cut) store.remove("roles/" + r.id); });
+}
+function subscribe(){
+  db.ref("jobs/grants/" + uid).once("value").then(g => db.ref("jobs/access/" + g.val()).once("value"))
+    .then(a => { who = (a.val() && a.val().name) || ""; if(live && view.name === "settings") onData(); }).catch(() => {});
+  db.ref("jobs/data").on("value", s => {
+    clearTimeout(bootTimer);
+    const first = !live; live = true; readOnly = false;
+    D = norm(s.val()); ls("jobs-cache", JSON.stringify(D)); applyLook(D.settings.theme);
+    seedIfNew(); purgeOld();
+    if(first){ banner(""); showApp(); } else onData();
+  }, () => {
+    // The rules refused us: the passcode was changed or removed in the console.
+    live = false; db.ref("jobs/data").off(); db.ref("jobs/grants/" + uid).remove().catch(() => {}); ls("jobs-cache", null);
+    showGate("Passcode changed. Enter the new one.");
+  });
+  db.ref(".info/connected").on("value", s => { if(live) banner(s.val() === true ? "" : "Offline. Changes save when you reconnect."); });
+}
+$("gate-form").addEventListener("submit", e => {
+  e.preventDefault(); e.stopPropagation();
+  // Typed however she likes (spaces, capitals, hyphens); only letters and digits are used.
+  const code = $("gate-code").value.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if(code.length < 6){ $("gate-msg").textContent = "Wrong passcode."; return; }
+  $("gate-go").disabled = true;
+  db.ref("jobs/access/" + code).once("value")
+    .then(s => { if(!s.exists()) throw new Error("nomatch"); return db.ref("jobs/grants/" + uid).set(code); })
+    .then(() => { $("gate-code").value = ""; subscribe(); })
+    .catch(err => { $("gate-msg").textContent = err && err.message === "nomatch" ? "Wrong passcode." : "Can't connect. Try again."; })
+    .then(() => { $("gate-go").disabled = false; });
+});
+
+function demoData(){
+  const t = Date.now(), day = n => iso(new Date(t + n * 864e5));
+  const d = blank();
+  DEFAULT_STATUSES.forEach((n, i) => { d.statuses["s" + (i + 1)] = { name:n, order:(i + 1) * 10 }; });
+  STARTER_PAGES.forEach((n, i) => { d.notebook["n" + (i + 1)] = { title:n, body:"", at:t + i }; });
+  d.roles = {
+    r1:{ company:"Holburne Museum", title:"Visitor Experience Lead", status:"s4", salary:"£29,500 a year", location:"Bath", link:"https://example.org/jobs/visitor-experience-lead", created:t - 9e8,
+         notes:"Panel is the Head of Operations plus one trustee.", dates:{ a:{ label:"Interview", date:day(4), time:"14:00" } }, todos:{ a:{ t:"Print two copies of CV", at:1 }, b:{ t:"Ask about weekend rota", at:2 } } },
+    r2:{ company:"Julian House", title:"Fundraising Officer", status:"s3", created:t - 7e8, dates:{ a:{ label:"Follow up by email", date:day(6) } } },
+    r3:{ company:"Bath Spa University", title:"Events Coordinator", status:"s2", created:t - 5e8, dates:{ a:{ label:"Application closes", date:day(2) } } },
+    r4:{ company:"Royal United Hospitals", title:"Patient Experience Coordinator", status:"s1", created:t - 3e8, dates:{ a:{ label:"Application closes", date:day(45) } } },
+    r5:{ company:"Future Publishing", title:"Production Assistant", status:"s1", created:t - 2e8 },
+    r6:{ company:"Komedia", title:"Office Manager", status:"s3", created:t - 12e8, closed:{ type:"unsuccessful", at:t - 2e8 } }
+  };
+  d.evidence = { e1:{ q:"A time you dealt with a difficult customer", s:"Saturday shift, a visitor was upset about a cancelled tour.", t:"Calm things down and keep the queue moving.", a:"Listened, apologised, offered the next slot and a cafe voucher.", r:"They stayed, and left a five-star review that week.", at:1 },
+    e2:{ q:"A time you improved a process", a:"Replaced the paper rota with a shared sheet.", r:"Cut swap requests by about half.", at:2 } };
+  return d;
+}
+
+function boot(){
+  applyLook(ls("jobs-look") || "allotment");
+  if(DEMO){ D = demoData(); who = "Demo"; showApp(); banner("Demo. Nothing is saved."); return; }
+  if(typeof firebase === "undefined"){ showCached("Can't connect."); return; }
+  firebase.initializeApp(FIREBASE_CONFIG); db = firebase.database();
+  // If nothing has arrived after a few seconds we are probably offline: show the last saved copy.
+  bootTimer = setTimeout(() => { if(!live) showCached("Can't connect."); }, 7000);
+  firebase.auth().signInAnonymously()
+    .then(c => { uid = c.user.uid; return db.ref("jobs/grants/" + uid).once("value"); })
+    .then(s => { if(s.exists()) subscribe(); else showGate(); })
+    .catch(() => { clearTimeout(bootTimer); if(!live) showCached("Can't connect."); });
+}
+boot();
+if("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("/sw.js").catch(() => {});
+</script>
+</body>
+</html>
