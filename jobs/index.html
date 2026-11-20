@@ -6,7 +6,8 @@
 
   Changelog
   v1.13 (20/11/2026): Every destructive action now asks first in a dialog: deleting a note, example,
-          date, task or status, clearing research, removing a sticker, and signing out. Notes
+          date, task or status, clearing research, and signing out. Stickers are the exception:
+          they go straight away, with Undo. Notes
           and examples get a labelled Delete button; icon-only buttons are larger.
   v1.12 (20/11/2026): "Saved jobs" tab renamed "Jobs". Add job only appears on that tab.
   v1.11 (20/11/2026): Evidence redesigned: "Give me an example of a time when..." with an accordion
@@ -821,7 +822,6 @@ const CONFIRM = {
   "del-date": el => { const d = (((D.roles[el.dataset.id] || {}).dates) || {})[el.dataset.d] || {}; return ["Delete this date?", (d.label || "Date") + (d.date ? ", " + fmtDate(d.date) : ""), "Delete date"]; },
   "del-todo": el => ["Delete this task?", ((((D.roles[el.dataset.id] || {}).todos) || {})[el.dataset.d] || {}).t || "", "Delete task"],
   "clear-research": el => ["Clear the research?", roleName(D.roles[el.dataset.id] || {}), "Clear research"],
-  "stk-del": () => { const k = ((((D.roles[view.id] || {}).stickers) || {})[ui.stk] || {}).k; return ["Remove this sticker?", STICKERS[k] ? STICKERS[k][0] : "", "Remove sticker"]; },
   "st-del": el => {
     const sl = statusList(), t = sl.find(x => x.id === el.dataset.id) || {}, other = sl.find(x => x.id !== el.dataset.id) || {}, n = roleList().filter(r => r.status === el.dataset.id).length;
     return ["Delete this status?", (t.name || "") + (n ? ". " + n + (n === 1 ? " job" : " jobs") + " will move to " + other.name + "." : ""), "Delete status"];
@@ -1092,10 +1092,8 @@ function endDrag(){
   const d = drag; drag = null;
   $("stkbin").hidden = true; $("stkbin").classList.remove("hot");
   const path = "roles/" + d.el.dataset.id + "/stickers/" + d.el.dataset.sid;
-  if(d.moved && d.bin){
-    const old = ((D.roles[d.el.dataset.id] || {}).stickers || {})[d.el.dataset.sid] || {};
-    askConfirm("Remove this sticker?", STICKERS[old.k] ? STICKERS[old.k][0] : "", "Remove sticker", () => { ui.stk = null; store.remove(path); render(); toast("Sticker removed.", () => store.set(path, old)); });
-  }
+  // stickers are throwaway: no "are you sure", just an Undo
+  if(d.moved && d.bin){ const old = ((D.roles[d.el.dataset.id] || {}).stickers || {})[d.el.dataset.sid]; ui.stk = null; store.remove(path); toast("Sticker removed.", () => store.set(path, old)); }
   else if(d.moved) store.update(path, { x:d.x, y:d.y });
   else ui.stk = ui.stk === d.el.dataset.sid ? null : d.el.dataset.sid;
   render();
