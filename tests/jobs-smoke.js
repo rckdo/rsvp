@@ -12,6 +12,7 @@
           Examples read/edit, reading panel, delete confirmation, stickers by mouse and touch.
   v1.1 (20/11/2026): Checks that pasted formatting is kept and unsafe content is stripped.
   v1.2 (20/11/2026): Saved note, back closes a panel, delete lands on the list, list keeps its place.
+  v1.3 (20/11/2026): Suggestions (filter, take) and the admin account (suggesting, activity log).
 */
 const http = require("http"), fs = require("fs"), path = require("path");
 const { chromium, devices } = require("playwright");
@@ -109,6 +110,34 @@ async function common(p, tag){
     check("laptop sticker drags", Math.abs(b.y - a.y) > 60, JSON.stringify([b.x - a.x, b.y - a.y]));
     check("laptop sticker controls after drag", await p.locator(".stkbar").count() === 1);
     await p.click("[data-act='add-role']").catch(() => {}); await p.close(); }
+
+  // suggestions, as she sees them: a Suggested filter, tick to take
+  { const p = await browser.newPage({ viewport:{ width:1280, height:900 } }); watch(p, "suggest");
+    await p.goto(base + "/jobs/?demo#jobs"); await p.waitForTimeout(700);
+    check("suggested filter shows", (await p.locator(".filt[data-k='suggested']").innerText()).replace(/\s/g, "") === "Suggested1");
+    check("jobs tab is flagged", await p.locator("#nav-jobs.dot").count() === 1);
+    const before = await p.locator("table.jobs tbody tr").count();
+    await p.click(".filt[data-k='suggested']"); await p.waitForTimeout(200);
+    check("suggestion not in her list yet", before === 5, String(before));
+    await p.click("[data-act='sug-take']"); await p.waitForTimeout(300); await p.click(".filt[data-k='all']"); await p.waitForTimeout(200);
+    check("taken suggestion joins her jobs", await p.locator("table.jobs tbody tr").count() === 6 && await p.locator(".filt[data-k='suggested']").count() === 0);
+    await p.click("#nav-settings"); await p.waitForTimeout(300);
+    check("no activity log for her", !(await p.locator("#pane").innerText()).includes("Activity"));
+    await p.close(); }
+
+  // the admin account: adding suggests, and Settings shows the activity log
+  { const p = await browser.newPage({ viewport:{ width:1280, height:900 } }); watch(p, "admin");
+    await p.goto(base + "/jobs/?demo&admin#jobs"); await p.waitForTimeout(700);
+    check("admin button suggests", (await p.locator("#add-role").innerText()).trim() === "Suggest job");
+    await p.click("#add-role"); await p.fill("#new-company", "Acme"); await p.fill("#dlg input[name=title]", "Tester"); await p.fill("#dlg input[name=note]", "Good fit"); await p.click("#dlg button.add"); await p.waitForTimeout(800);
+    await p.click("[data-act='job-done'] >> nth=0"); await p.waitForTimeout(300); await p.click("#nav-jobs"); await p.waitForTimeout(400);
+    check("admin job is a suggestion", await p.evaluate(() => Object.values(D.roles).filter(r => r.company === "Acme" && r.suggested && r.suggested.note === "Good fit" && !r.status).length === 1));
+    await p.click(".filt[data-k='all']"); await p.waitForTimeout(200);
+    check("suggestion stays out of All", !(await p.locator("table.jobs").innerText()).includes("Acme"));
+    await p.click("#nav-settings"); await p.waitForTimeout(300);
+    const act = await p.locator(".aud").innerText().catch(() => "");
+    check("activity log shows actions", /Admin\s+Suggested job/.test(act) && act.includes("Acme, Tester") && /\d{4} \d\d:\d\d/.test(act), act.slice(0, 200));
+    await p.close(); }
 
   // phone, touch
   { const ctx = await browser.newContext({ ...devices["iPhone 13"] }), p = await ctx.newPage(); watch(p, "phone"); await common(p, "phone");

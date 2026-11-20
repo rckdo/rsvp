@@ -5,6 +5,11 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.22 (20/11/2026): Admin account. A passcode whose entry in jobs/access has role "admin" gets
+          an Activity section in Settings: who did what, when, on which device, including
+          sign-ins and wrong passcodes. It records actions, never typed text. Jobs the admin adds
+          arrive as suggestions under a Suggested filter on the Jobs tab; she ticks one to take
+          it or crosses it to pass. Needs the updated database rules (jobs/audit).
   v1.21 (20/11/2026): A corner note shows "Saving" then "Saved" once the database confirms. The
           back gesture closes an open dialog or reading panel before leaving the page. Going back
           to a list returns to the same scroll position, with the job just viewed marked. Edit
@@ -398,6 +403,14 @@ body:has(dialog[open]){overflow:hidden}
 .rdh h3{font-size:1.02rem;margin:.9em 0 .3em}
 .rd a,.rich a{color:var(--accent);text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
 .rich:empty::before{content:attr(data-ph);color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.tab{position:relative}
+.tab.dot::after{content:"";position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.aud{list-style:none;padding:0;display:flex;flex-direction:column}
+.aud li{display:grid;grid-template-columns:minmax(0,11.5em) minmax(0,1fr);gap:12px;padding:8px 0;border-bottom:var(--rule);font-size:.92rem}
+.aud li .n{color:var(--muted);font-variant-numeric:tabular-nums;font-size:.85rem}
+.aud li div span{display:block;color:var(--muted);overflow-wrap:anywhere}
+@media (max-width:519px){.aud li{grid-template-columns:minmax(0,1fr);gap:2px}}
 .fmtbar{display:flex;gap:2px}
 .fmtbar .icb{min-width:40px;justify-content:center;font-size:1rem}
 .rich{background:var(--bg);border-bottom:1px solid var(--line);border-radius:var(--ctl);padding:10px 12px;min-height:6em;overflow-wrap:anywhere}
@@ -515,7 +528,7 @@ const KEEP_REMOVED_DAYS = 30;
    STATE AND HELPERS
    ===================================================================== */
 let D = blank(), db = null, uid = null, who = "", readOnly = false, pending = false, live = false;
-let q = "", ui = { ev:null, evEdit:null, edit:null, last:null, later:false, reh:null, filter:"all", sort:"date", stk:null, tip:null, arrange:false }, listTab = "week", view = { name:"home", id:null }, bootTimer = null, purged = false;
+let q = "", ui = { audWho:"", ev:null, evEdit:null, edit:null, last:null, later:false, reh:null, filter:"all", sort:"date", stk:null, tip:null, arrange:false }, listTab = "week", view = { name:"home", id:null }, bootTimer = null, purged = false;
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -589,7 +602,47 @@ const store = {
 };
 
 const roleList = () => Object.keys(D.roles).map(id => Object.assign({ id }, D.roles[id]));
-const isLive = r => !r.removedAt && !r.closed;
+const isLive = r => !r.removedAt && !r.closed && !r.suggested;
+// ---- Accounts. Each passcode in jobs/access has a name and, for the admin, role:"admin".
+// The admin can read the activity log, and the jobs they add arrive as suggestions.
+let role = "", justIn = false, AUD = [], audOn = false, audErr = false;
+const isAdmin = () => role === "admin";
+function deviceLabel(){
+  const u = navigator.userAgent;
+  const dev = /iPhone/.test(u) ? "iPhone" : /iPad/.test(u) ? "iPad" : /Android/.test(u) ? "Android" : /Mac/.test(u) ? "Mac" : /Windows/.test(u) ? "Windows" : /Linux/.test(u) ? "Linux" : "Device";
+  const br = /Edg\//.test(u) ? "Edge" : /CriOS|Chrome\//.test(u) ? "Chrome" : /FxiOS|Firefox\//.test(u) ? "Firefox" : /Safari\//.test(u) ? "Safari" : "Browser";
+  let id = ls("jobs-device"); if(!id){ id = Math.random().toString(36).slice(2, 6); ls("jobs-device", id); }
+  return dev + ", " + br + " #" + id;                      // the short code tells two phones of the same kind apart
+}
+// One line per thing that happens: who, what, on which device, and when (the database's own clock).
+// It records that something was done and to what, never the text that was typed.
+function log(what, detail){
+  const e = { who:(who || "?").slice(0, 40), what:String(what).slice(0, 80), dev:deviceLabel().slice(0, 60) };
+  if(detail) e.detail = String(detail).slice(0, 160);
+  if(DEMO){ e.at = Date.now(); AUD.push(e); return; }
+  if(!db) return;
+  e.at = firebase.database.ServerValue.TIMESTAMP;
+  db.ref("jobs/audit").push(e).catch(() => {});
+}
+// Typing is logged once per thing, when she moves on, not once per keystroke.
+const edited = {};
+function noteEdit(path){ const m = /^(roles|notebook|evidence|statuses)(?:\/([^/]+))?/.exec(path || ""); if(m) edited[m[1] + "/" + (m[1] === "statuses" ? "" : (m[2] || ""))] = true; }
+function flushEdits(){
+  Object.keys(edited).forEach(k => {
+    delete edited[k]; const kind = k.split("/")[0], id = k.split("/")[1];
+    if(kind === "roles"){ const r = D.roles[id]; if(r) log("Edited job", roleName(r)); }
+    else if(kind === "notebook"){ const n = D.notebook[id]; if(n) log("Edited note", n.title || "Untitled note"); }
+    else if(kind === "evidence"){ const x = D.evidence[id]; if(x) log("Edited example", x.q || "Untitled"); }
+    else log("Edited statuses");
+  });
+}
+function startAudit(){
+  if(audOn || DEMO || !db) return; audOn = true;
+  db.ref("jobs/audit").limitToLast(300).on("value", snap => { AUD = []; snap.forEach(c => { AUD.push(c.val()); }); if(view.name === "settings") onData(); },
+    () => { audErr = true; if(view.name === "settings") onData(); });
+}
+const fmtWhen = ms => { const d = new Date(ms); return fmtStamp(ms) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes()); };
+const pendingSuggestions = () => roleList().filter(r => !r.removedAt && r.suggested && !r.suggested.declined);
 function statusList(){ return Object.keys(D.statuses).map(id => ({ id, name:D.statuses[id].name || "", order:D.statuses[id].order || 0 })).sort((a,b) => a.order - b.order); }
 function statusOf(r){ const s = statusList(); return s.find(x => x.id === r.status) || s[0] || { id:"", name:"" }; }
 function dateList(r){ return Object.keys(r.dates || {}).map(id => Object.assign({ id }, r.dates[id])).sort((a,b) => ((a.date||"9999") + (a.time||"")).localeCompare((b.date||"9999") + (b.time||"")) || (a.at||0) - (b.at||0)); }
@@ -622,6 +675,8 @@ function onData(){
 function render(focusId){
   pending = false;
   document.body.dataset.view = view.name;
+  $("add-role").querySelector("span").textContent = isAdmin() ? "Suggest job" : "Add job"; $("add-role").setAttribute("aria-label", isAdmin() ? "Suggest job" : "Add job");
+  $("nav-jobs").classList.toggle("dot", !isAdmin() && pendingSuggestions().length > 0);
   document.body.dataset.tab = (view.name === "home" || view.name === "role") ? listTab : view.name;
   const cur = (view.name === "home" || view.name === "role") ? listTab : view.name;
   ["week","jobs","evidence","notebook","settings"].forEach(v => $("nav-" + v).setAttribute("aria-current", cur === v ? "page" : "false"));
@@ -694,9 +749,11 @@ function weekHtml(roles){
 // Saved jobs: one table, filtered by status. "Past" is a quiet, uncounted filter at the end.
 function jobsHtml(roles){
   const act = roles.filter(isLive), sts = statusList();
-  const cur = (ui.filter === "past" || sts.some(s => s.id === ui.filter)) ? ui.filter : "all";
+  const cur = (ui.filter === "past" || ui.filter === "suggested" || sts.some(s => s.id === ui.filter)) ? ui.filter : "all";
   const fb = (id, label, n) => `<button class="filt" data-act="filter" data-k="${id}" aria-pressed="${cur === id}">${esc(label)}${n == null ? "" : `<em>${n}</em>`}</button>`;
-  let h = `<div class="panel"><div class="filters" role="group" aria-label="Filter by status">${fb("all", "All", act.length)}${sts.map(s => fb(s.id, s.name, act.filter(r => statusOf(r).id === s.id).length)).join("")}${roles.some(r => r.closed) ? fb("past", "Past", null) : ""}${tipBtn("jobs", "Jobs")}</div>${tipBox("jobs")}`;
+  const sug = roles.filter(r => r.suggested && (isAdmin() || !r.suggested.declined));
+  let h = `<div class="panel"><div class="filters" role="group" aria-label="Filter by status">${sug.length ? fb("suggested", "Suggested", sug.filter(r => !r.suggested.declined).length) : ""}${fb("all", "All", act.length)}${sts.map(s => fb(s.id, s.name, act.filter(r => statusOf(r).id === s.id).length)).join("")}${roles.some(r => r.closed) ? fb("past", "Past", null) : ""}${tipBtn("jobs", "Jobs")}</div>${tipBox("jobs")}`;
+  if(cur === "suggested") return h + (sug.length ? suggestedHtml(sug) : `<p class="empty">No suggestions.</p>`) + `</div>`;
   const rows = cur === "past" ? roles.filter(r => r.closed) : cur === "all" ? act : act.filter(r => statusOf(r).id === cur);
   if(!rows.length) return h + (roles.length ? `<p class="empty">No jobs here.</p>` : `<p class="empty">No jobs yet.</p><div><button class="ghost" data-act="add-role">${ic("plus")}Add job</button></div>`) + `</div>`;
   const next = r => upcoming(r)[0], ord = {}; sts.forEach((s, i) => { ord[s.id] = i; });
@@ -713,6 +770,14 @@ function jobsHtml(roles){
       ${showSt ? `<td class="n">${esc(r.closed ? (CLOSED[r.closed.type] || "Closed") : statusOf(r).name)}${r.closed || sts.length > 8 ? "" : `<span class="prog" aria-hidden="true">${sts.map((x, i) => `<i${i <= ord[statusOf(r).id] ? ' class="on"' : ""}></i>`).join("")}</span>`}</td>` : ""}<td class="n">${r.closed ? fmtStamp(r.closed.at) : nd ? `<div class="nd">${dayChip(nd.date, true)}<span>${esc(nd.label || "Date")}</span></div>` : ""}</td></tr>`; }).join("");
   return h + `</tbody></table></div>`;
 }
+// Jobs the admin has put forward. She ticks one to take it into her own list, or crosses it to pass.
+function suggestedHtml(sug){
+  const adm = isAdmin();
+  return `<table class="jobs"><thead><tr><th scope="col">Job</th><th scope="col">${adm ? "State" : "From"}</th>${adm ? "" : `<th scope="col"><span class="sr">Decide</span></th>`}</tr></thead><tbody>`
+    + sug.slice().sort((a,b) => (b.suggested.at||0) - (a.suggested.at||0)).map(r => `<tr class="${ui.last === r.id ? "sel" : ""}" data-act="open" data-id="${r.id}"><td><button class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span>${r.suggested.note ? `<span>${esc(r.suggested.note)}</span>` : ""}</button></td>
+      <td class="n">${adm ? (r.suggested.declined ? "Passed" : "Waiting") : esc(r.suggested.by || "")}</td>${adm ? "" : `<td class="n"><span class="row" style="flex-wrap:nowrap;gap:0"><button class="icb" data-act="sug-take" data-id="${r.id}" aria-label="Add to my jobs" title="Add to my jobs">${ic("check")}</button><button class="icb" data-act="sug-pass" data-id="${r.id}" aria-label="Pass" title="Pass">${ic("close")}</button></span></td>`}</tr>`).join("")
+    + `</tbody></table>`;
+}
 function searchHtml(roles){
   const n = q.toLowerCase();
   const hit = r => [r.company, r.title, r.location, r.salary, jobText(r, "notes"), jobText(r, "advert")].concat(Object.values(r.research || {}), todoList(r).map(t => t.t), dateList(r).map(d => d.label)).some(v => v && String(v).toLowerCase().includes(n));
@@ -720,7 +785,7 @@ function searchHtml(roles){
   let h = `<div class="panel"><h2>Search results</h2>`;
   const es = evList().filter(e => [e.q].concat(STAR.map(x => e[x[0]])).some(v => v && String(v).toLowerCase().includes(n)));
   if(!rs.length && !ps.length && !es.length) h += `<p class="empty">No results.</p>`;
-  h += rs.map(r => `<div class="role"><button class="rowmain" data-act="open" data-id="${r.id}"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>${esc(r.closed ? (CLOSED[r.closed.type] || "Closed") : statusOf(r).name)}</span></button></div>`).join("");
+  h += rs.map(r => `<div class="role"><button class="rowmain" data-act="open" data-id="${r.id}"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>${esc(r.suggested ? "Suggested" : r.closed ? (CLOSED[r.closed.type] || "Closed") : statusOf(r).name)}</span></button></div>`).join("");
   h += ps.map(p => `<div class="role"><button class="rowmain" data-act="nav" data-v="notebook"><strong>${esc(p.title || "Untitled note")}</strong><span>Notebook</span></button></div>`).join("");
   h += es.map(e => `<div class="role"><button class="rowmain" data-act="nav" data-v="evidence"><strong>${esc(e.q || "Untitled example")}</strong><span>Examples</span></button></div>`).join("");
   return h + `</div>`;
@@ -739,7 +804,8 @@ function roleHtml(id){
     + (ed ? `<button class="add" data-act="job-done">${ic("check")}Done</button>` : `<button class="ghost" data-act="job-edit" data-id="${id}">${ic("pencil")}Edit</button>`);
   h += `</div>`;
   if(r.closed) h += `<p class="closed">${CLOSED[r.closed.type] || "Closed"}, ${fmtStamp(r.closed.at)} <button class="ghost" data-act="reopen" data-id="${id}">Reopen</button></p>`;
-  const status = r.closed ? "" : `<label class="fld"><span>Status</span><select id="f-status" data-chg="status" data-id="${id}">${statusList().map(s => `<option value="${s.id}"${s.id === cur ? " selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label>`;
+  if(r.suggested) h += `<p class="closed"><span>Suggested by ${esc(r.suggested.by || "")}${r.suggested.note ? ": " + esc(r.suggested.note) : ""}</span>${isAdmin() ? `<span>${r.suggested.declined ? "Passed" : "Waiting"}</span>` : `<span class="row"><button class="add" data-act="sug-take" data-id="${id}">${ic("check")}Add to my jobs</button><button class="ghost" data-act="sug-pass" data-id="${id}">${ic("close")}Pass</button></span>`}</p>`;
+  const status = r.closed || r.suggested ? "" : `<label class="fld"><span>Status</span><select id="f-status" data-chg="status" data-id="${id}">${statusList().map(s => `<option value="${s.id}"${s.id === cur ? " selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label>`;
   const advertBtn = /^https?:\/\//i.test(r.link || "") ? `<div><a class="ghost" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">${ic("link")}Open job spec</a></div>` : "";
   const researchHead = `<div class="row"><button class="add" data-act="prepare" data-id="${id}">${ic("spark")}Research this job</button><button class="icb" data-act="help" aria-label="How it works" title="How it works">${ic("help")}</button></div>`;
   const srcs = urls ? `<div class="srcs">${urls.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`).join("")}</div>` : "";
@@ -764,6 +830,7 @@ function roleHtml(id){
     h += `<div class="jobhead"><h2>${esc(r.company || "Untitled")}</h2><p>${esc(r.title || "")}</p></div>${status}`;
     const facts = [], place = [r.location, r.mode === "Hybrid" && r.hybrid ? "Hybrid, " + r.hybrid : r.mode].filter(Boolean).join(" \u00b7 ");
     if(r.salary) facts.push(["Salary", esc(r.salary)]);
+    if(r.suggestedBy) facts.push(["Suggested by", esc(r.suggestedBy)]);
     if(r.closing) facts.push(["Closes", fmtDate(r.closing) + " \u00b7 " + rel(r.closing)]);
     if(place) facts.push(["Location", esc(place)]);
     if(facts.length) h += `<dl class="facts">${facts.map(f => `<div><dt>${f[0]}</dt><dd>${f[1]}</dd></div>`).join("")}</dl>`;
@@ -844,7 +911,7 @@ function mdLite(t){
 const richHtml = pg => pg.fmt === "html" ? cleanHtml(pg.body) : esc(pg.body || "").replace(/\n/g, "<br>");
 function saveRich(el, now){
   const path = el.dataset.rich, f = el.dataset.rf || "body", flag = el.dataset.rflag || "fmt", key = path + "/" + f; clearTimeout(timers[key]); delete waiting[key];
-  const run = () => { delete waiting[key]; const o = {}; o[f] = el.textContent.trim() ? cleanHtml(el.innerHTML) : null; o[flag] = "html"; store.update(path, o); };
+  const run = () => { delete waiting[key]; noteEdit(path); const o = {}; o[f] = el.textContent.trim() ? cleanHtml(el.innerHTML) : null; o[flag] = "html"; store.update(path, o); };
   if(now) run(); else { waiting[key] = run; chip("saving"); timers[key] = setTimeout(run, 400); }
 }
 // Stickers sit on top of a job page wherever she drops them. x is a percentage of the page
@@ -918,7 +985,16 @@ function settingsHtml(){
   h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">${ic("download")}Backup</button><button class="ghost" data-act="export-csv">${ic("download")}Spreadsheet</button></div></div>`;
   h += `<div class="sec"><h3>Recently deleted</h3>`;
   h += removed.length ? `<p class="hint">Kept for ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Deleted ${fmtStamp(r.removedAt)}</span></div><span class="row"><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button><button class="icb" data-act="purge-ask" data-id="${r.id}" aria-label="Delete for good" title="Delete for good">${ic("bin")}</button></span></div>`).join("") : `<p class="empty">None.</p>`;
-  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.21. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
+  h += `</div>`;
+  if(isAdmin()){
+    startAudit();
+    const f = ui.audWho || "", names = Array.from(new Set(AUD.map(a => a.who))).sort();
+    const rows = AUD.filter(a => !f || a.who === f).slice().sort((a,b) => (b.at||0) - (a.at||0)).slice(0, 300);
+    h += `<div class="sec"><h3>Activity</h3>` + (audErr ? `<p class="empty">Can't read activity. Check the database rules.</p>`
+      : `<div class="filters" role="group" aria-label="Filter by person">${[["", "All"]].concat(names.map(n => [n, n])).map(x => `<button class="filt" data-act="aud-who" data-k="${esc(x[0])}" aria-pressed="${f === x[0]}">${esc(x[1])}</button>`).join("")}</div>`
+        + (rows.length ? `<ul class="aud">${rows.map(a => `<li><span class="n">${fmtWhen(a.at)}</span><div><b>${esc(a.who)}</b> ${esc(a.what)}${a.detail ? `<span>${esc(a.detail)}</span>` : ""}<span class="hint">${esc(a.dev || "")}</span></div></li>`).join("")}</ul>` : `<p class="empty">No activity yet.</p>`)) + `</div>`;
+  }
+  h += `<div class="sec"><h3>This device</h3><p class="hint">${esc(who || (DEMO ? "Demo" : ""))}${isAdmin() ? ", admin" : ""}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.22. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
   return h + `</div>`;
 }
 
@@ -962,11 +1038,13 @@ function toast(msg, undo){
 function banner(msg){ const b = $("banner"); b.textContent = msg || ""; b.hidden = !msg; }
 
 function addRoleDlg(){
-  openDlg(`<h2>Add job</h2><form data-form="new-role">
+  const adm = isAdmin(), label = adm ? "Suggest job" : "Add job";
+  openDlg(`<h2>${label}</h2><form data-form="new-role">
     <label class="fld"><span>Company</span><input type="text" name="company" id="new-company" required></label>
     <label class="fld"><span>Job title</span><input type="text" name="title" required></label>
     <label class="fld"><span>Job spec link (optional)</span><input type="url" name="link" placeholder="https://"></label>
-    <div class="row"><button class="add">Add job</button><button type="button" class="ghost" data-act="dlg-close">Cancel</button></div></form>`);
+    ${adm ? `<label class="fld"><span>Why (optional)</span><input type="text" name="note" maxlength="140"></label>` : ""}
+    <div class="row"><button class="add">${label}</button><button type="button" class="ghost" data-act="dlg-close">Cancel</button></div></form>`);
   $("new-company").focus();
 }
 function closeRoleDlg(id){
@@ -1096,6 +1174,7 @@ function go(name, id){
 }
 const scrollMem = { week:0, jobs:0 };
 function route(){
+  flushEdits();
   const hsh = location.hash.replace(/^#/, ""), m = /^role-(.+)$/.exec(hsh);
   if(view.name === "home" && !$("app").hidden) scrollMem[listTab] = window.scrollY;     // remember the list position being left
   if(view.name === "role" && view.id) ui.last = view.id;
@@ -1142,16 +1221,29 @@ const ACT = {
     // nothing in the job spec yet: that is almost certainly what she is here to paste
     const r = D.roles[el.dataset.id], t = r && !r.advert && $("t-advert"); if(t){ t.scrollIntoView({ block:"center" }); t.focus(); }
   },
-  "job-done": () => { ui.edit = null; render(); window.scrollTo(0, 0); },
+  "job-done": () => { flushSaves(); flushEdits(); ui.edit = null; render(); window.scrollTo(0, 0); },
   "ev-edit": el => {
     ui.evEdit = el.dataset.id; render();
     const e = D.evidence[el.dataset.id] || {}, gap = STAR.find(x => !e[x[0]]), t = gap && $("t-ev-" + el.dataset.id + "-" + gap[0]); if(t) t.focus();   // first box still empty
   },
-  "ev-done": () => { ui.evEdit = null; render(); },
+  "ev-done": () => { flushSaves(); flushEdits(); ui.evEdit = null; render(); },
   "read-advert": el => advertSheet(el.dataset.id),
   "read-research": el => researchSheet(el.dataset.id),
   "sheet-jump": el => { const t = $(el.dataset.t); if(t) t.scrollIntoView({ block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); },
   "sheet-edit": el => { const f = el.dataset.focus; closeDlg(); ui.edit = el.dataset.id; ui.arrange = false; render(); const t = f && $(f); if(t){ t.scrollIntoView({ block:"center" }); t.focus(); } },
+  "sug-take": el => {
+    const id = el.dataset.id, r = D.roles[id], first = statusList()[0]; if(!r || !r.suggested) return;
+    log("Took suggestion", roleName(r));
+    store.update("roles/" + id, { suggested:null, suggestedBy:r.suggested.by || null, status:first ? first.id : null, created:Date.now() });
+    render(); toast("Added to " + (first ? first.name : "Jobs") + ".");
+  },
+  "sug-pass": el => {
+    const id = el.dataset.id, r = D.roles[id]; if(!r || !r.suggested) return;
+    log("Passed on suggestion", roleName(r));
+    store.update("roles/" + id + "/suggested", { declined:true });
+    if(view.name === "role") go("home"); render(); toast("Passed.", () => store.update("roles/" + id + "/suggested", { declined:null }));
+  },
+  "aud-who": el => { ui.audWho = el.dataset.k; render(); },
   "tip": el => { ui.tip = ui.tip === el.dataset.k ? null : el.dataset.k; render(); },
   "filter": el => { ui.filter = el.dataset.k; scrollMem.jobs = 0; render(); },
   "sort": el => { ui.sort = el.dataset.k; render(); },
@@ -1166,30 +1258,30 @@ const ACT = {
   "del-date": el => { store.remove("roles/" + el.dataset.id + "/dates/" + el.dataset.d); render(); },
   "del-todo": el => { store.remove("roles/" + el.dataset.id + "/todos/" + el.dataset.d); render(); },
   "close-role": el => closeRoleDlg(el.dataset.id),
-  "close-as": el => { const id = el.dataset.id; store.update("roles/" + id, { closed:{ type:el.dataset.t, at:Date.now() } }); closeDlg(); go("home"); render(); toast("Moved to Past.", () => store.update("roles/" + id, { closed:null })); },
+  "close-as": el => { log("Closed job", roleName(D.roles[el.dataset.id] || {}) + " as " + (CLOSED[el.dataset.t] || "")); const id = el.dataset.id; store.update("roles/" + id, { closed:{ type:el.dataset.t, at:Date.now() } }); closeDlg(); go("home"); render(); toast("Moved to Past.", () => store.update("roles/" + id, { closed:null })); },
   "delete-role": el => deleteRoleDlg(el.dataset.id),
   "purge-ask": el => purgeDlg(el.dataset.id),
-  "purge": el => { store.remove("roles/" + el.dataset.id); closeDlg(); render(); toast("Deleted for good."); },
-  "remove": el => { const id = el.dataset.id; store.update("roles/" + id, { removedAt:Date.now() }); closeDlg(); go("home"); render(); toast("Job deleted.", () => store.update("roles/" + id, { removedAt:null })); },
-  "reopen": el => { store.update("roles/" + el.dataset.id, { closed:null }); render(); },
-  "restore": el => { store.update("roles/" + el.dataset.id, { removedAt:null }); render(); toast("Restored."); },
+  "purge": el => { log("Deleted job for good", roleName(D.roles[el.dataset.id] || {})); store.remove("roles/" + el.dataset.id); closeDlg(); render(); toast("Deleted for good."); },
+  "remove": el => { log("Deleted job", roleName(D.roles[el.dataset.id] || {})); const id = el.dataset.id; store.update("roles/" + id, { removedAt:Date.now() }); closeDlg(); go("home"); render(); toast("Job deleted.", () => store.update("roles/" + id, { removedAt:null })); },
+  "reopen": el => { log("Reopened job", roleName(D.roles[el.dataset.id] || {})); store.update("roles/" + el.dataset.id, { closed:null }); render(); },
+  "restore": el => { log("Restored job", roleName(D.roles[el.dataset.id] || {})); store.update("roles/" + el.dataset.id, { removedAt:null }); render(); toast("Restored."); },
   "prepare": el => prepareDlg(el.dataset.id),
   "copy-prompt": () => {
     const t = $("prompt-text"), done = () => toast("Copied.");
     const manual = () => { t.focus(); t.select(); try{ document.execCommand("copy") ? done() : toast("Copy failed. Select the text and copy it."); }catch(e){ toast("Copy failed. Select the text and copy it."); } };
     if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done, manual); else manual();
   },
-  "clear-research": el => { const id = el.dataset.id, old = (D.roles[id] || {}).research || null; store.remove("roles/" + id + "/research"); render(); toast("Research cleared.", () => store.set("roles/" + id + "/research", old)); },
-  "add-ev": () => { const id = newId(); store.set("evidence/" + id, { q:"", at:Date.now() }); ui.ev = id; ui.evEdit = id; render("ev-" + id); },
+  "clear-research": el => { log("Cleared research", roleName(D.roles[el.dataset.id] || {})); const id = el.dataset.id, old = (D.roles[id] || {}).research || null; store.remove("roles/" + id + "/research"); render(); toast("Research cleared.", () => store.set("roles/" + id + "/research", old)); },
+  "add-ev": () => { log("Added example"); const id = newId(); store.set("evidence/" + id, { q:"", at:Date.now() }); ui.ev = id; ui.evEdit = id; render("ev-" + id); },
   "ev-open": el => { ui.ev = ui.ev === el.dataset.id ? null : el.dataset.id; ui.evEdit = null; render(); },
   "star-help": starDlg,
-  "del-ev": el => { const id = el.dataset.id, old = D.evidence[id]; store.remove("evidence/" + id); render(); toast("Example deleted.", () => store.set("evidence/" + id, old)); },
+  "del-ev": el => { log("Deleted example", (D.evidence[el.dataset.id] || {}).q || "Untitled"); const id = el.dataset.id, old = D.evidence[id]; store.remove("evidence/" + id); render(); toast("Example deleted.", () => store.set("evidence/" + id, old)); },
   "rehearse": () => { const id = pickEv(null); if(id){ ui.reh = { id, shown:false }; render(); window.scrollTo(0, 0); } },
   "reh-show": () => { ui.reh.shown = true; render(); },
   "reh-next": () => { const id = pickEv(ui.reh.id); if(id){ ui.reh = { id, shown:false }; render(); window.scrollTo(0, 0); } },
   "reh-stop": () => { ui.reh = null; render(); },
-  "add-page": () => { const id = newId(); store.set("notebook/" + id, { title:"", body:"", at:Date.now() }); render("nt-" + id); },
-  "del-page": el => { const id = el.dataset.id, old = D.notebook[id]; store.remove("notebook/" + id); render(); toast("Note deleted.", () => store.set("notebook/" + id, old)); },
+  "add-page": () => { log("Added note"); const id = newId(); store.set("notebook/" + id, { title:"", body:"", at:Date.now() }); render("nt-" + id); },
+  "del-page": el => { log("Deleted note", (D.notebook[el.dataset.id] || {}).title || "Untitled note"); const id = el.dataset.id, old = D.notebook[id]; store.remove("notebook/" + id); render(); toast("Note deleted.", () => store.set("notebook/" + id, old)); },
   "look": el => { store.update("settings", { theme:el.dataset.l }); applyLook(el.dataset.l); render(); },
   "st-move": el => {
     const s = statusList(), i = s.findIndex(x => x.id === el.dataset.id), j = i + (+el.dataset.dir);
@@ -1198,6 +1290,7 @@ const ACT = {
     s.forEach((x, n) => store.update("statuses/" + x.id, { order:(n + 1) * 10 })); render();
   },
   "st-del": el => {
+    log("Deleted status", (D.statuses[el.dataset.id] || {}).name || "");
     const s = statusList(), id = el.dataset.id, t = s.find(x => x.id === id), other = s.find(x => x.id !== id);
     if(!t || !other) return;
     const used = roleList().filter(r => r.status === id);
@@ -1205,8 +1298,9 @@ const ACT = {
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.21", data:D }, null, 2), "application/json"),
+  "export-json": () => log("Downloaded backup") || download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.22", data:D }, null, 2), "application/json"),
   "export-csv": () => {
+    log("Downloaded spreadsheet");
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const rows = [["Company","Job title","Status","Salary","Closing date","Location","Working pattern","Hybrid details","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
       [r.company, r.title, r.closed ? "" : statusOf(r).name, r.salary, r.closing, r.location, r.mode, r.hybrid, r.link, r.created ? iso(new Date(r.created)) : "", r.closed ? (CLOSED[r.closed.type] || "Closed") : "", jobText(r, "notes")]));
@@ -1214,7 +1308,7 @@ const ACT = {
   },
   "lock": () => {
     if(DEMO){ toast("Demo."); return; }
-
+    flushSaves(); flushEdits(); log("Signed out");
     ls("jobs-cache", null);
     const done = () => location.reload();
     if(db && uid) db.ref("jobs/grants/" + uid).remove().then(done, done); else done();
@@ -1223,14 +1317,16 @@ const ACT = {
 
 const FORMS = {
   "new-role": f => {
-    const id = newId(), s = statusList()[0];
-    store.set("roles/" + id, { company:f.company.value.trim(), title:f.title.value.trim(), link:f.link.value.trim() || null, status:s ? s.id : null, created:Date.now() });
-    closeDlg(); $("search").value = ""; q = ""; listTab = "jobs"; ui.filter = "all"; ui.edit = id; ui.focusSpec = id; go("role", id); render();
+    const id = newId(), st = statusList()[0], job = { company:f.company.value.trim(), title:f.title.value.trim(), link:f.link.value.trim() || null, created:Date.now() };
+    if(isAdmin()) job.suggested = { by:who || "Admin", at:Date.now(), note:(f.note && f.note.value.trim()) || null }; else job.status = st ? st.id : null;
+    log(isAdmin() ? "Suggested job" : "Added job", roleName(job));
+    store.set("roles/" + id, job);
+    closeDlg(); $("search").value = ""; q = ""; listTab = "jobs"; ui.filter = isAdmin() ? "suggested" : "all"; ui.edit = id; ui.focusSpec = id; go("role", id); render();
   },
   "new-date": f => { store.set("roles/" + f.dataset.id + "/dates/" + newId(), { label:f.label.value.trim(), date:f.date.value, time:f.time.value || null }); render("date-new"); },
   "new-todo": f => { store.set("roles/" + f.dataset.id + "/todos/" + newId(), { t:f.t.value.trim(), at:Date.now() }); render("todo-new"); },
-  "new-status": f => { const s = statusList(); store.set("statuses/" + newId(), { name:f.name.value.trim(), order:(s.length ? s[s.length - 1].order : 0) + 10 }); render("status-new"); },
-  "file-reply": f => { fileReply(f.dataset.id, f.reply.value); render(); },
+  "new-status": f => { log("Added status", f.name.value.trim()); const s = statusList(); store.set("statuses/" + newId(), { name:f.name.value.trim(), order:(s.length ? s[s.length - 1].order : 0) + 10 }); render("status-new"); },
+  "file-reply": f => { log("Filed research", roleName(D.roles[f.dataset.id] || {})); fileReply(f.dataset.id, f.reply.value); render(); },
   "apply-facts": f => {
     const id = f.dataset.id, o = {};
     if(f.salary && f.salary.checked) o.salary = f.salary.value;
@@ -1245,13 +1341,13 @@ const timers = {};
 function saveField(el, now){
   const path = el.dataset.path, f = el.dataset.f; if(!path || !f) return;
   const key = path + "/" + f; clearTimeout(timers[key]); delete waiting[key];
-  const run = () => { delete waiting[key]; el._dirty = false; const v = el.type === "checkbox" ? el.checked : el.value, o = {}; o[f] = (v === "" || v === false) ? null : v; store.update(path, o); };
+  const run = () => { delete waiting[key]; noteEdit(path); el._dirty = false; const v = el.type === "checkbox" ? el.checked : el.value, o = {}; o[f] = (v === "" || v === false) ? null : v; store.update(path, o); };
   if(now) run(); else { el._dirty = true; waiting[key] = run; chip("saving"); timers[key] = setTimeout(run, 400); }
 }
 // Anything typed but not yet written is saved the moment the page is hidden, switched away from or closed.
 const waiting = {};
 function flushSaves(){ Object.keys(waiting).forEach(k => { clearTimeout(timers[k]); waiting[k](); }); }
-document.addEventListener("visibilitychange", () => { if(document.visibilityState === "hidden") flushSaves(); });
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "hidden"){ flushSaves(); flushEdits(); } });
 window.addEventListener("pagehide", flushSaves);
 // While a field has focus the page is not rebuilt, so a change made on another device would sit
 // unseen behind it and then be overwritten. Fields she is not in the middle of typing in are
@@ -1391,6 +1487,7 @@ document.addEventListener("change", e => {
     else {
       const sl = statusList(), last = sl[sl.length - 1], was = statusOf(D.roles[el.dataset.id] || {}).id;
       store.update("roles/" + el.dataset.id, { status:el.value }); render();
+      log("Changed status", roleName(D.roles[el.dataset.id] || {}) + " to " + ((sl.find(x => x.id === el.value) || {}).name || ""));
       if(sl.length > 1 && last && el.value === last.id && was !== last.id) burst();
     }
     return;
@@ -1450,7 +1547,7 @@ function purgeOld(){
 }
 function subscribe(){
   db.ref("jobs/grants/" + uid).once("value").then(g => db.ref("jobs/access/" + g.val()).once("value"))
-    .then(a => { who = (a.val() && a.val().name) || ""; if(live && view.name === "settings") onData(); }).catch(() => {});
+    .then(a => { const v = a.val() || {}; who = v.name || ""; role = v.role || ""; log(justIn ? "Signed in" : "Opened Jobs"); justIn = false; if(live) onData(); }).catch(() => {});
   db.ref("jobs/data").on("value", s => {
     clearTimeout(bootTimer);
     const first = !live; live = true; readOnly = false;
@@ -1474,8 +1571,8 @@ $("gate-form").addEventListener("submit", e => {
   $("gate-go").disabled = true;
   db.ref("jobs/access/" + code).once("value")
     .then(s => { if(!s.exists()) throw new Error("nomatch"); return db.ref("jobs/grants/" + uid).set(code); })
-    .then(() => { $("gate-code").value = ""; subscribe(); })
-    .catch(err => { $("gate-msg").textContent = err && err.message === "nomatch" ? "Wrong passcode." : "Can't connect. Try again."; })
+    .then(() => { $("gate-code").value = ""; justIn = true; subscribe(); })
+    .catch(err => { if(err && err.message === "nomatch") log("Wrong passcode"); $("gate-msg").textContent = err && err.message === "nomatch" ? "Wrong passcode." : "Can't connect. Try again."; })
     .then(() => { $("gate-go").disabled = false; });
 });
 
@@ -1491,6 +1588,7 @@ function demoData(){
     r3:{ company:"Bath Spa University", title:"Events Coordinator", status:"s2", created:t - 5e8, dates:{ a:{ label:"Application closes", date:day(2) } } },
     r4:{ company:"Royal United Hospitals", title:"Patient Experience Coordinator", status:"s1", created:t - 3e8, dates:{ a:{ label:"Application closes", date:day(45) } } },
     r5:{ company:"Future Publishing", title:"Production Assistant", status:"s1", created:t - 2e8 },
+    r7:{ company:"Bath Festivals", title:"Programme Assistant", created:t - 1e8, suggested:{ by:"Sam", at:t - 1e8, note:"Saw this and thought of you" } },
     r6:{ company:"Komedia", title:"Office Manager", status:"s3", created:t - 12e8, closed:{ type:"unsuccessful", at:t - 2e8 } }
   };
   d.evidence = { e1:{ q:"You dealt with a difficult customer", s:"Saturday shift, a visitor was upset about a cancelled tour.", t:"Calm things down and keep the queue moving.", a:"Listened, apologised, offered the next slot and a cafe voucher.", r:"They stayed, and left a five-star review that week.", at:1 } };
@@ -1500,7 +1598,7 @@ function demoData(){
 
 function boot(){
   applyLook(ls("jobs-look") || "allotment");
-  if(DEMO){ D = demoData(); who = "Demo"; showApp(); banner("Demo. Nothing is saved."); return; }
+  if(DEMO){ D = demoData(); who = /[?&]admin\b/.test(location.search) ? "Admin" : "Demo"; role = who === "Admin" ? "admin" : ""; showApp(); banner("Demo. Nothing is saved."); return; }
   if(typeof firebase === "undefined"){ showCached("Can't connect."); return; }
   firebase.initializeApp(FIREBASE_CONFIG); db = firebase.database();
   // If nothing has arrived after a few seconds we are probably offline: show the last saved copy.
