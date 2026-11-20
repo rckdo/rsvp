@@ -45,6 +45,7 @@ It opens `/jobs/?demo` (example data, no database) and walks every tab. If you a
 - The admin sees an Activity section in Settings, fed by `jobs/audit`. The rules make that log append-only and readable by the admin alone. Log actions with `log(what, detail)`; record what was done and to what, never the text typed.
 - Jobs the admin adds are suggestions (`suggested` on the job). They stay out of her lists until she takes them.
 - Changing `game/firebase-rules.json` means the owner must paste it into the Firebase console again. Say so every time.
+- The Firebase project belongs to the owner's personal Google account, not their work one. When giving console links, remind them to switch to that account first, or the project will look missing. Do not write the address into the repo.
 
 ### Things that bit us
 
