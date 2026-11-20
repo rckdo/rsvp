@@ -10,6 +10,7 @@
   Changelog
   v1.0 (20/11/2026): First version. Tabs, Notebook formatting, job read/edit, add job,
           Examples read/edit, reading panel, delete confirmation, stickers by mouse and touch.
+  v1.1 (20/11/2026): Checks that pasted formatting is kept and unsafe content is stripped.
 */
 const http = require("http"), fs = require("fs"), path = require("path");
 const { chromium, devices } = require("playwright");
@@ -33,8 +34,12 @@ async function common(p, tag){
   const marks = { week:"h2:has-text('This week')", jobs:"table.jobs", evidence:"h2:has-text('Examples')", notebook:"h2:has-text('Notebook')", settings:"h2:has-text('Settings')" };
   for(const v of Object.keys(marks)){ await p.click("#nav-" + v); await p.waitForTimeout(350); check(tag + " tab " + v, await p.locator(marks[v] + ":visible").count() > 0); }
   // every page-building function exists
-  const missing = await p.evaluate(() => ["homeHtml","weekHtml","jobsHtml","roleHtml","evidenceHtml","notebookHtml","settingsHtml","stickersHtml","stickerDlg","cleanHtml","saveRich","parseReply","buildPrompt","advertSheet","researchSheet","starDlg","helpDlg"].filter(f => typeof window[f] !== "function"));
+  const missing = await p.evaluate(() => ["homeHtml","weekHtml","jobsHtml","roleHtml","evidenceHtml","notebookHtml","settingsHtml","stickersHtml","stickerDlg","cleanHtml","htmlText","mdLite","saveRich","parseReply","buildPrompt","advertSheet","researchSheet","starDlg","helpDlg"].filter(f => typeof window[f] !== "function"));
   check(tag + " functions", missing.length === 0, missing.join(","));
+  // pasted formatting: bold, links and lists survive; styles, scripts and bad links do not
+  const cleaned = await p.evaluate(() => cleanHtml('<p style="x"><span style="font-weight:700">Bold</span> <a href="https://example.org/a">link</a></p><ul><li>One</li></ul><a href="javascript:alert(1)">bad</a><img src=x onerror=alert(1)><script>alert(1)</script>'));
+  check(tag + " paste keeps formatting", /<b>Bold<\/b>/.test(cleaned) && /href="https:\/\/example\.org\/a"/.test(cleaned) && /<li>One<\/li>/.test(cleaned), cleaned);
+  check(tag + " paste strips unsafe", !/script|onerror|javascript:|style=|<img/i.test(cleaned), cleaned);
   // notebook formatting saves
   await p.click("#nav-notebook"); await p.waitForTimeout(300);
   await p.locator(".rich").first().click(); await p.keyboard.type("Hello"); await p.keyboard.press("Control+A"); await p.click("[data-fmt='bold'] >> nth=0"); await p.waitForTimeout(600);

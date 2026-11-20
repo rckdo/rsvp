@@ -5,6 +5,10 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.20 (20/11/2026): Pasting keeps formatting. The job spec and job notes are now formatted fields
+          like the Notebook, and pasting into any of them keeps bold, italic, headings, lists and
+          links (styles, images and scripts are stripped). Research shows **bold** and tappable
+          links. While editing a job the top bar with Done stays in view; the same for an example.
   v1.19 (20/11/2026): Stickers: drag straight away (no hold, no arranging mode); pinch with a second
           finger to resize to any size; they lift when picked up and settle when dropped. The
           Stickers button opens the tray. The page itself no longer pinch-zooms. Dates always
@@ -379,6 +383,16 @@ body:has(dialog[open]){overflow:hidden}
 }
 @keyframes sheetup{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){dialog.sheet[open]{animation:none}}
+/* while editing, the bar with Done stays in view */
+.jobtop.stick{position:sticky;top:env(safe-area-inset-top,0px);z-index:8;background:var(--surface);padding-block:8px;margin-block:-8px;box-shadow:0 1px 0 var(--line)}
+.evbar{position:sticky;bottom:12px;z-index:4;background:var(--surface);padding:8px 0;box-shadow:0 -1px 0 var(--line)}
+@media (max-width:699px){.evbar{bottom:calc(64px + env(safe-area-inset-bottom,0px))}}
+.rdh{white-space:normal}
+.rdh p,.rdh div{margin:0 0 .5em}
+.rdh ul,.rdh ol,.rd ul{padding-left:22px;margin:.3em 0 .6em}
+.rdh h3{font-size:1.02rem;margin:.9em 0 .3em}
+.rd a,.rich a{color:var(--accent);text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+.rich:empty::before{content:attr(data-ph);color:var(--muted)}
 .fmtbar{display:flex;gap:2px}
 .fmtbar .icb{min-width:40px;justify-content:center;font-size:1rem}
 .rich{background:var(--bg);border-bottom:1px solid var(--line);border-radius:var(--ctl);padding:10px 12px;min-height:6em;overflow-wrap:anywhere}
@@ -599,7 +613,7 @@ const TIPS = {
   week:"Dates you add to a job show here for the next seven days. Tick one off when it's done.",
   jobs:"Every job you've added. Filter by status, tap a column heading to sort, tap a job to open it. Past holds closed jobs.",
   evidence:"Your own answers to the classic interview question. Open one and fill in the four boxes. Rehearse shows a question and hides your answer until you've said it aloud.",
-  notebook:"Free notes for anything not tied to one job. Select text and use the buttons above a note to format it.",
+  notebook:"Free notes for anything not tied to one job. Select text and use the buttons to format it. Pasting keeps bold, lists and links. Tap a link to open it.",
   settings:"Change the look, edit the statuses, download a backup, restore deleted jobs, sign out."
 };
 const tipBtn = (k, label) => `<button class="icb" data-act="tip" data-k="${k}" aria-expanded="${ui.tip === k}" aria-label="About ${label}">${ic("help")}</button>`;
@@ -678,7 +692,7 @@ function jobsHtml(roles){
 }
 function searchHtml(roles){
   const n = q.toLowerCase();
-  const hit = r => [r.company, r.title, r.location, r.salary, r.notes, r.advert].concat(Object.values(r.research || {}), todoList(r).map(t => t.t), dateList(r).map(d => d.label)).some(v => v && String(v).toLowerCase().includes(n));
+  const hit = r => [r.company, r.title, r.location, r.salary, jobText(r, "notes"), jobText(r, "advert")].concat(Object.values(r.research || {}), todoList(r).map(t => t.t), dateList(r).map(d => d.label)).some(v => v && String(v).toLowerCase().includes(n));
   const rs = roles.filter(hit), ps = Object.keys(D.notebook).map(id => D.notebook[id]).filter(p => ((p.title||"") + " " + String(p.body||"").replace(/<[^>]+>/g, " ")).toLowerCase().includes(n));
   let h = `<div class="panel"><h2>Search results</h2>`;
   const es = evList().filter(e => [e.q].concat(STAR.map(x => e[x[0]])).some(v => v && String(v).toLowerCase().includes(n)));
@@ -697,7 +711,7 @@ function roleHtml(id){
   if(!r || r.removedAt) return `<div class="panel"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button><p class="empty">Job not found.</p></div>`;
   const p = "roles/" + id, cur = statusOf(r).id, res = r.research || {}, ed = ui.edit === id;
   const ds = dateList(r), ts = todoList(r), got = RESEARCH.filter(x => res[x[0]]), urls = (res.sources || "").match(/https?:\/\/[^\s)>\]]+/g);
-  let h = `<div class="panel jobpanel${ui.arrange ? " arrange" : ""}"><div class="row"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button><span style="flex:1"></span>`;
+  let h = `<div class="panel jobpanel"><div class="row jobtop${ed ? " stick" : ""}"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button><span style="flex:1"></span>`;
   h += `<button class="stkbtn" data-act="stickers" data-id="${id}"><span class="mini" aria-hidden="true">${["t1f986", "t1f33b", "t2b50"].map(stkArt).join("")}</span>Stickers</button>`
     + (ed ? `<button class="add" data-act="job-done">${ic("check")}Done</button>` : `<button class="ghost" data-act="job-edit" data-id="${id}">${ic("pencil")}Edit</button>`);
   h += `</div>`;
@@ -717,11 +731,11 @@ function roleHtml(id){
     h += `</div><div class="sec"><h3>Dates</h3>`;
     if(ds.length) h += `<ul class="list">${ds.map(d => `<li><input type="checkbox" id="d-${d.id}" aria-label="Done" title="Done" data-path="${p}/dates/${d.id}" data-f="done"${d.done ? " checked" : ""}><div class="drow"><input type="text" id="dl-${d.id}" aria-label="What it is" placeholder="e.g. Interview" data-path="${p}/dates/${d.id}" data-f="label" value="${esc(d.label)}"><input type="date" aria-label="Date" id="dd-${d.id}" data-path="${p}/dates/${d.id}" data-f="date" value="${esc(d.date)}"><input type="time" aria-label="Time" id="dt-${d.id}" data-path="${p}/dates/${d.id}" data-f="time" value="${esc(d.time)}"></div><button class="icb" aria-label="Delete" title="Delete" data-act="del-date" data-id="${id}" data-d="${d.id}">${ic("bin")}</button></li>`).join("")}</ul>`;
     h += `<div><button class="ghost" data-act="add-date" data-id="${id}">${ic("plus")}Add date</button></div></div>`;
-    h += `<div class="sec"><h3>Job spec</h3>${area("", p, "advert", r.advert, "Paste the job spec")}</div>`;
+    h += `<div class="sec"><h3>Job spec</h3>${richField(p, r, "advert", "Paste the job spec")}</div>`;
     h += `<div class="sec"><h3>Research</h3>${researchHead}`;
     got.forEach(x => { h += area(x[1], p + "/research", x[0], res[x[0]], "", "r-" + x[0]); });
     h += srcs + (got.length ? `<p class="hint">AI draft. Check against sources. <button class="x" data-act="clear-research" data-id="${id}">Clear research</button></p>` : "") + `</div>`;
-    h += `<div class="sec"><h3>Notes</h3>${area("", p, "notes", r.notes, "Notes")}</div>`;
+    h += `<div class="sec"><h3>Notes</h3>${richField(p, r, "notes", "Notes")}</div>`;
   } else {
     // ---- reading: laid out to look at, nothing to knock by accident
     h += `<div class="jobhead"><h2>${esc(r.company || "Untitled")}</h2><p>${esc(r.title || "")}</p></div>${status}`;
@@ -734,16 +748,17 @@ function roleHtml(id){
     const shown = ds.filter(d => d.date || d.label);
     if(shown.length) h += `<div class="sec"><h3>Dates</h3><ul class="list">${shown.map(d => `<li><input type="checkbox" id="d-${d.id}" data-path="${p}/dates/${d.id}" data-f="done"${d.done ? " checked" : ""}><label for="d-${d.id}">${esc(d.label || "Date")}<span>${fmtDate(d.date)}${d.time ? " at " + esc(d.time) : ""}${d.done || !d.date ? "" : " \u00b7 " + rel(d.date)}</span></label></li>`).join("")}</ul></div>`;
     const longText = t => !!t && (t.length > 320 || t.split("\n").length > 6);
-    if(r.advert) h += `<div class="sec"><h3>Job spec</h3><p class="rd${longText(r.advert) ? " peek" : ""}">${esc(r.advert)}</p>${longText(r.advert) ? `<div><button class="ghost" data-act="read-advert" data-id="${id}">${ic("notebook")}Read</button></div>` : ""}</div>`;
+    const specLong = longText(jobText(r, "advert"));
+    if(r.advert) h += `<div class="sec"><h3>Job spec</h3><div class="rd rdh${specLong ? " peek" : ""}">${jobHtml(r, "advert")}</div>${specLong ? `<div><button class="ghost" data-act="read-advert" data-id="${id}">${ic("notebook")}Read</button></div>` : ""}</div>`;
     h += `<div class="sec"><h3>Research</h3>${researchHead}`;
     if(got.length){
       const first = got.find(x => x[0] !== "facts" && x[0] !== "sources") || got[0], more = got.length > 1 || longText(res[first[0]]);
-      if(res.facts && first[0] !== "facts") h += `<div><h4>Key facts</h4><p class="rd">${esc(res.facts)}</p></div>`;
-      h += `<div><h4>${first[1]}</h4><p class="rd${more ? " peek" : ""}">${esc(res[first[0]])}</p></div>`;
+      if(res.facts && first[0] !== "facts") h += `<div><h4>Key facts</h4><p class="rd">${mdLite(res.facts)}</p></div>`;
+      h += `<div><h4>${first[1]}</h4><p class="rd${more ? " peek" : ""}">${mdLite(res[first[0]])}</p></div>`;
       h += `<div class="row">${more ? `<button class="ghost" data-act="read-research" data-id="${id}">${ic("notebook")}Read</button>` : ""}<button class="ghost" data-act="job-edit" data-id="${id}">${ic("pencil")}Edit research</button><button class="ghost" data-act="clear-research" data-id="${id}">${ic("bin")}Clear research</button></div>`;
     }
     h += `</div>`;
-    if(r.notes) h += `<div class="sec"><h3>Notes</h3><p class="rd">${esc(r.notes)}</p></div>`;
+    if(r.notes) h += `<div class="sec"><h3>Notes</h3><div class="rd rdh">${jobHtml(r, "notes")}</div></div>`;
   }
   h += `<div class="sec"><h3>To do</h3>`;
   if(ts.length) h += `<ul class="list">${ts.map(t => `<li><input type="checkbox" id="td-${t.id}" data-path="${p}/todos/${t.id}" data-f="done"${t.done ? " checked" : ""}><label for="td-${t.id}">${esc(t.t)}</label>${ed ? `<button class="icb" aria-label="Delete" title="Delete" data-act="del-todo" data-id="${id}" data-d="${t.id}">${ic("bin")}</button>` : ""}</li>`).join("")}</ul>`;
@@ -758,23 +773,54 @@ function roleHtml(id){
 const FMT = [["bold","Bold","<b>B</b>"],["italic","Italic","<i>I</i>"],["h","Heading","<b>H</b>"],
   ["ul","Bullet list",'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7h11M9 12h11M9 17h11M4.5 7h.01M4.5 12h.01M4.5 17h.01"/></svg>'],
   ["ol","Numbered list",'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 7h10M10 12h10M10 17h10M4 6l1.5-1v4M4 15h2.5L4 18h2.5"/></svg>']];
-const RICH_OK = { B:1, STRONG:1, I:1, EM:1, U:1, H3:1, UL:1, OL:1, LI:1, P:1, DIV:1, BR:1 };
+const RICH_OK = { B:1, STRONG:1, I:1, EM:1, U:1, H3:1, UL:1, OL:1, LI:1, P:1, DIV:1, BR:1, A:1 };
+const RICH_DROP = /^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|LINK|META|HEAD|TITLE|SVG|IMG|PICTURE|VIDEO|AUDIO|CANVAS|BUTTON|INPUT|SELECT|TEXTAREA|NOSCRIPT|TEMPLATE)$/;
+// Everything else is stripped: no styles, no scripts, no attributes except a web link's address.
+// Word, Google Docs and web pages often mark bold and italic with styles rather than tags, so
+// those are read and turned into real <b> and <i>.
 function cleanHtml(html){
   const doc = new DOMParser().parseFromString("<div>" + String(html || "") + "</div>", "text/html"), out = doc.createElement("div");
   (function walk(from, to){
     from.childNodes.forEach(n => {
       if(n.nodeType === 3){ to.appendChild(doc.createTextNode(n.nodeValue)); return; }
-      if(n.nodeType !== 1 || /^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|LINK|META)$/.test(n.tagName)) return;
-      if(RICH_OK[n.tagName]){ const el = doc.createElement(n.tagName); to.appendChild(el); walk(n, el); } else walk(n, to);
+      if(n.nodeType !== 1 || RICH_DROP.test(n.tagName)) return;
+      const st = (n.getAttribute("style") || "").toLowerCase(), bold = /font-weight\s*:\s*(bold|[6-9]00)/.test(st), plain = /font-weight\s*:\s*(normal|[1-4]00)/.test(st), ital = /font-style\s*:\s*italic/.test(st);
+      let tag = n.tagName, into = to;
+      if(/^H[1-6]$/.test(tag)) tag = "H3";
+      if(tag === "TR") tag = "DIV";
+      if((tag === "B" || tag === "STRONG") && plain) tag = "SPAN";         // Google Docs wraps everything in a non-bold <b>
+      if(tag === "A"){
+        const href = n.getAttribute("href") || "";
+        if(/^(https?:|mailto:)/i.test(href)){ const a = doc.createElement("a"); a.setAttribute("href", href); a.setAttribute("target", "_blank"); a.setAttribute("rel", "noopener noreferrer"); to.appendChild(a); into = a; }
+      } else if(RICH_OK[tag]){ const el = doc.createElement(tag); to.appendChild(el); into = el; }
+      if(bold && tag !== "B" && tag !== "STRONG" && tag !== "H3"){ const b = doc.createElement("b"); into.appendChild(b); into = b; }
+      if(ital && tag !== "I" && tag !== "EM"){ const i = doc.createElement("i"); into.appendChild(i); into = i; }
+      walk(n, into);
+      if(tag === "TD" || tag === "TH") into.appendChild(doc.createTextNode("  "));
     });
   })(doc.body.firstChild, out);
   return out.innerHTML;
 }
+// The same text without any formatting, for searching, exporting and sending to the AI.
+function htmlText(html){
+  const d = document.createElement("div"); d.innerHTML = cleanHtml(html).replace(/<\/(p|div|li|h3)>|<br>/g, "$&\n");
+  return d.textContent.replace(/\n{3,}/g, "\n\n").trim();
+}
+// A job's text fields may be older plain text or newer formatted text; these read either.
+const jobText = (r, f) => r[f] ? (r[f + "Fmt"] === "html" ? htmlText(r[f]) : String(r[f])) : "";
+const jobHtml = (r, f) => r[f + "Fmt"] === "html" ? cleanHtml(r[f]) : esc(r[f] || "").replace(/\n/g, "<br>");
+const fmtBar = () => `<div class="fmtbar" role="toolbar" aria-label="Formatting">${FMT.map(f => `<button class="icb" data-fmt="${f[0]}" aria-label="${f[1]}" title="${f[1]}">${f[2]}</button>`).join("")}</div>`;
+const richField = (path, r, f, label) => `${fmtBar()}<div class="rich" contenteditable="true" role="textbox" aria-multiline="true" aria-label="${label}" data-ph="${label}" id="t-${f}" data-rich="${path}" data-rf="${f}" data-rflag="${f}Fmt">${jobHtml(r, f)}</div>`;
+// AI research arrives as plain text with a little Markdown: show **bold** and make links tappable.
+function mdLite(t){
+  const A = (u, x) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${x}</a>`;
+  return esc(t).replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (m, x, u) => A(u, x)).replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, (m, pre, u) => pre + A(u, u)).replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>");
+}
 // Notes written before formatting existed are plain text: keep their line breaks.
 const richHtml = pg => pg.fmt === "html" ? cleanHtml(pg.body) : esc(pg.body || "").replace(/\n/g, "<br>");
 function saveRich(el, now){
-  const path = el.dataset.rich, key = path + "/body"; clearTimeout(timers[key]); delete waiting[key];
-  const run = () => { delete waiting[key]; store.update(path, { body:cleanHtml(el.innerHTML), fmt:"html" }); };
+  const path = el.dataset.rich, f = el.dataset.rf || "body", flag = el.dataset.rflag || "fmt", key = path + "/" + f; clearTimeout(timers[key]); delete waiting[key];
+  const run = () => { delete waiting[key]; const o = {}; o[f] = el.textContent.trim() ? cleanHtml(el.innerHTML) : null; o[flag] = "html"; store.update(path, o); };
   if(now) run(); else { waiting[key] = run; timers[key] = setTimeout(run, 400); }
 }
 // Stickers sit on top of a job page wherever she drops them. x is a percentage of the page
@@ -797,7 +843,7 @@ function notebookHtml(){
   const pages = Object.keys(D.notebook).map(id => Object.assign({ id }, D.notebook[id])).sort((a,b) => (a.at||0) - (b.at||0));
   let h = `<div class="panel">${head("notebook", "Notebook")}`;
   if(!pages.length) h += `<p class="empty">No notes.</p>`;
-  h += pages.map(pg => `<div class="page"><label class="fld big"><span>Title</span><input type="text" id="nt-${pg.id}" data-path="notebook/${pg.id}" data-f="title" value="${esc(pg.title)}"></label><div class="fmtbar" role="toolbar" aria-label="Formatting">${FMT.map(f => `<button class="icb" data-fmt="${f[0]}" aria-label="${f[1]}" title="${f[1]}">${f[2]}</button>`).join("")}</div><div class="rich" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Note" id="nb-${pg.id}" data-rich="notebook/${pg.id}">${richHtml(pg)}</div><div><button class="ghost" data-act="del-page" data-id="${pg.id}">${ic("bin")}Delete note</button></div></div>`).join("");
+  h += pages.map(pg => `<div class="page"><label class="fld big"><span>Title</span><input type="text" id="nt-${pg.id}" data-path="notebook/${pg.id}" data-f="title" value="${esc(pg.title)}"></label>${fmtBar()}<div class="rich" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Note" id="nb-${pg.id}" data-rich="notebook/${pg.id}">${richHtml(pg)}</div><div><button class="ghost" data-act="del-page" data-id="${pg.id}">${ic("bin")}Delete note</button></div></div>`).join("");
   return h + `<div class="sec"><div><button class="ghost" data-act="add-page">${ic("plus")}Add note</button></div></div></div>`;
 }
 
@@ -822,7 +868,7 @@ function evidenceHtml(){
     const has = STAR.some(x => e[x[0]]);
     if(open && ui.evEdit === e.id) r += `<div class="accbody"><label class="fld"><span>${EV_LEAD}</span><input type="text" id="ev-${e.id}" data-path="evidence/${e.id}" data-f="q" value="${esc(e.q)}" placeholder="You\u2026"></label>
       <div class="stargrid">${STAR.map(x => `<label class="star" data-l="${x[1][0]}"><span>${x[1]}</span><textarea id="t-ev-${e.id}-${x[0]}" data-path="evidence/${e.id}" data-f="${x[0]}" rows="3" aria-label="${x[1]}">${esc(e[x[0]])}</textarea></label>`).join("")}</div>
-      <div class="row"><button class="icb" data-act="star-help" aria-label="How STAR works" title="How STAR works">${ic("help")}</button><span style="flex:1"></span><button class="ghost" data-act="del-ev" data-id="${e.id}">${ic("bin")}Delete example</button><button class="add" data-act="ev-done">${ic("check")}Done</button></div></div>`;
+      <div class="row evbar"><button class="icb" data-act="star-help" aria-label="How STAR works" title="How STAR works">${ic("help")}</button><span style="flex:1"></span><button class="ghost" data-act="del-ev" data-id="${e.id}">${ic("bin")}Delete example</button><button class="add" data-act="ev-done">${ic("check")}Done</button></div></div>`;
     else if(open) r += `<div class="accbody"><div class="stargrid">${STAR.map(x => `<div class="star" data-l="${x[1][0]}"><span>${x[1]}</span><p>${e[x[0]] ? esc(e[x[0]]) : `<em>Not written yet</em>`}</p></div>`).join("")}</div>
       <div class="row"><button class="icb" data-act="star-help" aria-label="How STAR works" title="How STAR works">${ic("help")}</button><span style="flex:1"></span><button class="ghost" data-act="ev-edit" data-id="${e.id}">${ic("pencil")}${has ? "Edit" : "Write it"}</button></div></div>`;
     return r + `</div>`;
@@ -848,7 +894,7 @@ function settingsHtml(){
   h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">${ic("download")}Backup</button><button class="ghost" data-act="export-csv">${ic("download")}Spreadsheet</button></div></div>`;
   h += `<div class="sec"><h3>Recently deleted</h3>`;
   h += removed.length ? `<p class="hint">Kept for ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Deleted ${fmtStamp(r.removedAt)}</span></div><span class="row"><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button><button class="icb" data-act="purge-ask" data-id="${r.id}" aria-label="Delete for good" title="Delete for good">${ic("bin")}</button></span></div>`).join("") : `<p class="empty">None.</p>`;
-  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.19. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
+  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.20. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
   return h + `</div>`;
 }
 
@@ -864,11 +910,11 @@ function sheet(title, chips, body, id, focusId){
     + `<div class="sheetbody" id="sheetbody" tabindex="0">${body}</div>`, "sheet");
   $("sheetbody").scrollTop = 0;
 }
-function advertSheet(id){ const r = D.roles[id]; if(r) sheet("Job spec", [], `<p class="rd">${esc(r.advert || "")}</p>`, id, "t-advert"); }
+function advertSheet(id){ const r = D.roles[id]; if(r) sheet("Job spec", [], `<div class="rd rdh">${jobHtml(r, "advert")}</div>`, id, "t-advert"); }
 function researchSheet(id){
   const r = D.roles[id]; if(!r) return;
   const res = r.research || {}, got = RESEARCH.filter(x => res[x[0]]), urls = (res.sources || "").match(/https?:\/\/[^\s)>\]]+/g);
-  sheet("Research", got.map(x => ["rs-" + x[0], x[1]]), got.map(x => `<section id="rs-${x[0]}"><h3>${x[1]}</h3>${x[0] === "sources" && urls ? `<div class="srcs">${urls.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`).join("")}</div>` : `<p class="rd">${esc(res[x[0]])}</p>`}</section>`).join("")
+  sheet("Research", got.map(x => ["rs-" + x[0], x[1]]), got.map(x => `<section id="rs-${x[0]}"><h3>${x[1]}</h3>${x[0] === "sources" && urls ? `<div class="srcs">${urls.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`).join("")}</div>` : `<p class="rd">${mdLite(res[x[0]])}</p>`}</section>`).join("")
     + `<p class="hint">AI draft. Check against sources.</p>`, id, got.length ? "t-r-" + got[0][0] : "");
 }
 let toastTimer = null, toastUndo = null;
@@ -944,7 +990,7 @@ function buildPrompt(r){
   if(r.link) L.push("Advert link: " + r.link);
   if(r.location) L.push("Location: " + r.location);
   if(r.mode) L.push("Working pattern: " + r.mode + (r.mode === "Hybrid" && r.hybrid ? " (" + r.hybrid + ")" : ""));
-  if(r.advert) L.push("", "ADVERT TEXT", '"""', r.advert.trim(), '"""');
+  if(r.advert) L.push("", "ADVERT TEXT", '"""', jobText(r, "advert"), '"""');
   else L.push("", "I have not pasted the advert text. If you cannot open the link, say so under ADVERT SUMMARY and carry on with the other sections.");
   L.push("", "HOW TO REPLY",
     "Reply with ONE code block and nothing before or after it, so I can copy the whole reply in one go.",
@@ -1109,11 +1155,11 @@ const ACT = {
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.19", data:D }, null, 2), "application/json"),
+  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.20", data:D }, null, 2), "application/json"),
   "export-csv": () => {
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const rows = [["Company","Job title","Status","Salary","Closing date","Location","Working pattern","Hybrid details","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
-      [r.company, r.title, r.closed ? "" : statusOf(r).name, r.salary, r.closing, r.location, r.mode, r.hybrid, r.link, r.created ? iso(new Date(r.created)) : "", r.closed ? (CLOSED[r.closed.type] || "Closed") : "", r.notes]));
+      [r.company, r.title, r.closed ? "" : statusOf(r).name, r.salary, r.closing, r.location, r.mode, r.hybrid, r.link, r.created ? iso(new Date(r.created)) : "", r.closed ? (CLOSED[r.closed.type] || "Closed") : "", jobText(r, "notes")]));
     download("jobs-roles-" + iso(new Date()) + ".csv", "﻿" + rows.map(r => r.map(cell).join(",")).join("\r\n"), "text/csv");
   },
   "lock": () => {
@@ -1258,7 +1304,7 @@ document.addEventListener("pointercancel", endDrag);
 document.addEventListener("mousedown", e => { if(e.target.closest("[data-fmt]")) e.preventDefault(); });
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-fmt]"); if(!b) return;
-  const box = b.closest(".page").querySelector(".rich"), c = b.dataset.fmt;
+  const box = b.closest(".fmtbar").nextElementSibling, c = b.dataset.fmt;
   if(!box.contains(document.activeElement) && document.activeElement !== box) box.focus();
   if(c === "h") document.execCommand("formatBlock", false, document.queryCommandValue("formatBlock").toLowerCase() === "h3" ? "div" : "h3");
   else document.execCommand(c === "ul" ? "insertUnorderedList" : c === "ol" ? "insertOrderedList" : c);
@@ -1266,9 +1312,15 @@ document.addEventListener("click", e => {
 });
 // Pasting brings plain text only, so nothing odd from other apps ends up in a note.
 document.addEventListener("paste", e => {
-  if(!e.target.closest || !e.target.closest(".rich")) return;
-  e.preventDefault(); document.execCommand("insertText", false, (e.clipboardData || window.clipboardData).getData("text/plain"));
+  const box = e.target.closest && e.target.closest(".rich"); if(!box) return;
+  // Keep bold, italic, headings, lists and links from whatever was copied; drop everything else.
+  const cd = e.clipboardData || window.clipboardData, html = cd.getData("text/html");
+  e.preventDefault();
+  if(html && /<[a-z]/i.test(html)) document.execCommand("insertHTML", false, cleanHtml(html)); else document.execCommand("insertText", false, cd.getData("text/plain"));
+  saveRich(box, false);
 });
+// In the Notebook there is no separate reading view, so a tap on a link opens it.
+document.addEventListener("click", e => { const a = e.target.closest && e.target.closest(".page .rich a"); if(a){ e.preventDefault(); window.open(a.href, "_blank", "noopener"); } });
 document.addEventListener("input", e => {
   const el = e.target;
   if(el.dataset && el.dataset.rich){ saveRich(el, false); return; }

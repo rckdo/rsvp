@@ -31,6 +31,8 @@ It opens `/jobs/?demo` (example data, no database) and walks every tab. If you a
 - **Nothing nags.** No automatic reminders or emails. Only dates she sets appear in This week.
 - **Stickers** drag straight away, pinch to resize, and a tap passes through to what is underneath. Artwork is Twemoji (CC BY 4.0); do not add hand-drawn art.
 - **No pills, no boxed panels.** Squared controls, grouping by spacing and rules, three looks (Allotment, Lido, Blossom) driven by CSS tokens.
+- **Pasting keeps formatting.** The Notebook, job spec and job notes are formatted fields; `cleanHtml` is the only gate between pasted content and the page, so keep it an allowlist.
+- **While editing, the bar with Done stays in view.**
 - **Every page is full width** in one column; long texts open in the reading panel.
 - **Phone first.** Check every change at phone width as well as laptop width.
 
