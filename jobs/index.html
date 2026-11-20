@@ -5,6 +5,10 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.23 (20/11/2026): Reviewing suggestions. Each suggestion shows who sent it and why, its key
+          facts and the start of the job spec, with Review to open it in full. Yes and No are
+          large round buttons, on the list and in a bar that stays at the foot of the job while
+          she reads it.
   v1.22 (20/11/2026): Admin account. A passcode whose entry in jobs/access has role "admin" gets
           an Activity section in Settings: who did what, when, on which device, including
           sign-ins and wrong passcodes. It records actions, never typed text. Jobs the admin adds
@@ -396,13 +400,32 @@ body:has(dialog[open]){overflow:hidden}
 /* while editing, the bar with Done stays in view */
 .jobtop.stick{position:sticky;top:env(safe-area-inset-top,0px);z-index:8;background:var(--surface);padding-block:8px;margin-block:-8px;box-shadow:0 1px 0 var(--line)}
 .evbar{position:sticky;bottom:12px;z-index:4;background:var(--surface);padding:8px 0;box-shadow:0 -1px 0 var(--line)}
-@media (max-width:699px){.evbar{bottom:calc(64px + env(safe-area-inset-bottom,0px))}}
+@media (max-width:699px){.evbar{bottom:calc(56px + env(safe-area-inset-bottom,0px))}}
 .rdh{white-space:normal}
 .rdh p,.rdh div{margin:0 0 .5em}
 .rdh ul,.rdh ol,.rd ul{padding-left:22px;margin:.3em 0 .6em}
 .rdh h3{font-size:1.02rem;margin:.9em 0 .3em}
 .rd a,.rich a{color:var(--accent);text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
 .rich:empty::before{content:attr(data-ph);color:var(--muted)}
+/* reviewing suggestions */
+.sugs{display:flex;flex-direction:column}
+.sug{display:flex;flex-direction:column;gap:12px;padding:20px 0;border-bottom:var(--rule)}
+.sughead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.sughead h3{font-size:1.25rem}
+.sughead p{color:var(--muted);margin-top:2px}
+.sugfrom{font-size:.92rem}
+.sugfrom span{display:block;color:var(--muted);font-size:.82rem}
+.yns{display:flex;gap:12px;flex:none}
+.yn{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:0;font-size:.82rem;font-weight:700;color:var(--ink)}
+.yn svg{width:56px;height:56px;padding:13px;border-radius:50%;stroke-width:2.6;transition:transform .15s cubic-bezier(.3,1.6,.5,1),background-color .15s ease-out,color .15s ease-out}
+.yn.yes svg{background:var(--accent);color:var(--on-accent)}
+.yn.no svg{box-shadow:inset 0 0 0 2px var(--ink)}
+.yn:hover svg{transform:scale(1.08)}
+.yn:active svg{transform:scale(.92)}
+.yn.no:hover svg{background:var(--ink);color:var(--surface)}
+@media (prefers-reduced-motion:reduce){.yn svg{transition:none}}
+.decide{position:sticky;bottom:12px;z-index:7;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--surface);border-top:2px solid var(--ink);padding:12px 0 8px;margin-top:12px;font-family:var(--display);font-weight:var(--display-weight);font-size:1.1rem}
+@media (max-width:699px){.decide{bottom:calc(56px + env(safe-area-inset-bottom,0px))}}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 .tab{position:relative}
 .tab.dot::after{content:"";position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
@@ -771,12 +794,30 @@ function jobsHtml(roles){
   return h + `</tbody></table></div>`;
 }
 // Jobs the admin has put forward. She ticks one to take it into her own list, or crosses it to pass.
+function factsHtml(r){
+  const facts = [], place = [r.location, r.mode === "Hybrid" && r.hybrid ? "Hybrid, " + r.hybrid : r.mode].filter(Boolean).join(" \u00b7 ");
+  if(r.salary) facts.push(["Salary", esc(r.salary)]);
+  if(r.suggestedBy) facts.push(["Suggested by", esc(r.suggestedBy)]);
+  if(r.closing) facts.push(["Closes", fmtDate(r.closing) + " \u00b7 " + rel(r.closing)]);
+  if(place) facts.push(["Location", esc(place)]);
+  return facts.length ? `<dl class="facts">${facts.map(f => `<div><dt>${f[0]}</dt><dd>${f[1]}</dd></div>`).join("")}</dl>` : "";
+}
+// The two answers to a suggestion, drawn as large round buttons.
+const ynBtns = id => `<span class="yns"><button class="yn no" data-act="sug-pass" data-id="${id}" aria-label="No, pass" title="No, pass">${ic("close")}<small>No</small></button><button class="yn yes" data-act="sug-take" data-id="${id}" aria-label="Yes, add to my jobs" title="Yes, add to my jobs">${ic("check")}<small>Yes</small></button></span>`;
+// Jobs the admin has put forward. She can weigh each one up here (who, why, the key facts and
+// the start of the job spec), open it in full, then answer yes or no. The admin sees a plain
+// list with each one's state.
 function suggestedHtml(sug){
-  const adm = isAdmin();
-  return `<table class="jobs"><thead><tr><th scope="col">Job</th><th scope="col">${adm ? "State" : "From"}</th>${adm ? "" : `<th scope="col"><span class="sr">Decide</span></th>`}</tr></thead><tbody>`
-    + sug.slice().sort((a,b) => (b.suggested.at||0) - (a.suggested.at||0)).map(r => `<tr class="${ui.last === r.id ? "sel" : ""}" data-act="open" data-id="${r.id}"><td><button class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span>${r.suggested.note ? `<span>${esc(r.suggested.note)}</span>` : ""}</button></td>
-      <td class="n">${adm ? (r.suggested.declined ? "Passed" : "Waiting") : esc(r.suggested.by || "")}</td>${adm ? "" : `<td class="n"><span class="row" style="flex-wrap:nowrap;gap:0"><button class="icb" data-act="sug-take" data-id="${r.id}" aria-label="Add to my jobs" title="Add to my jobs">${ic("check")}</button><button class="icb" data-act="sug-pass" data-id="${r.id}" aria-label="Pass" title="Pass">${ic("close")}</button></span></td>`}</tr>`).join("")
-    + `</tbody></table>`;
+  const list = sug.slice().sort((a,b) => (b.suggested.at||0) - (a.suggested.at||0));
+  if(isAdmin()) return `<table class="jobs"><thead><tr><th scope="col">Job</th><th scope="col">State</th></tr></thead><tbody>`
+    + list.map(r => `<tr class="${ui.last === r.id ? "sel" : ""}" data-act="open" data-id="${r.id}"><td><button class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span>${r.suggested.note ? `<span>${esc(r.suggested.note)}</span>` : ""}</button></td><td class="n">${r.suggested.declined ? "Passed" : "Waiting"}</td></tr>`).join("") + `</tbody></table>`;
+  return `<div class="sugs">` + list.map(r => `<article class="sug">
+      <div class="sughead"><div><h3>${esc(r.company || "Untitled")}</h3><p>${esc(r.title || "")}</p></div>${ynBtns(r.id)}</div>
+      <p class="sugfrom"><b>${esc(r.suggested.by || "")}</b>${r.suggested.note ? " \u00b7 " + esc(r.suggested.note) : ""}<span>${fmtStamp(r.suggested.at || r.created || Date.now())}</span></p>
+      ${factsHtml(r)}
+      ${r.advert ? `<div class="rd rdh peek">${jobHtml(r, "advert")}</div>` : ""}
+      <div class="row"><button class="ghost" data-act="open" data-id="${r.id}">${ic("notebook")}Review</button>${/^https?:\/\//i.test(r.link || "") ? `<a class="ghost" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">${ic("link")}Open job spec</a>` : ""}</div>
+    </article>`).join("") + `</div>`;
 }
 function searchHtml(roles){
   const n = q.toLowerCase();
@@ -804,7 +845,7 @@ function roleHtml(id){
     + (ed ? `<button class="add" data-act="job-done">${ic("check")}Done</button>` : `<button class="ghost" data-act="job-edit" data-id="${id}">${ic("pencil")}Edit</button>`);
   h += `</div>`;
   if(r.closed) h += `<p class="closed">${CLOSED[r.closed.type] || "Closed"}, ${fmtStamp(r.closed.at)} <button class="ghost" data-act="reopen" data-id="${id}">Reopen</button></p>`;
-  if(r.suggested) h += `<p class="closed"><span>Suggested by ${esc(r.suggested.by || "")}${r.suggested.note ? ": " + esc(r.suggested.note) : ""}</span>${isAdmin() ? `<span>${r.suggested.declined ? "Passed" : "Waiting"}</span>` : `<span class="row"><button class="add" data-act="sug-take" data-id="${id}">${ic("check")}Add to my jobs</button><button class="ghost" data-act="sug-pass" data-id="${id}">${ic("close")}Pass</button></span>`}</p>`;
+  if(r.suggested) h += `<p class="closed"><span>Suggested by ${esc(r.suggested.by || "")}${r.suggested.note ? ": " + esc(r.suggested.note) : ""}</span>${isAdmin() ? `<span>${r.suggested.declined ? "Passed" : "Waiting"}</span>` : ""}</p>`;
   const status = r.closed || r.suggested ? "" : `<label class="fld"><span>Status</span><select id="f-status" data-chg="status" data-id="${id}">${statusList().map(s => `<option value="${s.id}"${s.id === cur ? " selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label>`;
   const advertBtn = /^https?:\/\//i.test(r.link || "") ? `<div><a class="ghost" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">${ic("link")}Open job spec</a></div>` : "";
   const researchHead = `<div class="row"><button class="add" data-act="prepare" data-id="${id}">${ic("spark")}Research this job</button><button class="icb" data-act="help" aria-label="How it works" title="How it works">${ic("help")}</button></div>`;
@@ -828,12 +869,7 @@ function roleHtml(id){
   } else {
     // ---- reading: laid out to look at, nothing to knock by accident
     h += `<div class="jobhead"><h2>${esc(r.company || "Untitled")}</h2><p>${esc(r.title || "")}</p></div>${status}`;
-    const facts = [], place = [r.location, r.mode === "Hybrid" && r.hybrid ? "Hybrid, " + r.hybrid : r.mode].filter(Boolean).join(" \u00b7 ");
-    if(r.salary) facts.push(["Salary", esc(r.salary)]);
-    if(r.suggestedBy) facts.push(["Suggested by", esc(r.suggestedBy)]);
-    if(r.closing) facts.push(["Closes", fmtDate(r.closing) + " \u00b7 " + rel(r.closing)]);
-    if(place) facts.push(["Location", esc(place)]);
-    if(facts.length) h += `<dl class="facts">${facts.map(f => `<div><dt>${f[0]}</dt><dd>${f[1]}</dd></div>`).join("")}</dl>`;
+    h += factsHtml(r);
     h += advertBtn;
     const shown = ds.filter(d => d.date || d.label);
     if(shown.length) h += `<div class="sec"><h3>Dates</h3><ul class="list">${shown.map(d => `<li><input type="checkbox" id="d-${d.id}" data-path="${p}/dates/${d.id}" data-f="done"${d.done ? " checked" : ""}><label for="d-${d.id}">${esc(d.label || "Date")}<span>${fmtDate(d.date)}${d.time ? " at " + esc(d.time) : ""}${d.done || !d.date ? "" : " \u00b7 " + rel(d.date)}</span></label></li>`).join("")}</ul></div>`;
@@ -856,6 +892,7 @@ function roleHtml(id){
 
   if(ed) h += `<div class="sec"><div><button class="add" data-act="job-done">${ic("check")}Done</button></div></div>`;
   h += `<div class="sec"><div class="row">${r.closed ? "" : `<button class="ghost" data-act="close-role" data-id="${id}">Close job</button>`}<button class="ghost" data-act="delete-role" data-id="${id}">${ic("bin")}Delete job</button></div></div>`;
+  if(r.suggested && !isAdmin()) h += `<div class="decide"><span>Add to your jobs?</span>${ynBtns(id)}</div>`;
   return h + stickersHtml(id, r) + `</div>`;
 }
 
@@ -994,7 +1031,7 @@ function settingsHtml(){
       : `<div class="filters" role="group" aria-label="Filter by person">${[["", "All"]].concat(names.map(n => [n, n])).map(x => `<button class="filt" data-act="aud-who" data-k="${esc(x[0])}" aria-pressed="${f === x[0]}">${esc(x[1])}</button>`).join("")}</div>`
         + (rows.length ? `<ul class="aud">${rows.map(a => `<li><span class="n">${fmtWhen(a.at)}</span><div><b>${esc(a.who)}</b> ${esc(a.what)}${a.detail ? `<span>${esc(a.detail)}</span>` : ""}<span class="hint">${esc(a.dev || "")}</span></div></li>`).join("")}</ul>` : `<p class="empty">No activity yet.</p>`)) + `</div>`;
   }
-  h += `<div class="sec"><h3>This device</h3><p class="hint">${esc(who || (DEMO ? "Demo" : ""))}${isAdmin() ? ", admin" : ""}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.22. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
+  h += `<div class="sec"><h3>This device</h3><p class="hint">${esc(who || (DEMO ? "Demo" : ""))}${isAdmin() ? ", admin" : ""}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.23. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
   return h + `</div>`;
 }
 
@@ -1298,7 +1335,7 @@ const ACT = {
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => log("Downloaded backup") || download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.22", data:D }, null, 2), "application/json"),
+  "export-json": () => log("Downloaded backup") || download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.23", data:D }, null, 2), "application/json"),
   "export-csv": () => {
     log("Downloaded spreadsheet");
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
