@@ -5,6 +5,11 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.1 (20/11/2026): Restyle following the Impeccable guidance. Pipeline replaced by "Saved jobs":
+          one table with status filters and sortable columns; Past is a quiet filter at the end.
+          Proper tab bar (fixed to the bottom on a phone). Pills removed: squared controls, status
+          is a plain dropdown on the job page. Panels dropped in favour of spacing and rules.
+          Line-icon set whose stroke weight follows the look. One noun throughout: "job".
   v1.0 (20/11/2026): Initial build. This Week (only dates she sets) and Pipeline home screen;
           role pages with details, dates, advert, research, notes and to-do list; one-tap
           status changes; Close this role (Not for me / Unsuccessful / Remove) with a buried,
@@ -42,142 +47,167 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;700&family=Karla:wght@400;500;700&family=Nunito:wght@400;600;800&family=Young+Serif&display=swap">
 <style>
-/* Each look is a complete palette plus lettering and corner shape. Components only use tokens. */
+/* Each look is a complete palette plus lettering, corner shape and icon stroke. Components only
+   use tokens. Spacing follows a 4px scale (4 8 12 16 24 32). Grouping is by spacing and rules,
+   not boxes: the page is one surface, and only fields and the day chip are filled. */
 :root{
   --bg:#E4EBDD; --surface:#F5F8F0; --ink:#1E2E22; --muted:#55675A; --line:#C3CFBB;
   --accent:#1F5F3F; --on-accent:#F5F8F0; --hi:#F2B632; --on-hi:#2B2206;
   --display:"Bricolage Grotesque","Trebuchet MS",sans-serif; --body:"Figtree","Segoe UI",sans-serif;
-  --display-weight:700; --radius:10px; --pill:999px; --rule:1px solid var(--line);
+  --display-weight:700; --radius:10px; --stroke:1.75; --rule:1px solid var(--line);
+  --ctl:calc(var(--radius) * .6);
   color-scheme:light;
 }
 :root[data-look="lido"]{
   --bg:#FFFFFF; --surface:#EAF2FF; --ink:#0A2A5E; --muted:#44597F; --line:#B4CCF2;
   --accent:#1456D9; --on-accent:#FFFFFF; --hi:#FF9A85; --on-hi:#3A0E05;
   --display:"Baloo 2","Trebuchet MS",sans-serif; --body:"Nunito","Segoe UI",sans-serif;
-  --display-weight:700; --radius:14px;
+  --display-weight:700; --radius:14px; --stroke:2.25;
 }
 :root[data-look="blossom"]{
   --bg:#F6E4E6; --surface:#FFF7F7; --ink:#3A1730; --muted:#76536A; --line:#E3C3CB;
   --accent:#8A2A5B; --on-accent:#FFFFFF; --hi:#F9D3AE; --on-hi:#3A1730;
   --display:"Young Serif","Georgia",serif; --body:"Karla","Segoe UI",sans-serif;
-  --display-weight:400; --radius:6px;
+  --display-weight:400; --radius:6px; --stroke:1.4;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+body{margin:0;background:var(--surface);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
 h1,h2,h3,p,ul,ol{margin:0}
 h1,h2,h3{font-family:var(--display);font-weight:var(--display-weight);line-height:1.15;text-wrap:balance}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.wrap{max-width:1120px;margin:0 auto;padding-block:max(20px,env(safe-area-inset-top,0px)) 64px;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  display:flex;flex-direction:column;gap:18px}
+.wrap{max-width:1160px;margin:0 auto;padding-block:max(16px,env(safe-area-inset-top,0px)) 96px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+svg.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:var(--stroke);stroke-linecap:round;stroke-linejoin:round}
 
-/* buttons */
-.add{background:var(--accent);color:var(--on-accent);border:0;border-radius:var(--pill);padding:10px 18px;font-weight:700}
-.ghost{background:transparent;border:var(--rule);border-radius:var(--pill);padding:6px 14px;font-size:.9rem;text-decoration:none;display:inline-block}
-.ghost[aria-pressed="true"],.ghost[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+/* controls: squared, one radius, three kinds (primary, secondary, icon-only) */
+.add{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--accent);color:var(--on-accent);border:0;border-radius:var(--ctl);padding:10px 16px;font-weight:700;min-height:44px}
+.add:hover{filter:brightness(1.1)}
+.ghost{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:transparent;border:var(--rule);border-radius:var(--ctl);padding:8px 14px;font-size:.92rem;min-height:40px;text-decoration:none}
+.ghost:hover:not(:disabled){background:var(--bg)}
+.ghost[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.icb{display:inline-flex;background:none;border:0;padding:10px;border-radius:var(--ctl);color:var(--muted)}
+.icb:hover{background:var(--bg);color:var(--ink)}
 .lnk{background:none;border:0;padding:0;text-align:left;text-decoration:underline;text-underline-offset:3px;color:var(--muted);font-size:.9rem}
 .x{background:none;border:0;color:var(--muted);font-size:.85rem;text-decoration:underline;padding:4px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text],input[type=search],input[type=url],input[type=date],input[type=time],input[type=password],textarea,select{
+  width:100%;background:var(--bg);border:1px solid transparent;border-bottom-color:var(--line);border-radius:var(--ctl);padding:9px 10px;min-width:0;min-height:40px}
+input:hover,textarea:hover,select:hover{border-color:var(--line)}
+textarea{resize:vertical;line-height:1.5;min-height:2.8em}
 
 /* gate */
 #gate{min-height:70vh;display:grid;place-items:center}
-#gate form{background:var(--surface);border:var(--rule);border-radius:var(--radius);padding:24px;width:min(100%,380px);display:flex;flex-direction:column;gap:12px}
-#gate h1{font-size:1.8rem}
+#gate form{width:min(100%,340px);display:flex;flex-direction:column;gap:12px}
+#gate h1{font-size:2rem}
 #gate p{color:var(--muted);font-size:.95rem}
 #gate p:empty{display:none}
 
-/* header */
-#app{display:flex;flex-direction:column;gap:18px}
+/* header and tabs */
+#app{display:flex;flex-direction:column;gap:16px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .top h1{font-size:1.7rem}
 .top h1 span{display:block;color:var(--muted);font-size:.85rem;font-family:var(--body);font-weight:400;margin-top:2px}
-.search{flex:1 1 180px;max-width:320px}
-input[type=text],input[type=search],input[type=url],input[type=date],input[type=time],input[type=password],textarea,select{
-  width:100%;background:var(--bg);border:var(--rule);border-radius:calc(var(--radius) * .6);padding:8px 10px;min-width:0}
-.panel input[type=text],.panel input[type=url],.panel textarea,.panel input[type=date],.panel input[type=time]{background:var(--bg)}
-textarea{resize:vertical;line-height:1.5;min-height:2.8em}
-#banner{background:var(--hi);color:var(--on-hi);border-radius:var(--radius);padding:8px 14px;font-size:.9rem}
+.search{flex:1 1 180px;max-width:340px}
+.tabs{display:flex;gap:4px;border-bottom:var(--rule)}
+.tab{display:inline-flex;align-items:center;gap:8px;background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;padding:10px 14px;color:var(--muted);font-weight:500}
+.tab:hover{color:var(--ink)}
+.tab[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:700}
+@media (max-width:699px){
+  /* on a phone the tabs become a fixed bottom bar, like an installed app */
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--surface);border-top:var(--rule);border-bottom:0;gap:0;
+    padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+  .tab{flex:1;flex-direction:column;gap:2px;font-size:.75rem;padding:8px 2px 6px;border-bottom:0;border-top:3px solid transparent;margin:0;min-width:0}
+  .tab[aria-current="page"]{border-top-color:var(--accent)}
+  #toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+}
+#banner{background:var(--hi);color:var(--on-hi);border-radius:var(--ctl);padding:8px 12px;font-size:.9rem}
 
 /* layout: one pane at a time on a phone, list and detail side by side on a laptop */
-.shell{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
-#home,#pane{display:flex;flex-direction:column;gap:20px;min-width:0}
+.shell{display:grid;grid-template-columns:minmax(0,1fr);gap:32px;align-items:start}
+#home,#pane{min-width:0}
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel>h2{font-size:1.3rem}
 @media (max-width:979px){
   body[data-view="home"] #pane{display:none}
   body:not([data-view="home"]) #home{display:none}
 }
 @media (min-width:980px){
-  .shell{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr)}
+  .shell{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
+  #pane{border-left:var(--rule);padding-left:32px;min-height:60vh}
   .back{display:none}
 }
-.panel{background:var(--surface);border:var(--rule);border-radius:var(--radius);padding:18px;min-width:0}
-.panel>h2{font-size:1.2rem;margin-bottom:4px}
 .hint{color:var(--muted);font-size:.85rem}
-.empty{color:var(--muted);padding:10px 0}
+.empty{color:var(--muted);padding:8px 0}
 
 /* this week */
-.week{list-style:none;padding:0;margin-top:10px}
-.week li{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:start;padding:11px 0;border-top:var(--rule)}
-.day{background:var(--hi);color:var(--on-hi);border-radius:var(--radius);text-align:center;padding:5px 4px;font-size:.78rem;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
+.week{list-style:none;padding:0}
+.week li{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px 0;border-bottom:var(--rule)}
+.day{background:var(--hi);color:var(--on-hi);border-radius:var(--ctl);text-align:center;padding:5px 4px;font-size:.78rem;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
 .day b{display:block;font-family:var(--display);font-size:1.15rem;font-weight:var(--display-weight)}
 .week strong{display:block}
 .when{display:block;color:var(--muted);font-size:.8rem;font-weight:700;margin-top:2px}
 
-/* pipeline */
-.stage{margin-top:16px}
-.stage h3{font-size:.95rem;display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding-bottom:6px;border-bottom:2px solid var(--ink)}
-.stage h3 em{font-style:normal;font-family:var(--body);font-weight:400;color:var(--muted);font-size:.85rem}
-.role{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:var(--rule)}
-.rowmain{flex:1;min-width:0;background:none;border:0;text-align:left;padding:2px 0;display:block}
+/* saved jobs table */
+.filters{display:flex;gap:4px;flex-wrap:wrap}
+.filt{background:none;border:0;border-radius:var(--ctl);padding:6px 10px;color:var(--muted);font-size:.9rem;min-height:36px}
+.filt em{font-style:normal;font-variant-numeric:tabular-nums;opacity:.75;margin-left:6px}
+.filt:hover{background:var(--bg)}
+.filt[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+table.jobs{width:100%;border-collapse:collapse;font-size:.95rem}
+.jobs th{text-align:left;padding:8px;border-bottom:2px solid var(--ink);white-space:nowrap}
+.jobs th button{background:none;border:0;padding:0;font-size:.82rem;font-weight:500;color:var(--muted)}
+.jobs th button[aria-pressed="true"]{color:var(--ink);font-weight:700}
+.jobs td{padding:10px 8px;border-bottom:var(--rule);vertical-align:top}
+.jobs tbody tr{cursor:pointer}
+.jobs tbody tr:hover,.jobs tr.sel{background:var(--bg)}
+.jobs .n{white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--muted);font-size:.9rem}
+.rowmain{width:100%;min-width:0;background:none;border:0;text-align:left;padding:0;display:block}
 .rowmain strong,.rowmain span{display:block;overflow-wrap:anywhere}
 .rowmain span{color:var(--muted);font-size:.9rem}
-.role.sel .rowmain strong{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
-.role select{width:auto;max-width:42%;font-size:.85rem;padding:6px 8px;background:var(--surface)}
-.past{margin-top:22px}
-.past>button{color:var(--muted)}
+.role{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:var(--rule)}
 
-/* role page */
+/* job page, evidence, notebook, settings */
 .back{align-self:flex-start}
-.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
 .fld{display:flex;flex-direction:column;gap:4px;min-width:0}
 .fld>span{color:var(--muted);font-size:.82rem}
 .big input{font-family:var(--display);font-weight:var(--display-weight);font-size:1.2rem}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
-.chip{background:transparent;border:var(--rule);border-radius:var(--pill);padding:5px 13px;font-size:.88rem;color:var(--muted)}
-.chip.on{background:var(--ink);color:var(--surface);border-color:var(--ink);font-weight:700}
-.sec{margin-top:20px;padding-top:16px;border-top:var(--rule);display:flex;flex-direction:column;gap:10px}
+.sec{margin-top:12px;padding-top:16px;border-top:var(--rule);display:flex;flex-direction:column;gap:12px}
 .sec>h3{font-size:1.05rem}
-.closed{background:var(--bg);border-radius:var(--radius);padding:10px 12px;font-size:.92rem;margin-bottom:12px}
+.closed{background:var(--bg);border-radius:var(--ctl);padding:8px 12px;font-size:.92rem;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .list{list-style:none;padding:0;display:flex;flex-direction:column}
-.list li{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:var(--rule)}
-.list input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:none}
-.list label{flex:1;min-width:0;overflow-wrap:anywhere}
+.list li{display:flex;align-items:center;gap:12px;padding:4px 0;border-bottom:var(--rule)}
+.list input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.list label{flex:1;min-width:0;overflow-wrap:anywhere;padding:6px 0}
 .list label span{display:block;color:var(--muted);font-size:.85rem}
 .list input:checked+label{color:var(--muted);text-decoration:line-through}
 .inline{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
 .inline.d3{grid-template-columns:minmax(0,1fr)}
 @media (min-width:520px){.inline.d3{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr) auto}}
 .srcs a{color:var(--accent);overflow-wrap:anywhere;font-size:.9rem;display:block}
-.page{padding:14px 0;border-top:var(--rule);display:flex;flex-direction:column;gap:8px}
+.page{padding:16px 0;border-top:var(--rule);display:flex;flex-direction:column;gap:8px}
 .looks{display:flex;gap:8px;flex-wrap:wrap}
-.strow{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:6px;align-items:center;margin-bottom:6px}
-.check{display:flex;gap:10px;align-items:flex-start}
+.strow{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:4px;align-items:center;margin-bottom:4px}
+.check{display:flex;gap:12px;align-items:flex-start}
 .check input{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:none}
 
 /* dialog and toast */
-dialog{border:var(--rule);border-radius:var(--radius);background:var(--surface);color:var(--ink);padding:22px;width:min(560px,calc(100vw - 32px));max-height:calc(100dvh - 32px)}
+dialog{border:var(--rule);border-radius:var(--radius);background:var(--surface);color:var(--ink);padding:24px;width:min(560px,calc(100vw - 32px));max-height:calc(100dvh - 32px)}
 dialog::backdrop{background:rgba(0,0,0,.45)}
-dialog h2{font-size:1.3rem;margin-bottom:10px}
+dialog h2{font-size:1.3rem;margin-bottom:12px}
 dialog form,.dbody{display:flex;flex-direction:column;gap:12px}
-.steps{padding-left:20px;display:flex;flex-direction:column;gap:6px}
-.choice{display:block;width:100%;text-align:left;background:var(--bg);border:var(--rule);border-radius:var(--radius);padding:12px 14px}
+.steps{padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.choice{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid transparent;border-radius:var(--ctl);padding:12px 16px}
+.choice:hover{border-color:var(--ink)}
 .choice b{display:block}
 .choice span{color:var(--muted);font-size:.9rem}
-#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);
-  border-radius:var(--radius);padding:10px 16px;font-size:.92rem;display:flex;gap:14px;align-items:center;max-width:calc(100vw - 32px);z-index:20}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);
+  border-radius:var(--ctl);padding:10px 16px;font-size:.92rem;display:flex;gap:16px;align-items:center;max-width:calc(100vw - 32px);z-index:20}
 #toast button{background:none;border:0;color:inherit;font-weight:700;text-decoration:underline;padding:0}
 </style>
 </head>
@@ -195,14 +225,16 @@ dialog form,.dbody{display:flex;flex-direction:column;gap:12px}
   <div id="app" hidden>
     <header class="top">
       <h1>Jobs<span id="today"></span></h1>
-      <input type="search" class="search" id="search" placeholder="Search everything" aria-label="Search roles, notes and evidence">
-      <nav class="row" aria-label="Sections">
-        <button class="ghost" data-act="nav" data-v="evidence" id="nav-evidence">Evidence</button>
-        <button class="ghost" data-act="nav" data-v="notebook" id="nav-notebook">Notebook</button>
-        <button class="ghost" data-act="nav" data-v="settings" id="nav-settings">Settings</button>
-        <button class="add" data-act="add-role" id="add-role">+ Add a role</button>
-      </nav>
+      <input type="search" class="search" id="search" placeholder="Search" aria-label="Search jobs, notes and evidence">
+      <button class="add" data-act="add-role" id="add-role" data-ic="plus">Add job</button>
     </header>
+    <nav class="tabs" aria-label="Sections">
+      <button class="tab" data-act="nav" data-v="week" id="nav-week" data-ic="week">This week</button>
+      <button class="tab" data-act="nav" data-v="jobs" id="nav-jobs" data-ic="jobs">Saved jobs</button>
+      <button class="tab" data-act="nav" data-v="evidence" id="nav-evidence" data-ic="evidence">Evidence</button>
+      <button class="tab" data-act="nav" data-v="notebook" id="nav-notebook" data-ic="notebook">Notebook</button>
+      <button class="tab" data-act="nav" data-v="settings" id="nav-settings" data-ic="settings">Settings</button>
+    </nav>
     <p id="banner" hidden></p>
     <div class="shell">
       <main id="home"></main>
@@ -250,10 +282,24 @@ const KEEP_REMOVED_DAYS = 30;
    STATE AND HELPERS
    ===================================================================== */
 let D = blank(), db = null, uid = null, who = "", readOnly = false, pending = false, live = false;
-let q = "", ui = { past:false, later:false, reh:null }, view = { name:"home", id:null }, bootTimer = null, purged = false;
+let q = "", ui = { later:false, reh:null, filter:"all", sort:"date" }, listTab = "week", view = { name:"home", id:null }, bootTimer = null, purged = false;
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+// One small icon set, drawn as plain strokes so each look can set its own line weight.
+const ICONS = {
+  week:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  jobs:'<path d="M6 4h12v17l-6-4-6 4z"/>',
+  evidence:'<path d="M4 5h16v11H10l-5 4v-4H4z"/><path d="M8 9h8M8 12h5"/>',
+  notebook:'<path d="M5 4h14v16H5zM9 4v16M12 8h4M12 11h4"/>',
+  settings:'<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>', back:'<path d="M15 5l-7 7 7 7"/>', check:'<path d="M5 12l5 5 9-10"/>',
+  link:'<path d="M10 5H5v14h14v-5M14 5h5v5M19 5l-8 8"/>', bin:'<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',
+  copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V4H4v11h5"/>', play:'<path d="M8 5l11 7-11 7z"/>',
+  download:'<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>', lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  spark:'<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>'
+};
+const ic = n => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ""}</svg>`;
 function blank(){ return { roles:{}, statuses:{}, notebook:{}, evidence:{}, settings:{} }; }
 function norm(v){ v = v || {}; return { roles:v.roles||{}, statuses:v.statuses||{}, notebook:v.notebook||{}, evidence:v.evidence||{}, settings:v.settings||{} }; }
 function ls(k, v){ try{ if(v === undefined) return localStorage.getItem(k); v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); }catch(e){} return null; }
@@ -304,14 +350,15 @@ function onData(){ if(editing()){ pending = true; return; } render(); }
 function render(focusId){
   pending = false;
   document.body.dataset.view = view.name;
-  ["evidence","notebook","settings"].forEach(v => $("nav-" + v).setAttribute("aria-current", view.name === v ? "page" : "false"));
+  const cur = (view.name === "home" || view.name === "role") ? listTab : view.name;
+  ["week","jobs","evidence","notebook","settings"].forEach(v => $("nav-" + v).setAttribute("aria-current", cur === v ? "page" : "false"));
   $("home").innerHTML = homeHtml();
   $("pane").innerHTML = view.name === "role" ? roleHtml(view.id) : view.name === "notebook" ? notebookHtml() : view.name === "evidence" ? evidenceHtml() : view.name === "settings" ? settingsHtml() : paneEmpty();
   document.querySelectorAll("textarea").forEach(grow);
   if(focusId && $(focusId)) $(focusId).focus();
 }
 function grow(t){ if(!t.offsetParent) return; t.style.height = "auto"; t.style.height = (t.scrollHeight + 2) + "px"; }
-function paneEmpty(){ return `<div class="panel"><p class="empty">No role selected.</p></div>`; }
+function paneEmpty(){ return `<div class="panel"><p class="empty">No job selected.</p></div>`; }
 
 function dayChip(s){
   const d = parseIso(s);
@@ -319,38 +366,43 @@ function dayChip(s){
 }
 function homeHtml(){
   const roles = roleList().filter(r => !r.removedAt);
-  if(q) return searchHtml(roles);
-  const act = roles.filter(isLive), lim = iso(new Date(Date.now() + 7 * 864e5));
+  return q ? searchHtml(roles) : listTab === "jobs" ? jobsHtml(roles) : weekHtml(roles);
+}
+function weekHtml(roles){
+  const lim = iso(new Date(Date.now() + 7 * 864e5));
   let items = [];
-  act.forEach(r => dateList(r).forEach(d => { if(!d.done && d.date) items.push({ r, d }); }));
+  roles.filter(isLive).forEach(r => dateList(r).forEach(d => { if(!d.done && d.date) items.push({ r, d }); }));
   items.sort((a,b) => (a.d.date + (a.d.time||"")).localeCompare(b.d.date + (b.d.time||"")));
   const soon = items.filter(x => x.d.date <= lim), later = items.filter(x => x.d.date > lim);
   const li = x => `<li>${dayChip(x.d.date)}<div><strong>${esc(x.d.label || "Date")}${x.d.time ? ", " + esc(x.d.time) : ""}</strong>
     <button class="lnk" data-act="open" data-id="${x.r.id}">${esc(roleName(x.r))}</button><span class="when">${rel(x.d.date)}</span></div>
-    <button class="ghost" data-act="date-done" data-id="${x.r.id}" data-d="${x.d.id}">Done</button></li>`;
+    <button class="icb" aria-label="Mark done" title="Mark done" data-act="date-done" data-id="${x.r.id}" data-d="${x.d.id}">${ic("check")}</button></li>`;
   let h = `<div class="panel"><h2>This week</h2>`;
   h += soon.length ? `<ul class="week">${soon.map(li).join("")}</ul>` : `<p class="empty">No dates this week.</p>`;
-  if(later.length) h += `<p style="margin-top:10px"><button class="lnk" data-act="toggle-later" aria-expanded="${ui.later}">Later</button></p>` + (ui.later ? `<ul class="week">${later.map(li).join("")}</ul>` : "");
-  h += `</div><div class="panel"><h2>Pipeline</h2>`;
-  if(!roles.length) h += `<p class="empty">No roles yet.</p>`;
-  const sts = statusList();
-  if(roles.length) sts.forEach(s => {
-    const rs = act.filter(r => statusOf(r).id === s.id).sort((a,b) => (b.created||0) - (a.created||0));
-    h += `<div class="stage"><h3>${esc(s.name)} <em>${rs.length}</em></h3>${rs.map(r => rowHtml(r, sts)).join("")}</div>`;
-  });
-  const past = roles.filter(r => r.closed).sort((a,b) => (b.closed.at||0) - (a.closed.at||0));
-  if(past.length){
-    h += `<div class="past"><button class="lnk" data-act="toggle-past" aria-expanded="${ui.past}">Past roles</button>`;
-    if(ui.past) h += past.map(r => `<div class="role${view.id === r.id ? " sel" : ""}"><button class="rowmain" data-act="open" data-id="${r.id}"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>${CLOSED[r.closed.type] || "Closed"}, ${fmtStamp(r.closed.at)}</span></button></div>`).join("");
-    h += `</div>`;
-  }
+  if(later.length) h += `<div><button class="lnk" data-act="toggle-later" aria-expanded="${ui.later}">Later</button></div>` + (ui.later ? `<ul class="week">${later.map(li).join("")}</ul>` : "");
   return h + `</div>`;
 }
-function rowHtml(r, sts){
-  const nd = dateList(r).find(d => !d.done && d.date), cur = statusOf(r).id;
-  const meta = nd ? (nd.label || "Date") + " " + fmtDate(nd.date) : (r.salary || "");
-  return `<div class="role${view.id === r.id ? " sel" : ""}"><button class="rowmain" data-act="open" data-id="${r.id}"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span>${meta ? `<span>${esc(meta)}</span>` : ""}</button>
-    <select aria-label="Status for ${esc(r.company || "this role")}" data-chg="status" data-id="${r.id}">${sts.map(s => `<option value="${s.id}"${s.id === cur ? " selected" : ""}>${esc(s.name)}</option>`).join("")}<option value="__close">Close this role…</option></select></div>`;
+// Saved jobs: one table, filtered by status. "Past" is a quiet, uncounted filter at the end.
+function jobsHtml(roles){
+  const act = roles.filter(isLive), sts = statusList();
+  const cur = (ui.filter === "past" || sts.some(s => s.id === ui.filter)) ? ui.filter : "all";
+  const fb = (id, label, n) => `<button class="filt" data-act="filter" data-k="${id}" aria-pressed="${cur === id}">${esc(label)}${n == null ? "" : `<em>${n}</em>`}</button>`;
+  let h = `<div class="panel"><h2>Saved jobs</h2><div class="filters" role="group" aria-label="Filter by status">${fb("all", "All", act.length)}${sts.map(s => fb(s.id, s.name, act.filter(r => statusOf(r).id === s.id).length)).join("")}${roles.some(r => r.closed) ? fb("past", "Past", null) : ""}</div>`;
+  const rows = cur === "past" ? roles.filter(r => r.closed) : cur === "all" ? act : act.filter(r => statusOf(r).id === cur);
+  if(!rows.length) return h + (roles.length ? `<p class="empty">No jobs here.</p>` : `<p class="empty">No saved jobs.</p><div><button class="ghost" data-act="add-role">${ic("plus")}Add job</button></div>`) + `</div>`;
+  const next = r => dateList(r).find(d => !d.done && d.date), ord = {}; sts.forEach((s, i) => { ord[s.id] = i; });
+  const byDate = (a,b) => ((next(a) || {}).date || "9999").localeCompare((next(b) || {}).date || "9999") || (b.created||0) - (a.created||0);
+  if(cur === "past") rows.sort((a,b) => (b.closed.at||0) - (a.closed.at||0));
+  else if(ui.sort === "job") rows.sort((a,b) => (a.company||"").localeCompare(b.company||""));
+  else if(ui.sort === "status") rows.sort((a,b) => ord[statusOf(a).id] - ord[statusOf(b).id] || byDate(a,b));
+  else rows.sort(byDate);
+  const th = (k, label) => `<th scope="col"><button data-act="sort" data-k="${k}" aria-pressed="${cur !== "past" && ui.sort === k}"${cur === "past" ? " disabled" : ""}>${label}</button></th>`;
+  const showSt = cur === "all" || cur === "past";
+  h += `<table class="jobs"><thead><tr>${th("job", "Job")}${showSt ? th("status", cur === "past" ? "Outcome" : "Status") : ""}${th("date", cur === "past" ? "Closed" : "Next date")}</tr></thead><tbody>`;
+  h += rows.map(r => { const nd = next(r);
+    return `<tr class="${view.id === r.id ? "sel" : ""}" data-act="open" data-id="${r.id}"><td><button class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span></button></td>
+      ${showSt ? `<td class="n">${esc(r.closed ? (CLOSED[r.closed.type] || "Closed") : statusOf(r).name)}</td>` : ""}<td class="n">${r.closed ? fmtStamp(r.closed.at) : nd ? esc(nd.label || "Date") + "<br>" + fmtDate(nd.date) : ""}</td></tr>`; }).join("");
+  return h + `</tbody></table></div>`;
 }
 function searchHtml(roles){
   const n = q.toLowerCase();
@@ -370,25 +422,25 @@ const area = (label, path, f, val, ph, id) => `<label class="fld">${label ? `<sp
 
 function roleHtml(id){
   const r = D.roles[id];
-  if(!r || r.removedAt) return `<div class="panel"><button class="ghost back" data-act="nav" data-v="home">Back</button><p class="empty">Role not found.</p></div>`;
+  if(!r || r.removedAt) return `<div class="panel"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button><p class="empty">Job not found.</p></div>`;
   const p = "roles/" + id, cur = statusOf(r).id, res = r.research || {};
-  let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home" style="margin-bottom:14px">Back</button>`;
+  let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button>`;
   if(r.closed) h += `<p class="closed">${CLOSED[r.closed.type] || "Closed"}, ${fmtStamp(r.closed.at)} <button class="ghost" data-act="reopen" data-id="${id}">Reopen</button></p>`;
   h += `<div class="pair big">${fld("Company", p, "company", r.company)}${fld("Job title", p, "title", r.title)}</div>`;
-  if(!r.closed) h += `<div class="chips" role="group" aria-label="Status">${statusList().map(s => `<button class="chip${s.id === cur ? " on" : ""}" data-act="set-status" data-id="${id}" data-s="${s.id}" aria-pressed="${s.id === cur}">${esc(s.name)}</button>`).join("")}</div>`;
+  if(!r.closed) h += `<label class="fld"><span>Status</span><select id="f-status" data-chg="status" data-id="${id}">${statusList().map(s => `<option value="${s.id}"${s.id === cur ? " selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label>`;
 
   h += `<div class="sec"><h3>Details</h3>${fld("Advert link", p, "link", r.link, "url", "https://")}`;
-  if(/^https?:\/\//i.test(r.link || "")) h += `<div><a class="ghost" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">Open advert</a></div>`;
+  if(/^https?:\/\//i.test(r.link || "")) h += `<div><a class="ghost" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">${ic("link")}Open advert</a></div>`;
   h += `<div class="pair">${fld("Salary", p, "salary", r.salary, "text", "e.g. £29,500 a year")}${fld("Location", p, "location", r.location)}</div></div>`;
 
   const ds = dateList(r);
   h += `<div class="sec"><h3>Dates</h3>`;
-  if(ds.length) h += `<ul class="list">${ds.map(d => `<li><input type="checkbox" id="d-${d.id}" data-path="${p}/dates/${d.id}" data-f="done"${d.done ? " checked" : ""}><label for="d-${d.id}">${esc(d.label || "Date")}<span>${fmtDate(d.date)}${d.time ? " at " + esc(d.time) : ""}${d.done ? "" : " · " + rel(d.date)}</span></label><button class="x" data-act="del-date" data-id="${id}" data-d="${d.id}">Delete</button></li>`).join("")}</ul>`;
+  if(ds.length) h += `<ul class="list">${ds.map(d => `<li><input type="checkbox" id="d-${d.id}" data-path="${p}/dates/${d.id}" data-f="done"${d.done ? " checked" : ""}><label for="d-${d.id}">${esc(d.label || "Date")}<span>${fmtDate(d.date)}${d.time ? " at " + esc(d.time) : ""}${d.done ? "" : " · " + rel(d.date)}</span></label><button class="icb" aria-label="Delete" title="Delete" data-act="del-date" data-id="${id}" data-d="${d.id}">${ic("bin")}</button></li>`).join("")}</ul>`;
   h += `<form class="inline d3" data-form="new-date" data-id="${id}"><input type="text" name="label" id="date-new" placeholder="e.g. Interview" aria-label="What the date is for" required><input type="date" name="date" aria-label="Date" required><input type="time" name="time" aria-label="Time (optional)"><button class="ghost">Add date</button></form></div>`;
 
   h += `<div class="sec"><h3>Advert</h3>${area("", p, "advert", r.advert, "Paste advert text")}</div>`;
 
-  h += `<div class="sec"><h3>Research</h3><div class="row"><button class="add" data-act="prepare" data-id="${id}">Prepare this role</button><button class="ghost" data-act="help" aria-label="How it works">?</button></div>`;
+  h += `<div class="sec"><h3>Research</h3><div class="row"><button class="add" data-act="prepare" data-id="${id}">${ic("spark")}Research this job</button><button class="ghost" data-act="help" aria-label="How it works">?</button></div>`;
   const got = RESEARCH.filter(x => res[x[0]]);
   got.forEach(x => { h += area(x[1], p + "/research", x[0], res[x[0]], "", "r-" + x[0]); });
   const urls = (res.sources || "").match(/https?:\/\/[^\s)>\]]+/g);
@@ -400,25 +452,25 @@ function roleHtml(id){
 
   const ts = todoList(r);
   h += `<div class="sec"><h3>To do</h3>`;
-  if(ts.length) h += `<ul class="list">${ts.map(t => `<li><input type="checkbox" id="td-${t.id}" data-path="${p}/todos/${t.id}" data-f="done"${t.done ? " checked" : ""}><label for="td-${t.id}">${esc(t.t)}</label><button class="x" data-act="del-todo" data-id="${id}" data-d="${t.id}">Delete</button></li>`).join("")}</ul>`;
+  if(ts.length) h += `<ul class="list">${ts.map(t => `<li><input type="checkbox" id="td-${t.id}" data-path="${p}/todos/${t.id}" data-f="done"${t.done ? " checked" : ""}><label for="td-${t.id}">${esc(t.t)}</label><button class="icb" aria-label="Delete" title="Delete" data-act="del-todo" data-id="${id}" data-d="${t.id}">${ic("bin")}</button></li>`).join("")}</ul>`;
   h += `<form class="inline" data-form="new-todo" data-id="${id}"><input type="text" name="t" id="todo-new" placeholder="Add a task" aria-label="Add a task" required><button class="ghost">Add</button></form></div>`;
 
-  if(!r.closed) h += `<div class="sec"><div><button class="ghost" data-act="close-role" data-id="${id}">Close this role</button></div></div>`;
+  if(!r.closed) h += `<div class="sec"><div><button class="ghost" data-act="close-role" data-id="${id}">Close job</button></div></div>`;
   return h + `</div>`;
 }
 
 function notebookHtml(){
   const pages = Object.keys(D.notebook).map(id => Object.assign({ id }, D.notebook[id])).sort((a,b) => (a.at||0) - (b.at||0));
-  let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home" style="margin-bottom:14px">Back</button><h2>Notebook</h2>`;
+  let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button><h2>Notebook</h2>`;
   if(!pages.length) h += `<p class="empty">No pages yet.</p>`;
-  h += pages.map(pg => `<div class="page"><label class="fld big"><span>Page title</span><input type="text" id="nt-${pg.id}" data-path="notebook/${pg.id}" data-f="title" value="${esc(pg.title)}"></label>${area("Notes", "notebook/" + pg.id, "body", pg.body, "", "nb-" + pg.id)}<div><button class="x" data-act="del-page" data-id="${pg.id}">Delete</button></div></div>`).join("");
-  return h + `<div class="sec"><div><button class="ghost" data-act="add-page">Add a page</button></div></div></div>`;
+  h += pages.map(pg => `<div class="page"><label class="fld big"><span>Page title</span><input type="text" id="nt-${pg.id}" data-path="notebook/${pg.id}" data-f="title" value="${esc(pg.title)}"></label>${area("Notes", "notebook/" + pg.id, "body", pg.body, "", "nb-" + pg.id)}<div><button class="icb" aria-label="Delete" title="Delete" data-act="del-page" data-id="${pg.id}">${ic("bin")}</button></div></div>`).join("");
+  return h + `<div class="sec"><div><button class="ghost" data-act="add-page">${ic("plus")}Add page</button></div></div></div>`;
 }
 
 const evList = () => Object.keys(D.evidence).map(id => Object.assign({ id }, D.evidence[id])).sort((a,b) => (a.at||0) - (b.at||0));
 const evReady = e => e.q && STAR.some(x => e[x[0]]);
 function evidenceHtml(){
-  const back = `<button class="ghost back" data-act="nav" data-v="home" style="margin-bottom:14px">Back</button>`;
+  const back = `<button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button>`;
   const all = evList(), ready = all.filter(evReady);
   if(ui.reh){
     const e = D.evidence[ui.reh.id];
@@ -429,10 +481,10 @@ function evidenceHtml(){
     ui.reh = null;
   }
   let h = `<div class="panel">${back}<h2>Evidence</h2>
-    <div class="row" style="margin-top:12px"><button class="add" data-act="add-ev">Add example</button>${ready.length ? `<button class="ghost" data-act="rehearse">Rehearse</button>` : ""}</div>`;
+    <div class="row" style="margin-top:12px"><button class="add" data-act="add-ev">${ic("plus")}Add example</button>${ready.length ? `<button class="ghost" data-act="rehearse">${ic("play")}Rehearse</button>` : ""}</div>`;
   if(!all.length) h += `<p class="empty">No examples yet.</p>`;
   h += all.map(e => `<div class="page"><label class="fld big"><span>Question or skill</span><input type="text" id="ev-${e.id}" data-path="evidence/${e.id}" data-f="q" value="${esc(e.q)}" placeholder="e.g. Led a project"></label>
-    ${STAR.map(x => area(x[1], "evidence/" + e.id, x[0], e[x[0]], x[2], "ev-" + e.id + "-" + x[0])).join("")}<div><button class="x" data-act="del-ev" data-id="${e.id}">Delete</button></div></div>`).join("");
+    ${STAR.map(x => area(x[1], "evidence/" + e.id, x[0], e[x[0]], x[2], "ev-" + e.id + "-" + x[0])).join("")}<div><button class="icb" aria-label="Delete" title="Delete" data-act="del-ev" data-id="${e.id}">${ic("bin")}</button></div></div>`).join("");
   return h + `</div>`;
 }
 function pickEv(not){ const r = evList().filter(evReady).filter(e => e.id !== not); return r.length ? r[Math.floor(Math.random() * r.length)].id : null; }
@@ -440,15 +492,15 @@ function pickEv(not){ const r = evList().filter(evReady).filter(e => e.id !== no
 function settingsHtml(){
   const sts = statusList(), look = D.settings.theme || "allotment";
   const removed = roleList().filter(r => r.removedAt).sort((a,b) => b.removedAt - a.removedAt);
-  let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home" style="margin-bottom:14px">Back</button><h2>Settings</h2>`;
+  let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button><h2>Settings</h2>`;
   h += `<div class="sec"><h3>Look</h3><div class="looks">${LOOKS.map(l => `<button class="ghost" data-act="look" data-l="${l[0]}" aria-pressed="${l[0] === look}">${l[1]}</button>`).join("")}</div></div>`;
-  h += `<div class="sec"><h3>Statuses</h3><div>${sts.map((s,i) => `<div class="strow"><input type="text" id="st-${s.id}" aria-label="Status name" data-path="statuses/${s.id}" data-f="name" value="${esc(s.name)}"><button class="ghost" data-act="st-move" data-id="${s.id}" data-dir="-1" aria-label="Move ${esc(s.name)} up"${i === 0 ? " disabled" : ""}>Up</button><button class="ghost" data-act="st-move" data-id="${s.id}" data-dir="1" aria-label="Move ${esc(s.name)} down"${i === sts.length - 1 ? " disabled" : ""}>Down</button><button class="x" data-act="st-del" data-id="${s.id}"${sts.length < 2 ? " disabled" : ""}>Delete</button></div>`).join("")}</div>
+  h += `<div class="sec"><h3>Statuses</h3><div>${sts.map((s,i) => `<div class="strow"><input type="text" id="st-${s.id}" aria-label="Status name" data-path="statuses/${s.id}" data-f="name" value="${esc(s.name)}"><button class="ghost" data-act="st-move" data-id="${s.id}" data-dir="-1" aria-label="Move ${esc(s.name)} up"${i === 0 ? " disabled" : ""}>Up</button><button class="ghost" data-act="st-move" data-id="${s.id}" data-dir="1" aria-label="Move ${esc(s.name)} down"${i === sts.length - 1 ? " disabled" : ""}>Down</button><button class="icb" aria-label="Delete" title="Delete" data-act="st-del" data-id="${s.id}"${sts.length < 2 ? " disabled" : ""}>${ic("bin")}</button></div>`).join("")}</div>
     <form class="inline" data-form="new-status"><input type="text" name="name" id="status-new" placeholder="New status" aria-label="New status" required><button class="ghost">Add</button></form></div>`;
   h += `<div class="sec"><h3>AI research</h3><div class="check"><input type="checkbox" id="set-cv" data-path="settings" data-f="cv"${D.settings.cv ? " checked" : ""}><label for="set-cv">My AI has my CV<span class="hint" style="display:block">Needs a ChatGPT project holding your CV. <button class="lnk" data-act="help">Setup</button></span></label></div></div>`;
-  h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">Download backup</button><button class="ghost" data-act="export-csv">Download spreadsheet</button></div></div>`;
+  h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">${ic("download")}Backup</button><button class="ghost" data-act="export-csv">${ic("download")}Spreadsheet</button></div></div>`;
   h += `<div class="sec"><h3>Recently removed</h3>`;
   h += removed.length ? `<p class="hint">Deleted after ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Removed ${fmtStamp(r.removedAt)}</span></div><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button></div>`).join("") : `<p class="empty">None.</p>`;
-  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">Lock</button></div><p class="hint">Jobs v1.0</p></div>`;
+  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("lock")}Lock</button></div><p class="hint">Jobs v1.1</p></div>`;
   return h + `</div>`;
 }
 
@@ -466,27 +518,27 @@ function toast(msg, undo){
 function banner(msg){ const b = $("banner"); b.textContent = msg || ""; b.hidden = !msg; }
 
 function addRoleDlg(){
-  openDlg(`<h2>Add a role</h2><form data-form="new-role">
+  openDlg(`<h2>Add job</h2><form data-form="new-role">
     <label class="fld"><span>Company</span><input type="text" name="company" id="new-company" required></label>
     <label class="fld"><span>Job title</span><input type="text" name="title" required></label>
     <label class="fld"><span>Advert link (optional)</span><input type="url" name="link" placeholder="https://"></label>
-    <div class="row"><button class="add">Add role</button><button type="button" class="ghost" data-act="dlg-close">Cancel</button></div></form>`);
+    <div class="row"><button class="add">Add job</button><button type="button" class="ghost" data-act="dlg-close">Cancel</button></div></form>`);
   $("new-company").focus();
 }
 function closeRoleDlg(id){
   const r = D.roles[id]; if(!r) return;
-  openDlg(`<h2>Close this role</h2><div class="dbody"><p>${esc(roleName(r))}</p>
-    <button class="choice" data-act="close-as" data-id="${id}" data-t="notforme"><b>Not for me</b><span>Kept in Past roles</span></button>
-    <button class="choice" data-act="close-as" data-id="${id}" data-t="unsuccessful"><b>Unsuccessful</b><span>Kept in Past roles</span></button>
+  openDlg(`<h2>Close job</h2><div class="dbody"><p>${esc(roleName(r))}</p>
+    <button class="choice" data-act="close-as" data-id="${id}" data-t="notforme"><b>Not for me</b><span>Kept in Past</span></button>
+    <button class="choice" data-act="close-as" data-id="${id}" data-t="unsuccessful"><b>Unsuccessful</b><span>Kept in Past</span></button>
     <button class="choice" data-act="remove" data-id="${id}"><b>Remove</b><span>Deleted after ${KEEP_REMOVED_DAYS} days</span></button>
     <div><button class="ghost" data-act="dlg-close">Cancel</button></div></div>`);
 }
 function helpDlg(){
-  openDlg(`<h2>Prepare this role</h2><div class="dbody">
+  openDlg(`<h2>Research this job</h2><div class="dbody">
     <ol class="steps"><li>Copy prompt.</li><li>Paste into a new ChatGPT chat. Send.</li><li>Copy ChatGPT's reply (button on its answer box).</li><li>Paste reply here. File it.</li></ol>
-    <p class="hint">Paste the advert text into the role first. For interviews, switch on Deep research in ChatGPT.</p>
+    <p class="hint">Paste the advert text into the job first. For interviews, switch on Deep research in ChatGPT.</p>
     <h2 style="font-size:1.05rem;margin:6px 0 0">Optional: use your CV</h2>
-    <ol class="steps"><li>ChatGPT sidebar: New project.</li><li>Add your CV as a file.</li><li>Start role chats inside that project.</li><li>Here: Settings, My AI has my CV.</li></ol>
+    <ol class="steps"><li>ChatGPT sidebar: New project.</li><li>Add your CV as a file.</li><li>Start job chats inside that project.</li><li>Here: Settings, My AI has my CV.</li></ol>
     <div><button class="ghost" data-act="dlg-close">Close</button></div></div>`);
 }
 
@@ -538,10 +590,10 @@ function parseReply(txt){
 }
 function prepareDlg(id){
   const r = D.roles[id]; if(!r) return;
-  openDlg(`<h2>Prepare this role</h2><div class="dbody">
-    ${r.advert ? "" : `<p class="hint">No advert text on this role. The summary will be weaker.</p>`}
+  openDlg(`<h2>Research this job</h2><div class="dbody">
+    ${r.advert ? "" : `<p class="hint">No advert text on this job. The summary will be weaker.</p>`}
     <textarea id="prompt-text" readonly rows="5" aria-label="Prompt to copy">${esc(buildPrompt(r))}</textarea>
-    <div><button class="add" data-act="copy-prompt">Copy prompt</button></div>
+    <div><button class="add" data-act="copy-prompt">${ic("copy")}Copy prompt</button></div>
     <form data-form="file-reply" data-id="${id}"><textarea name="reply" id="reply-text" rows="5" placeholder="Paste reply" aria-label="ChatGPT's reply" required></textarea>
     <div class="row"><button class="add">File it</button><button type="button" class="ghost" data-act="dlg-close">Not now</button></div></form></div>`);
 }
@@ -561,9 +613,10 @@ function fileReply(id, txt){
 /* =====================================================================
    ACTIONS
    ===================================================================== */
-function go(name, id){ location.hash = name === "role" ? "role-" + id : name; }
+function go(name, id){ location.hash = name === "role" ? "role-" + id : name === "home" ? listTab : name; }
 function route(){
   const hsh = location.hash.replace(/^#/, ""), m = /^role-(.+)$/.exec(hsh);
+  if(hsh === "week" || hsh === "jobs") listTab = hsh;
   view = m ? { name:"role", id:m[1] } : (hsh === "notebook" || hsh === "settings" || hsh === "evidence") ? { name:hsh, id:null } : { name:"home", id:null };
   render(); window.scrollTo(0, 0);
 }
@@ -580,14 +633,15 @@ const ACT = {
   "dlg-close": closeDlg,
   "help": helpDlg,
   "undo": () => { const u = toastUndo; $("toast").hidden = true; toastUndo = null; if(u){ u(); render(); } },
-  "toggle-past": () => { ui.past = !ui.past; render(); },
+  "filter": el => { ui.filter = el.dataset.k; render(); },
+  "sort": el => { ui.sort = el.dataset.k; render(); },
   "toggle-later": () => { ui.later = !ui.later; render(); },
   "set-status": el => { store.update("roles/" + el.dataset.id, { status:el.dataset.s }); render(); },
   "date-done": el => { const p = "roles/" + el.dataset.id + "/dates/" + el.dataset.d; store.update(p, { done:true }); render(); toast("Done.", () => store.update(p, { done:false })); },
   "del-date": el => { store.remove("roles/" + el.dataset.id + "/dates/" + el.dataset.d); render(); },
   "del-todo": el => { store.remove("roles/" + el.dataset.id + "/todos/" + el.dataset.d); render(); },
   "close-role": el => closeRoleDlg(el.dataset.id),
-  "close-as": el => { const id = el.dataset.id; store.update("roles/" + id, { closed:{ type:el.dataset.t, at:Date.now() } }); closeDlg(); go("home"); render(); toast("Moved to Past roles.", () => store.update("roles/" + id, { closed:null })); },
+  "close-as": el => { const id = el.dataset.id; store.update("roles/" + id, { closed:{ type:el.dataset.t, at:Date.now() } }); closeDlg(); go("home"); render(); toast("Moved to Past.", () => store.update("roles/" + id, { closed:null })); },
   "remove": el => { const id = el.dataset.id; store.update("roles/" + id, { removedAt:Date.now() }); closeDlg(); go("home"); render(); toast("Removed.", () => store.update("roles/" + id, { removedAt:null })); },
   "reopen": el => { store.update("roles/" + el.dataset.id, { closed:null }); render(); },
   "restore": el => { store.update("roles/" + el.dataset.id, { removedAt:null }); render(); toast("Restored."); },
@@ -617,11 +671,11 @@ const ACT = {
     const s = statusList(), id = el.dataset.id, t = s.find(x => x.id === id), other = s.find(x => x.id !== id);
     if(!t || !other) return;
     const used = roleList().filter(r => r.status === id);
-    if(used.length && !confirm("Delete \"" + t.name + "\"? " + used.length + (used.length === 1 ? " role" : " roles") + " will move to \"" + other.name + "\".")) return;
+    if(used.length && !confirm("Delete \"" + t.name + "\"? " + used.length + (used.length === 1 ? " job" : " jobs") + " will move to \"" + other.name + "\".")) return;
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.0", data:D }, null, 2), "application/json"),
+  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.1", data:D }, null, 2), "application/json"),
   "export-csv": () => {
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const rows = [["Company","Job title","Status","Salary","Location","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
@@ -641,7 +695,7 @@ const FORMS = {
   "new-role": f => {
     const id = newId(), s = statusList()[0];
     store.set("roles/" + id, { company:f.company.value.trim(), title:f.title.value.trim(), link:f.link.value.trim() || null, status:s ? s.id : null, created:Date.now() });
-    closeDlg(); $("search").value = ""; q = ""; go("role", id); render();
+    closeDlg(); $("search").value = ""; q = ""; listTab = "jobs"; ui.filter = "all"; go("role", id); render();
   },
   "new-date": f => { store.set("roles/" + f.dataset.id + "/dates/" + newId(), { label:f.label.value.trim(), date:f.date.value, time:f.time.value || null }); render("date-new"); },
   "new-todo": f => { store.set("roles/" + f.dataset.id + "/todos/" + newId(), { t:f.t.value.trim(), at:Date.now() }); render("todo-new"); },
@@ -784,6 +838,7 @@ function boot(){
     .then(s => { if(s.exists()) subscribe(); else showGate(); })
     .catch(() => { clearTimeout(bootTimer); if(!live) showCached("Can't connect."); });
 }
+document.querySelectorAll("[data-ic]").forEach(e => e.insertAdjacentHTML("afterbegin", ic(e.dataset.ic)));
 boot();
 if("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("/sw.js").catch(() => {});
 </script>
