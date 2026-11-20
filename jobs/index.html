@@ -5,6 +5,10 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.13 (20/11/2026): Every destructive action now asks first in a dialog: deleting a note, example,
+          date, task or status, clearing research, and signing out. Stickers are the exception:
+          they go straight away, with Undo. Notes
+          and examples get a labelled Delete button; icon-only buttons are larger.
   v1.12 (20/11/2026): "Saved jobs" tab renamed "Jobs". Add job only appears on that tab.
   v1.11 (20/11/2026): Evidence redesigned: "Give me an example of a time when..." with an accordion
           of examples, three seeded. Opening one shows a 2x2 STAR grid with a faint letter behind
@@ -133,6 +137,7 @@ a.ghost{color:var(--ink)}
 .ghost[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 .icb{display:inline-flex;background:none;border:0;padding:10px;border-radius:var(--ctl);color:var(--muted)}
 .icb:hover{background:var(--bg);color:var(--ink)}
+.icb svg.ic{width:24px;height:24px}
 .lnk{background:none;border:0;padding:0;text-align:left;text-decoration:underline;text-underline-offset:3px;color:var(--muted);font-size:.9rem}
 .x{background:none;border:0;color:var(--muted);font-size:.85rem;text-decoration:underline;padding:4px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -718,7 +723,7 @@ function notebookHtml(){
   const pages = Object.keys(D.notebook).map(id => Object.assign({ id }, D.notebook[id])).sort((a,b) => (a.at||0) - (b.at||0));
   let h = `<div class="panel">${head("notebook", "Notebook")}`;
   if(!pages.length) h += `<p class="empty">No notes.</p>`;
-  h += pages.map(pg => `<div class="page"><label class="fld big"><span>Title</span><input type="text" id="nt-${pg.id}" data-path="notebook/${pg.id}" data-f="title" value="${esc(pg.title)}"></label><div class="fmtbar" role="toolbar" aria-label="Formatting">${FMT.map(f => `<button class="icb" data-fmt="${f[0]}" aria-label="${f[1]}" title="${f[1]}">${f[2]}</button>`).join("")}</div><div class="rich" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Note" id="nb-${pg.id}" data-rich="notebook/${pg.id}">${richHtml(pg)}</div><div><button class="icb" aria-label="Delete" title="Delete" data-act="del-page" data-id="${pg.id}">${ic("bin")}</button></div></div>`).join("");
+  h += pages.map(pg => `<div class="page"><label class="fld big"><span>Title</span><input type="text" id="nt-${pg.id}" data-path="notebook/${pg.id}" data-f="title" value="${esc(pg.title)}"></label><div class="fmtbar" role="toolbar" aria-label="Formatting">${FMT.map(f => `<button class="icb" data-fmt="${f[0]}" aria-label="${f[1]}" title="${f[1]}">${f[2]}</button>`).join("")}</div><div class="rich" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Note" id="nb-${pg.id}" data-rich="notebook/${pg.id}">${richHtml(pg)}</div><div><button class="ghost" data-act="del-page" data-id="${pg.id}">${ic("bin")}Delete note</button></div></div>`).join("");
   return h + `<div class="sec"><div><button class="ghost" data-act="add-page">${ic("plus")}Add note</button></div></div></div>`;
 }
 
@@ -742,7 +747,7 @@ function evidenceHtml(){
     let r = `<div class="acc${open ? " open" : ""}"><button class="acchead" data-act="ev-open" data-id="${e.id}" aria-expanded="${open}"><span>${esc(e.q || "Untitled")}</span><span class="pips" aria-hidden="true">${pips}</span>${ic("chev")}</button>`;
     if(open) r += `<div class="accbody"><label class="fld"><span>${EV_LEAD}</span><input type="text" id="ev-${e.id}" data-path="evidence/${e.id}" data-f="q" value="${esc(e.q)}" placeholder="You\u2026"></label>
       <div class="stargrid">${STAR.map(x => `<label class="star" data-l="${x[1][0]}"><span>${x[1]}</span><textarea id="t-ev-${e.id}-${x[0]}" data-path="evidence/${e.id}" data-f="${x[0]}" rows="3" aria-label="${x[1]}">${esc(e[x[0]])}</textarea></label>`).join("")}</div>
-      <div class="row"><button class="icb" data-act="star-help" aria-label="How STAR works" title="How STAR works">${ic("help")}</button><span style="flex:1"></span><button class="icb" aria-label="Delete" title="Delete" data-act="del-ev" data-id="${e.id}">${ic("bin")}</button></div></div>`;
+      <div class="row"><button class="icb" data-act="star-help" aria-label="How STAR works" title="How STAR works">${ic("help")}</button><span style="flex:1"></span><button class="ghost" data-act="del-ev" data-id="${e.id}">${ic("bin")}Delete example</button></div></div>`;
     return r + `</div>`;
   }).join("") + `</div>`;
   h += `<div class="row"><button class="add" data-act="add-ev">${ic("plus")}Add example</button>${ready.length ? `<button class="ghost" data-act="rehearse">${ic("play")}Rehearse</button>` : ""}</div>`;
@@ -766,7 +771,7 @@ function settingsHtml(){
   h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">${ic("download")}Backup</button><button class="ghost" data-act="export-csv">${ic("download")}Spreadsheet</button></div></div>`;
   h += `<div class="sec"><h3>Recently deleted</h3>`;
   h += removed.length ? `<p class="hint">Kept for ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Deleted ${fmtStamp(r.removedAt)}</span></div><span class="row"><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button><button class="icb" data-act="purge-ask" data-id="${r.id}" aria-label="Delete for good" title="Delete for good">${ic("bin")}</button></span></div>`).join("") : `<p class="empty">None.</p>`;
-  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.12. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
+  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.13. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
   return h + `</div>`;
 }
 
@@ -809,6 +814,25 @@ function purgeDlg(id){
   const r = D.roles[id]; if(!r) return;
   openDlg(`<h2>Delete for good?</h2><div class="dbody"><p><b>${esc(roleName(r))}</b></p><p class="hint">This can't be undone.</p>
     <div class="row"><button class="add danger" data-act="purge" data-id="${id}">${ic("bin")}Delete for good</button><button class="ghost" data-act="dlg-close">Cancel</button></div></div>`);
+}
+// Anything that destroys something asks first. Each entry returns [question, what it is, button label].
+const CONFIRM = {
+  "del-page": el => ["Delete this note?", (D.notebook[el.dataset.id] || {}).title || "Untitled note", "Delete note"],
+  "del-ev": el => ["Delete this example?", (D.evidence[el.dataset.id] || {}).q || "Untitled", "Delete example"],
+  "del-date": el => { const d = (((D.roles[el.dataset.id] || {}).dates) || {})[el.dataset.d] || {}; return ["Delete this date?", (d.label || "Date") + (d.date ? ", " + fmtDate(d.date) : ""), "Delete date"]; },
+  "del-todo": el => ["Delete this task?", ((((D.roles[el.dataset.id] || {}).todos) || {})[el.dataset.d] || {}).t || "", "Delete task"],
+  "clear-research": el => ["Clear the research?", roleName(D.roles[el.dataset.id] || {}), "Clear research"],
+  "st-del": el => {
+    const sl = statusList(), t = sl.find(x => x.id === el.dataset.id) || {}, other = sl.find(x => x.id !== el.dataset.id) || {}, n = roleList().filter(r => r.status === el.dataset.id).length;
+    return ["Delete this status?", (t.name || "") + (n ? ". " + n + (n === 1 ? " job" : " jobs") + " will move to " + other.name + "." : ""), "Delete status"];
+  },
+  "lock": () => ["Sign out on this device?", "You'll need the passcode to get back in.", "Sign out"]
+};
+let confirmFn = null;
+function askConfirm(q, what, label, fn){
+  confirmFn = fn;
+  openDlg(`<h2>${esc(q)}</h2><div class="dbody">${what ? `<p><b>${esc(what)}</b></p>` : ""}
+    <div class="row"><button class="add danger" data-act="confirm-yes">${esc(label)}</button><button class="ghost" data-act="dlg-close">Cancel</button></div></div>`);
 }
 function helpDlg(){
   openDlg(`<h2>Research this job</h2><div class="dbody">
@@ -930,6 +954,7 @@ const ACT = {
   },
   "stk-del": () => { const path = "roles/" + view.id + "/stickers/" + ui.stk, old = ((D.roles[view.id] || {}).stickers || {})[ui.stk]; ui.stk = null; store.remove(path); render(); toast("Sticker removed.", () => store.set(path, old)); },
   "search-toggle": () => { const on = document.body.classList.toggle("searching"); if(on) $("search").focus(); else if(q){ $("search").value = ""; q = ""; render(); } },
+  "confirm-yes": () => { const fn = confirmFn; confirmFn = null; closeDlg(); if(fn) fn(); },
   "tip": el => { ui.tip = ui.tip === el.dataset.k ? null : el.dataset.k; render(); },
   "filter": el => { ui.filter = el.dataset.k; render(); },
   "sort": el => { ui.sort = el.dataset.k; render(); },
@@ -979,11 +1004,11 @@ const ACT = {
     const s = statusList(), id = el.dataset.id, t = s.find(x => x.id === id), other = s.find(x => x.id !== id);
     if(!t || !other) return;
     const used = roleList().filter(r => r.status === id);
-    if(used.length && !confirm("Delete \"" + t.name + "\"? " + used.length + (used.length === 1 ? " job" : " jobs") + " will move to \"" + other.name + "\".")) return;
+
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.12", data:D }, null, 2), "application/json"),
+  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.13", data:D }, null, 2), "application/json"),
   "export-csv": () => {
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const rows = [["Company","Job title","Status","Salary","Closing date","Location","Working pattern","Hybrid details","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
@@ -992,7 +1017,7 @@ const ACT = {
   },
   "lock": () => {
     if(DEMO){ toast("Demo."); return; }
-    if(!confirm("Sign out on this device?")) return;
+
     ls("jobs-cache", null);
     const done = () => location.reload();
     if(db && uid) db.ref("jobs/grants/" + uid).remove().then(done, done); else done();
@@ -1030,7 +1055,10 @@ function saveField(el, now){
 document.addEventListener("click", e => {
   if(e.target === $("dlg")){ closeDlg(); return; }             // tap on the backdrop
   const el = e.target.closest("[data-act]"); if(!el || el.disabled) return;
-  const fn = ACT[el.dataset.act]; if(fn){ if(el.tagName === "BUTTON" && el.type !== "submit") e.preventDefault(); fn(el); }
+  const act = el.dataset.act, fn = ACT[act]; if(!fn) return;
+  if(el.tagName === "BUTTON" && el.type !== "submit") e.preventDefault();
+  if(CONFIRM[act] && !(DEMO && act === "lock")){ const c = CONFIRM[act](el); askConfirm(c[0], c[1], c[2], () => fn(el)); return; }
+  fn(el);
 });
 document.addEventListener("submit", e => {
   e.preventDefault();
@@ -1040,7 +1068,7 @@ document.addEventListener("submit", e => {
 let drag = null;
 document.addEventListener("pointerdown", e => {
   const el = e.target.closest && e.target.closest(".arrange .stk");
-  if(!el){ if(ui.stk && !(e.target.closest && e.target.closest(".stkbar"))){ ui.stk = null; document.querySelectorAll(".stk.on").forEach(x => x.classList.remove("on")); document.querySelectorAll(".stkbar").forEach(x => x.remove()); } return; }
+  if(!el){ if(ui.stk && !(e.target.closest && e.target.closest(".stkbar,dialog"))){ ui.stk = null; document.querySelectorAll(".stk.on").forEach(x => x.classList.remove("on")); document.querySelectorAll(".stkbar").forEach(x => x.remove()); } return; }
   e.preventDefault();
   const r = el.getBoundingClientRect();
   drag = { el, dx:e.clientX - r.left - r.width / 2, dy:e.clientY - r.top - r.height / 2, sx:e.clientX, sy:e.clientY, moved:false };
@@ -1064,6 +1092,7 @@ function endDrag(){
   const d = drag; drag = null;
   $("stkbin").hidden = true; $("stkbin").classList.remove("hot");
   const path = "roles/" + d.el.dataset.id + "/stickers/" + d.el.dataset.sid;
+  // stickers are throwaway: no "are you sure", just an Undo
   if(d.moved && d.bin){ const old = ((D.roles[d.el.dataset.id] || {}).stickers || {})[d.el.dataset.sid]; ui.stk = null; store.remove(path); toast("Sticker removed.", () => store.set(path, old)); }
   else if(d.moved) store.update(path, { x:d.x, y:d.y });
   else ui.stk = ui.stk === d.el.dataset.sid ? null : d.el.dataset.sid;
