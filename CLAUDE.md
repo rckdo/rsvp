@@ -36,6 +36,9 @@ It opens `/jobs/?demo` (example data, no database) and walks every tab. If you a
 - **Every page is full width** in one column; long texts open in the reading panel.
 - **Phone first.** Check every change at phone width as well as laptop width.
 
+- **Saving is visible.** The corner note says "Saving" then "Saved"; route all writes through `store` so it stays true.
+- **Back closes things.** A dialog or reading panel adds a history step; use `openDlg`, `closeDlg` and `go()` so the phone's back gesture closes it and page changes do not race it.
+
 ### Things that bit us
 
 - The page rebuilds its HTML from data. Never rebuild while a field has focus or a button is mid-press (`editing()`, `pressing`, `pending`), or clicks and typing get lost.

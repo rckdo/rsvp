@@ -5,6 +5,11 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.21 (20/11/2026): A corner note shows "Saving" then "Saved" once the database confirms. The
+          back gesture closes an open dialog or reading panel before leaving the page. Going back
+          to a list returns to the same scroll position, with the job just viewed marked. Edit
+          puts the cursor in the job spec when it is empty, and in the first empty box of an
+          example. A second Done sits at the bottom of a job being edited.
   v1.20 (20/11/2026): Pasting keeps formatting. The job spec and job notes are now formatted fields
           like the Notebook, and pasting into any of them keeps bold, italic, headings, lists and
           links (styles, images and scripts are stripped). Research shows **bold** and tappable
@@ -415,6 +420,10 @@ dialog form,.dbody{display:flex;flex-direction:column;gap:12px}
 .choice:hover{border-color:var(--ink)}
 .choice b{display:block}
 .choice span{color:var(--muted);font-size:.9rem}
+#savechip{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:16;display:flex;align-items:center;gap:4px;
+  background:var(--surface);border:var(--rule);border-radius:var(--ctl);padding:4px 10px;font-size:.82rem;color:var(--muted);pointer-events:none}
+#savechip svg{width:16px;height:16px;color:var(--accent)}
+@media (max-width:699px){#savechip{bottom:calc(76px + env(safe-area-inset-bottom,0px))}}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);
   border-radius:var(--ctl);padding:10px 16px;font-size:.92rem;display:flex;gap:16px;align-items:center;max-width:calc(100vw - 32px);z-index:20}
 #toast button{background:none;border:0;color:inherit;font-weight:700;text-decoration:underline;padding:0}
@@ -467,6 +476,7 @@ dialog form,.dbody{display:flex;flex-direction:column;gap:12px}
 <div id="stkbin" hidden></div>
 <dialog id="dlg"></dialog>
 <div id="toast" role="status" hidden></div>
+<div id="savechip" role="status" aria-live="polite" hidden></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -505,7 +515,7 @@ const KEEP_REMOVED_DAYS = 30;
    STATE AND HELPERS
    ===================================================================== */
 let D = blank(), db = null, uid = null, who = "", readOnly = false, pending = false, live = false;
-let q = "", ui = { ev:null, evEdit:null, edit:null, later:false, reh:null, filter:"all", sort:"date", stk:null, tip:null, arrange:false }, listTab = "week", view = { name:"home", id:null }, bootTimer = null, purged = false;
+let q = "", ui = { ev:null, evEdit:null, edit:null, last:null, later:false, reh:null, filter:"all", sort:"date", stk:null, tip:null, arrange:false }, listTab = "week", view = { name:"home", id:null }, bootTimer = null, purged = false;
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -558,10 +568,23 @@ function localSet(path, val){
   if(val === null || val === undefined) delete o[k]; else o[k] = val;
 }
 function saveErr(){ toast("Couldn't save."); }
+// A small note in the corner says when changes are being saved and when they are safely stored.
+// "Saved" only shows once the database has confirmed it, so offline it stays on "Saving".
+let saving = 0, chipTimer = null;
+function chip(state){
+  const c = $("savechip"); clearTimeout(chipTimer);
+  if(state === "saving"){ c.textContent = "Saving\u2026"; c.hidden = false; }
+  else if(state === "saved"){ c.innerHTML = ic("check") + "Saved"; c.hidden = false; chipTimer = setTimeout(() => { c.hidden = true; }, 1600); }
+  else c.hidden = true;
+}
+function track(pr){
+  saving++; chip("saving");
+  pr.then(() => { saving--; if(!saving && !Object.keys(waiting).length) chip("saved"); }, () => { saving--; chip(); saveErr(); });
+}
 const store = {
   ok(){ if(readOnly){ toast("Offline. Can't save."); return false; } return true; },
-  set(p, v){ if(!this.ok()) return; if(DEMO){ localSet(p, v); onData(); return; } db.ref(BASE + p).set(v).catch(saveErr); },
-  update(p, o){ if(!this.ok()) return; if(DEMO){ Object.keys(o).forEach(k => localSet(p + "/" + k, o[k])); onData(); return; } db.ref(BASE + p).update(o).catch(saveErr); },
+  set(p, v){ if(!this.ok()) return; if(DEMO){ localSet(p, v); onData(); track(Promise.resolve()); return; } track(db.ref(BASE + p).set(v)); },
+  update(p, o){ if(!this.ok()) return; if(DEMO){ Object.keys(o).forEach(k => localSet(p + "/" + k, o[k])); onData(); track(Promise.resolve()); return; } track(db.ref(BASE + p).update(o)); },
   remove(p){ this.set(p, null); }
 };
 
@@ -686,7 +709,7 @@ function jobsHtml(roles){
   const showSt = cur === "all" || cur === "past";
   h += `<table class="jobs"><thead><tr>${th("job", "Job")}${showSt ? th("status", cur === "past" ? "Outcome" : "Status") : ""}${th("date", cur === "past" ? "Closed" : "Next date")}</tr></thead><tbody>`;
   h += rows.map(r => { const nd = next(r);
-    return `<tr class="${view.id === r.id ? "sel" : ""}" data-act="open" data-id="${r.id}"><td><button class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span></button></td>
+    return `<tr class="${ui.last === r.id ? "sel" : ""}" data-act="open" data-id="${r.id}"><td><button class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span></button></td>
       ${showSt ? `<td class="n">${esc(r.closed ? (CLOSED[r.closed.type] || "Closed") : statusOf(r).name)}${r.closed || sts.length > 8 ? "" : `<span class="prog" aria-hidden="true">${sts.map((x, i) => `<i${i <= ord[statusOf(r).id] ? ' class="on"' : ""}></i>`).join("")}</span>`}</td>` : ""}<td class="n">${r.closed ? fmtStamp(r.closed.at) : nd ? `<div class="nd">${dayChip(nd.date, true)}<span>${esc(nd.label || "Date")}</span></div>` : ""}</td></tr>`; }).join("");
   return h + `</tbody></table></div>`;
 }
@@ -764,6 +787,7 @@ function roleHtml(id){
   if(ts.length) h += `<ul class="list">${ts.map(t => `<li><input type="checkbox" id="td-${t.id}" data-path="${p}/todos/${t.id}" data-f="done"${t.done ? " checked" : ""}><label for="td-${t.id}">${esc(t.t)}</label>${ed ? `<button class="icb" aria-label="Delete" title="Delete" data-act="del-todo" data-id="${id}" data-d="${t.id}">${ic("bin")}</button>` : ""}</li>`).join("")}</ul>`;
   h += `<form class="inline" data-form="new-todo" data-id="${id}"><input type="text" name="t" id="todo-new" placeholder="Add a task" aria-label="Add a task" required><button class="ghost">Add</button></form></div>`;
 
+  if(ed) h += `<div class="sec"><div><button class="add" data-act="job-done">${ic("check")}Done</button></div></div>`;
   h += `<div class="sec"><div class="row">${r.closed ? "" : `<button class="ghost" data-act="close-role" data-id="${id}">Close job</button>`}<button class="ghost" data-act="delete-role" data-id="${id}">${ic("bin")}Delete job</button></div></div>`;
   return h + stickersHtml(id, r) + `</div>`;
 }
@@ -821,7 +845,7 @@ const richHtml = pg => pg.fmt === "html" ? cleanHtml(pg.body) : esc(pg.body || "
 function saveRich(el, now){
   const path = el.dataset.rich, f = el.dataset.rf || "body", flag = el.dataset.rflag || "fmt", key = path + "/" + f; clearTimeout(timers[key]); delete waiting[key];
   const run = () => { delete waiting[key]; const o = {}; o[f] = el.textContent.trim() ? cleanHtml(el.innerHTML) : null; o[flag] = "html"; store.update(path, o); };
-  if(now) run(); else { waiting[key] = run; timers[key] = setTimeout(run, 400); }
+  if(now) run(); else { waiting[key] = run; chip("saving"); timers[key] = setTimeout(run, 400); }
 }
 // Stickers sit on top of a job page wherever she drops them. x is a percentage of the page
 // width (so it holds on phone and laptop), y is pixels from the top of the page.
@@ -894,15 +918,27 @@ function settingsHtml(){
   h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">${ic("download")}Backup</button><button class="ghost" data-act="export-csv">${ic("download")}Spreadsheet</button></div></div>`;
   h += `<div class="sec"><h3>Recently deleted</h3>`;
   h += removed.length ? `<p class="hint">Kept for ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Deleted ${fmtStamp(r.removedAt)}</span></div><span class="row"><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button><button class="icb" data-act="purge-ask" data-id="${r.id}" aria-label="Delete for good" title="Delete for good">${ic("bin")}</button></span></div>`).join("") : `<p class="empty">None.</p>`;
-  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.20. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
+  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.21. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
   return h + `</div>`;
 }
 
 /* =====================================================================
    DIALOGS AND TOAST
    ===================================================================== */
-function openDlg(html, cls){ const d = $("dlg"); d.className = cls || ""; d.innerHTML = html; if(!d.open) d.showModal(); }
-function closeDlg(){ const d = $("dlg"); if(d.open) d.close(); d.innerHTML = ""; d.className = ""; }
+// Opening a dialog adds a step to the browser's history, so the phone's back gesture closes the
+// dialog instead of leaving the job. Closing it any other way takes that step back out; a page
+// change asked for at the same moment waits until that has finished (see go()).
+let dlgStep = false, backing = false, afterBack = null;
+function dropDlgStep(){ if(dlgStep){ dlgStep = false; backing = true; history.back(); } }
+function openDlg(html, cls){
+  const d = $("dlg"); d.className = cls || ""; d.innerHTML = html;
+  if(!d.open){ d.showModal(); if(!backing){ history.pushState({ dlg:true }, ""); dlgStep = true; } }
+}
+function closeDlg(){ const d = $("dlg"); if(d.open){ dropDlgStep(); d.close(); } d.innerHTML = ""; d.className = ""; }
+window.addEventListener("popstate", () => {
+  if(backing){ backing = false; const f = afterBack; afterBack = null; if(f) f(); return; }
+  const d = $("dlg"); if(d.open){ dlgStep = false; d.close(); d.innerHTML = ""; d.className = ""; }
+});
 // A reading panel: fills most of a phone screen, scrolls by itself, and leaves the page behind alone.
 function sheet(title, chips, body, id, focusId){
   openDlg(`<div class="sheethead"><h2>${esc(title)}</h2><span style="flex:1"></span><button class="ghost" data-act="sheet-edit" data-id="${id}" data-focus="${focusId}">${ic("pencil")}Edit</button><button class="icb" data-act="dlg-close" aria-label="Close" title="Close">${ic("close")}</button></div>`
@@ -1054,14 +1090,21 @@ function fileReply(id, txt){
 /* =====================================================================
    ACTIONS
    ===================================================================== */
-function go(name, id){ location.hash = name === "role" ? "role-" + id : name === "home" ? listTab : name; }
+function go(name, id){
+  const set = () => { location.hash = name === "role" ? "role-" + id : name === "home" ? listTab : name; };
+  if(backing) afterBack = set; else set();
+}
+const scrollMem = { week:0, jobs:0 };
 function route(){
   const hsh = location.hash.replace(/^#/, ""), m = /^role-(.+)$/.exec(hsh);
+  if(view.name === "home" && !$("app").hidden) scrollMem[listTab] = window.scrollY;     // remember the list position being left
+  if(view.name === "role" && view.id) ui.last = view.id;
   if(hsh === "week" || hsh === "jobs") listTab = hsh;
   ui.arrange = false; ui.stk = null;
   if(!(m && ui.edit === m[1])) ui.edit = null;      // a job just added opens ready to fill in
   view = m ? { name:"role", id:m[1] } : (hsh === "notebook" || hsh === "settings" || hsh === "evidence") ? { name:hsh, id:null } : { name:"home", id:null };
-  const paint = () => { try{ render(); }catch(err){ console.error(err); toast("This page couldn't be shown. Reload and try again."); } window.scrollTo(0, 0); $("pane").scrollTop = 0; };
+  const paint = () => { try{ render(); }catch(err){ console.error(err); toast("This page couldn't be shown. Reload and try again."); } window.scrollTo(0, view.name === "home" ? (scrollMem[listTab] || 0) : 0);
+    if(ui.focusSpec && view.id === ui.focusSpec){ ui.focusSpec = null; const t = $("t-advert"); if(t) t.focus(); } };
   // A short cross-fade between views, built into the browser. Skipped if motion is reduced.
   if(document.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) { const t = document.startViewTransition(paint); [t.ready, t.finished, t.updateCallbackDone].forEach(x => x && x.catch(() => {})); } else paint();
 }
@@ -1094,16 +1137,23 @@ const ACT = {
   "stk-del": () => { const path = "roles/" + view.id + "/stickers/" + ui.stk, old = ((D.roles[view.id] || {}).stickers || {})[ui.stk]; ui.stk = null; store.remove(path); render(); toast("Sticker removed.", () => store.set(path, old)); },
   "search-toggle": () => { const on = document.body.classList.toggle("searching"); if(on) $("search").focus(); else if(q){ $("search").value = ""; q = ""; render(); } },
   "confirm-yes": () => { const fn = confirmFn; confirmFn = null; closeDlg(); if(fn) fn(); },
-  "job-edit": el => { ui.edit = el.dataset.id; ui.arrange = false; render(); window.scrollTo(0, 0); },
+  "job-edit": el => {
+    ui.edit = el.dataset.id; ui.arrange = false; render(); window.scrollTo(0, 0);
+    // nothing in the job spec yet: that is almost certainly what she is here to paste
+    const r = D.roles[el.dataset.id], t = r && !r.advert && $("t-advert"); if(t){ t.scrollIntoView({ block:"center" }); t.focus(); }
+  },
   "job-done": () => { ui.edit = null; render(); window.scrollTo(0, 0); },
-  "ev-edit": el => { ui.evEdit = el.dataset.id; render(); },
+  "ev-edit": el => {
+    ui.evEdit = el.dataset.id; render();
+    const e = D.evidence[el.dataset.id] || {}, gap = STAR.find(x => !e[x[0]]), t = gap && $("t-ev-" + el.dataset.id + "-" + gap[0]); if(t) t.focus();   // first box still empty
+  },
   "ev-done": () => { ui.evEdit = null; render(); },
   "read-advert": el => advertSheet(el.dataset.id),
   "read-research": el => researchSheet(el.dataset.id),
   "sheet-jump": el => { const t = $(el.dataset.t); if(t) t.scrollIntoView({ block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); },
   "sheet-edit": el => { const f = el.dataset.focus; closeDlg(); ui.edit = el.dataset.id; ui.arrange = false; render(); const t = f && $(f); if(t){ t.scrollIntoView({ block:"center" }); t.focus(); } },
   "tip": el => { ui.tip = ui.tip === el.dataset.k ? null : el.dataset.k; render(); },
-  "filter": el => { ui.filter = el.dataset.k; render(); },
+  "filter": el => { ui.filter = el.dataset.k; scrollMem.jobs = 0; render(); },
   "sort": el => { ui.sort = el.dataset.k; render(); },
   "toggle-later": () => { ui.later = !ui.later; render(); },
   "set-status": el => { store.update("roles/" + el.dataset.id, { status:el.dataset.s }); render(); },
@@ -1155,7 +1205,7 @@ const ACT = {
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.20", data:D }, null, 2), "application/json"),
+  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.21", data:D }, null, 2), "application/json"),
   "export-csv": () => {
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const rows = [["Company","Job title","Status","Salary","Closing date","Location","Working pattern","Hybrid details","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
@@ -1175,7 +1225,7 @@ const FORMS = {
   "new-role": f => {
     const id = newId(), s = statusList()[0];
     store.set("roles/" + id, { company:f.company.value.trim(), title:f.title.value.trim(), link:f.link.value.trim() || null, status:s ? s.id : null, created:Date.now() });
-    closeDlg(); $("search").value = ""; q = ""; listTab = "jobs"; ui.filter = "all"; ui.edit = id; go("role", id); render();
+    closeDlg(); $("search").value = ""; q = ""; listTab = "jobs"; ui.filter = "all"; ui.edit = id; ui.focusSpec = id; go("role", id); render();
   },
   "new-date": f => { store.set("roles/" + f.dataset.id + "/dates/" + newId(), { label:f.label.value.trim(), date:f.date.value, time:f.time.value || null }); render("date-new"); },
   "new-todo": f => { store.set("roles/" + f.dataset.id + "/todos/" + newId(), { t:f.t.value.trim(), at:Date.now() }); render("todo-new"); },
@@ -1196,7 +1246,7 @@ function saveField(el, now){
   const path = el.dataset.path, f = el.dataset.f; if(!path || !f) return;
   const key = path + "/" + f; clearTimeout(timers[key]); delete waiting[key];
   const run = () => { delete waiting[key]; el._dirty = false; const v = el.type === "checkbox" ? el.checked : el.value, o = {}; o[f] = (v === "" || v === false) ? null : v; store.update(path, o); };
-  if(now) run(); else { el._dirty = true; waiting[key] = run; timers[key] = setTimeout(run, 400); }
+  if(now) run(); else { el._dirty = true; waiting[key] = run; chip("saving"); timers[key] = setTimeout(run, 400); }
 }
 // Anything typed but not yet written is saved the moment the page is hidden, switched away from or closed.
 const waiting = {};
@@ -1414,6 +1464,8 @@ function subscribe(){
   });
   db.ref(".info/connected").on("value", s => { if(live) banner(s.val() === true ? "" : "Offline. Changes save when you reconnect."); });
 }
+// Esc closes a dialog without going through closeDlg(): tidy up the same way.
+$("dlg").addEventListener("close", () => { dropDlgStep(); });
 $("gate-form").addEventListener("submit", e => {
   e.preventDefault(); e.stopPropagation();
   // Typed however she likes (spaces, capitals, hyphens); only letters and digits are used.
