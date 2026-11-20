@@ -5,6 +5,7 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.6 (20/11/2026): Today's date removed from under the title.
   v1.5 (20/11/2026): Flourishes. Dates drawn as small calendar leaves (This week and the Next
           date column), with today's leaf picked out. Seven-day strip at the top of This week
           with a dot per thing due. Progress bar of steps under each status in Saved jobs.
@@ -130,7 +131,6 @@ textarea{resize:vertical;line-height:1.5;min-height:2.8em}
 #app{display:flex;flex-direction:column;gap:16px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .top h1{font-size:1.7rem}
-.top h1 span{display:block;color:var(--muted);font-size:.85rem;font-family:var(--body);font-weight:400;margin-top:2px}
 .search{flex:1 1 180px;max-width:340px}
 .tabs{display:flex;gap:4px;border-bottom:var(--rule)}
 .tab{display:inline-flex;align-items:center;gap:8px;background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;padding:10px 14px;color:var(--muted);font-weight:500}
@@ -278,7 +278,7 @@ dialog form,.dbody{display:flex;flex-direction:column;gap:12px}
 
   <div id="app" hidden>
     <header class="top">
-      <h1>Jobs<span id="today"></span></h1>
+      <h1>Jobs</h1>
       <input type="search" class="search" id="search" placeholder="Search" aria-label="Search jobs, notes and evidence">
       <button class="add" data-act="add-role" id="add-role" data-ic="plus">Add job</button>
     </header>
@@ -626,7 +626,7 @@ function settingsHtml(){
   h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">${ic("download")}Backup</button><button class="ghost" data-act="export-csv">${ic("download")}Spreadsheet</button></div></div>`;
   h += `<div class="sec"><h3>Recently removed</h3>`;
   h += removed.length ? `<p class="hint">Deleted after ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Removed ${fmtStamp(r.removedAt)}</span></div><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button></div>`).join("") : `<p class="empty">None.</p>`;
-  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.5</p></div>`;
+  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.6</p></div>`;
   return h + `</div>`;
 }
 
@@ -810,7 +810,7 @@ const ACT = {
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.5", data:D }, null, 2), "application/json"),
+  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.6", data:D }, null, 2), "application/json"),
   "export-csv": () => {
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const rows = [["Company","Job title","Status","Salary","Closing date","Location","Working pattern","Hybrid details","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
@@ -910,8 +910,6 @@ window.addEventListener("hashchange", route);
    ===================================================================== */
 function showApp(){
   $("gate").hidden = true; $("app").hidden = false;
-  const d = new Date();
-  $("today").textContent = d.toLocaleDateString("en-GB", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
   route();
 }
 function showGate(msg){
