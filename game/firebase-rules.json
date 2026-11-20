@@ -88,6 +88,16 @@
       "data": {
         ".read": "auth != null && root.child('jobs/grants').child(auth.uid).exists() && root.child('jobs/access').child(root.child('jobs/grants').child(auth.uid).val()).exists()",
         ".write": "auth != null && root.child('jobs/grants').child(auth.uid).exists() && root.child('jobs/access').child(root.child('jobs/grants').child(auth.uid).val()).exists()"
+      },
+      "audit": {
+        ".read": "auth != null && root.child('jobs/access').child(root.child('jobs/grants').child(auth.uid).val()).child('role').val() === 'admin'",
+        "$id": {
+          ".write": "auth != null && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['at','who','what','dev']) && newData.child('at').val() === now && newData.child('who').isString() && newData.child('who').val().length <= 40 && newData.child('what').isString() && newData.child('what').val().length <= 80 && newData.child('dev').isString() && newData.child('dev').val().length <= 60 && (!newData.hasChild('detail') || (newData.child('detail').isString() && newData.child('detail').val().length <= 160))",
+          "$other": {
+            ".validate": "$other === 'at' || $other === 'who' || $other === 'what' || $other === 'dev' || $other === 'detail'"
+          }
+        }
       }
     }
   }
