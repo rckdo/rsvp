@@ -5,6 +5,11 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.11 (20/11/2026): Evidence redesigned: "Give me an example of a time when..." with an accordion
+          of examples, three seeded. Opening one shows a 2x2 STAR grid with a faint letter behind
+          each box, progress pips on each row, and a help button explaining STAR. Phone header
+          decluttered: one row, search behind an icon, Add job as a floating button, and the
+          header hidden while a job is open.
   v1.10 (20/11/2026): "Delete job" button on every job with an "are you sure" dialog; deleted jobs
           stay restorable in Settings for 30 days and can be deleted for good from there. Stickers
           are now stuck down by default and cannot be nudged by accident; the Stickers button
@@ -151,7 +156,18 @@ textarea{resize:vertical;line-height:1.5;min-height:2.8em}
 .tab{display:inline-flex;align-items:center;gap:8px;background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;padding:10px 14px;color:var(--muted);font-weight:500}
 .tab:hover{color:var(--ink)}
 .tab[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:700}
+#search-toggle{display:none}
 @media (max-width:699px){
+  /* phone header: title and date on one row, search behind an icon, Add job as a floating button */
+  .top{flex-wrap:wrap}
+  #search-toggle{display:inline-flex;color:var(--ink)}
+  .search{display:none;order:5;flex-basis:100%;max-width:none}
+  body.searching .search{display:block}
+  #add-role{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:14;width:56px;height:56px;padding:0;border-radius:50%;box-shadow:0 3px 8px rgba(0,0,0,.25)}
+  #add-role span{display:none}
+  #add-role svg{width:26px;height:26px}
+  body:not([data-view="home"]) #add-role{display:none}
+  body[data-view="role"] .top{display:none}
   /* on a phone the tabs become a fixed bottom bar, like an installed app */
   .tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--surface);border-top:var(--rule);border-bottom:0;gap:0;
     padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
@@ -289,6 +305,26 @@ table.jobs{width:100%;border-collapse:collapse;font-size:.95rem}
 .tray button{background:none;border:0;border-radius:var(--ctl);padding:8px}
 .tray button:hover{background:var(--bg)}
 .tray svg{display:block;width:100%;height:auto}
+.evlead{font-family:var(--display);font-weight:var(--display-weight);font-size:1.05rem;color:var(--muted)}
+.accs{display:flex;flex-direction:column;border-top:var(--rule)}
+.acc{border-bottom:var(--rule)}
+.acchead{width:100%;display:flex;align-items:center;gap:12px;background:none;border:0;text-align:left;padding:14px 4px;font-weight:700;min-height:48px}
+.acchead>span:first-child{flex:1;min-width:0;overflow-wrap:anywhere}
+.acchead svg{transition:transform .18s ease-out;color:var(--muted)}
+.acc.open .acchead svg{transform:rotate(180deg)}
+.pips{display:flex;gap:3px}
+.pips i{width:8px;height:8px;border-radius:2px;background:var(--line)}
+.pips i.on{background:var(--accent)}
+.accbody{display:flex;flex-direction:column;gap:12px;padding:4px 4px 16px}
+.stargrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.star{position:relative;overflow:hidden;background:var(--bg);border-radius:var(--ctl);padding:10px 12px;min-height:150px;display:flex;flex-direction:column;gap:4px}
+.star::before{content:attr(data-l);position:absolute;right:4px;bottom:-22px;font-family:var(--display);font-weight:var(--display-weight);font-size:8rem;line-height:1;color:var(--ink);opacity:.04;pointer-events:none}
+.star>span{font-size:.82rem;font-weight:700;color:var(--muted)}
+.star textarea{position:relative;flex:1;background:transparent;border:0;border-radius:0;padding:0;min-height:96px;resize:none}
+.star textarea:hover{border-color:transparent}
+.star textarea:focus-visible{outline:none}
+.star:focus-within{outline:3px solid var(--accent);outline-offset:2px}
+.star p{position:relative;white-space:pre-wrap;font-size:.95rem;color:var(--ink);max-width:none;margin:0}
 .fmtbar{display:flex;gap:2px}
 .fmtbar .icb{min-width:40px;justify-content:center;font-size:1rem}
 .rich{background:var(--bg);border-bottom:1px solid var(--line);border-radius:var(--ctl);padding:10px 12px;min-height:6em;overflow-wrap:anywhere}
@@ -331,7 +367,8 @@ dialog form,.dbody{display:flex;flex-direction:column;gap:12px}
     <header class="top">
       <div class="titlebar"><h1>Jobs</h1><div id="today"></div></div>
       <input type="search" class="search" id="search" placeholder="Search" aria-label="Search jobs, notes and evidence">
-      <button class="add" data-act="add-role" id="add-role" data-ic="plus">Add job</button>
+      <button class="icb" id="search-toggle" data-act="search-toggle" aria-label="Search" data-ic="search"></button>
+      <button class="add" data-act="add-role" id="add-role" data-ic="plus" aria-label="Add job"><span>Add job</span></button>
     </header>
     <nav class="tabs" aria-label="Sections">
       <button class="tab" data-act="nav" data-v="week" id="nav-week" data-ic="week">This week</button>
@@ -400,7 +437,7 @@ const KEEP_REMOVED_DAYS = 30;
    STATE AND HELPERS
    ===================================================================== */
 let D = blank(), db = null, uid = null, who = "", readOnly = false, pending = false, live = false;
-let q = "", ui = { later:false, reh:null, filter:"all", sort:"date", stk:null, tip:null, arrange:false }, listTab = "week", view = { name:"home", id:null }, bootTimer = null, purged = false;
+let q = "", ui = { ev:null, later:false, reh:null, filter:"all", sort:"date", stk:null, tip:null, arrange:false }, listTab = "week", view = { name:"home", id:null }, bootTimer = null, purged = false;
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -418,6 +455,7 @@ const ICONS = {
   help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.4c-.8.5-1.2 1-1.2 1.9M12 16.8v.2"/>',
   out:'<path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9"/>',
   sticker:'<path d="M5 4h14v10l-5 6H5zM19 14h-5v6"/>',
+  chev:'<path d="M6 9l6 6 6-6"/>', search:'<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.6-4.6"/>',
   spark:'<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>'
 };
 // Sticker artwork: Twemoji (CC BY 4.0). Each entry is [name, svg, group]. Keys are stored with a job, so never rename one.
@@ -494,7 +532,7 @@ function grow(t){ if(!t.offsetParent) return; t.style.height = "auto"; t.style.h
 const TIPS = {
   week:"Dates you add to a job show here for the next seven days. Tick one off when it's done.",
   jobs:"Every job you've saved. Filter by status, tap a column heading to sort, tap a job to open it. Past holds closed jobs.",
-  evidence:"Your own stories for interviews. Write one per question or skill: Situation, Task, Action, Result. Rehearse shows a question and hides your answer until you've said it aloud.",
+  evidence:"Your own answers to the classic interview question. Open one and fill in the four boxes. Rehearse shows a question and hides your answer until you've said it aloud.",
   notebook:"Free notes for anything not tied to one job. Select text and use the buttons above a note to format it.",
   settings:"Change the look, edit the statuses, download a backup, restore deleted jobs, sign out."
 };
@@ -681,23 +719,34 @@ function notebookHtml(){
 
 const evList = () => Object.keys(D.evidence).map(id => Object.assign({ id }, D.evidence[id])).sort((a,b) => (a.at||0) - (b.at||0));
 const evReady = e => e.q && STAR.some(x => e[x[0]]);
+const EV_LEAD = "Give me an example of a time when\u2026";
 function evidenceHtml(){
-  const back = "";
   const all = evList(), ready = all.filter(evReady);
   if(ui.reh){
     const e = D.evidence[ui.reh.id];
-    if(e) return `<div class="panel">${back}<p class="hint">Rehearsing</p><h2 style="font-size:1.5rem;margin:6px 0 12px">${esc(e.q)}</h2>
-      ${ui.reh.shown ? STAR.filter(x => e[x[0]]).map(x => `<div class="sec"><h3>${x[1]}</h3><p style="white-space:pre-wrap">${esc(e[x[0]])}</p></div>`).join("")
+    if(e) return `<div class="panel"><p class="evlead">${EV_LEAD}</p><h2 style="font-size:1.5rem">${esc(e.q)}</h2>
+      ${ui.reh.shown ? `<div class="stargrid">${STAR.map(x => `<div class="star" data-l="${x[1][0]}"><span>${x[1]}</span><p>${esc(e[x[0]] || "")}</p></div>`).join("")}</div>`
         : `<p class="hint">Answer out loud, then check.</p>`}
-      <div class="sec"><div class="row">${ui.reh.shown ? "" : `<button class="add" data-act="reh-show">Show my answer</button>`}${ready.length > 1 ? `<button class="${ui.reh.shown ? "add" : "ghost"}" data-act="reh-next">Next question</button>` : ""}<button class="ghost" data-act="reh-stop">Finish</button></div></div></div>`;
+      <div class="row">${ui.reh.shown ? "" : `<button class="add" data-act="reh-show">Show my answer</button>`}${ready.length > 1 ? `<button class="${ui.reh.shown ? "add" : "ghost"}" data-act="reh-next">Next question</button>` : ""}<button class="ghost" data-act="reh-stop">Finish</button></div></div>`;
     ui.reh = null;
   }
-  let h = `<div class="panel">${back}${head("evidence", "Evidence")}
-    <div class="row" style="margin-top:12px"><button class="add" data-act="add-ev">${ic("plus")}Add example</button>${ready.length ? `<button class="ghost" data-act="rehearse">${ic("play")}Rehearse</button>` : ""}</div>`;
+  let h = `<div class="panel">${head("evidence", "Evidence")}<p class="evlead">${EV_LEAD}</p>`;
   if(!all.length) h += `<p class="empty">No examples yet.</p>`;
-  h += all.map(e => `<div class="page"><label class="fld big"><span>Question or skill</span><input type="text" id="ev-${e.id}" data-path="evidence/${e.id}" data-f="q" value="${esc(e.q)}" placeholder="e.g. Led a project"></label>
-    ${STAR.map(x => area(x[1], "evidence/" + e.id, x[0], e[x[0]], x[2], "ev-" + e.id + "-" + x[0])).join("")}<div><button class="icb" aria-label="Delete" title="Delete" data-act="del-ev" data-id="${e.id}">${ic("bin")}</button></div></div>`).join("");
+  h += `<div class="accs">` + all.map(e => {
+    const open = ui.ev === e.id, pips = STAR.map(x => `<i${e[x[0]] ? ' class="on"' : ""}></i>`).join("");
+    let r = `<div class="acc${open ? " open" : ""}"><button class="acchead" data-act="ev-open" data-id="${e.id}" aria-expanded="${open}"><span>${esc(e.q || "Untitled")}</span><span class="pips" aria-hidden="true">${pips}</span>${ic("chev")}</button>`;
+    if(open) r += `<div class="accbody"><label class="fld"><span>${EV_LEAD}</span><input type="text" id="ev-${e.id}" data-path="evidence/${e.id}" data-f="q" value="${esc(e.q)}" placeholder="You\u2026"></label>
+      <div class="stargrid">${STAR.map(x => `<label class="star" data-l="${x[1][0]}"><span>${x[1]}</span><textarea id="t-ev-${e.id}-${x[0]}" data-path="evidence/${e.id}" data-f="${x[0]}" rows="3" aria-label="${x[1]}">${esc(e[x[0]])}</textarea></label>`).join("")}</div>
+      <div class="row"><button class="icb" data-act="star-help" aria-label="How STAR works" title="How STAR works">${ic("help")}</button><span style="flex:1"></span><button class="icb" aria-label="Delete" title="Delete" data-act="del-ev" data-id="${e.id}">${ic("bin")}</button></div></div>`;
+    return r + `</div>`;
+  }).join("") + `</div>`;
+  h += `<div class="row"><button class="add" data-act="add-ev">${ic("plus")}Add example</button>${ready.length ? `<button class="ghost" data-act="rehearse">${ic("play")}Rehearse</button>` : ""}</div>`;
   return h + `</div>`;
+}
+function starDlg(){
+  const tips = { s:"Set the scene. Where, when, who was involved.", t:"What had to be achieved, and what was down to you.", a:"What you did, step by step. Say \u201cI\u201d, not \u201cwe\u201d.", r:"What changed. Numbers if you have them. What you learned." };
+  openDlg(`<h2>STAR</h2><div class="dbody"><div class="stargrid">${STAR.map(x => `<div class="star" data-l="${x[1][0]}"><span>${x[1]}</span><p>${tips[x[0]]}</p></div>`).join("")}</div>
+    <p class="hint">Aim for about two minutes spoken. Most of it should be Action.</p><div><button class="ghost" data-act="dlg-close">Close</button></div></div>`);
 }
 function pickEv(not){ const r = evList().filter(evReady).filter(e => e.id !== not); return r.length ? r[Math.floor(Math.random() * r.length)].id : null; }
 
@@ -712,7 +761,7 @@ function settingsHtml(){
   h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">${ic("download")}Backup</button><button class="ghost" data-act="export-csv">${ic("download")}Spreadsheet</button></div></div>`;
   h += `<div class="sec"><h3>Recently deleted</h3>`;
   h += removed.length ? `<p class="hint">Kept for ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Deleted ${fmtStamp(r.removedAt)}</span></div><span class="row"><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button><button class="icb" data-act="purge-ask" data-id="${r.id}" aria-label="Delete for good" title="Delete for good">${ic("bin")}</button></span></div>`).join("") : `<p class="empty">None.</p>`;
-  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.10. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
+  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.11. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
   return h + `</div>`;
 }
 
@@ -875,6 +924,7 @@ const ACT = {
     store.update("roles/" + view.id + "/stickers/" + ui.stk, { s:n }); render();
   },
   "stk-del": () => { const path = "roles/" + view.id + "/stickers/" + ui.stk, old = ((D.roles[view.id] || {}).stickers || {})[ui.stk]; ui.stk = null; store.remove(path); render(); toast("Sticker removed.", () => store.set(path, old)); },
+  "search-toggle": () => { const on = document.body.classList.toggle("searching"); if(on) $("search").focus(); else if(q){ $("search").value = ""; q = ""; render(); } },
   "tip": el => { ui.tip = ui.tip === el.dataset.k ? null : el.dataset.k; render(); },
   "filter": el => { ui.filter = el.dataset.k; render(); },
   "sort": el => { ui.sort = el.dataset.k; render(); },
@@ -903,7 +953,9 @@ const ACT = {
     if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done, manual); else manual();
   },
   "clear-research": el => { const id = el.dataset.id, old = (D.roles[id] || {}).research || null; store.remove("roles/" + id + "/research"); render(); toast("Research cleared.", () => store.set("roles/" + id + "/research", old)); },
-  "add-ev": () => { const id = newId(); store.set("evidence/" + id, { q:"", at:Date.now() }); render("ev-" + id); },
+  "add-ev": () => { const id = newId(); store.set("evidence/" + id, { q:"", at:Date.now() }); ui.ev = id; render("ev-" + id); },
+  "ev-open": el => { ui.ev = ui.ev === el.dataset.id ? null : el.dataset.id; render(); },
+  "star-help": starDlg,
   "del-ev": el => { const id = el.dataset.id, old = D.evidence[id]; store.remove("evidence/" + id); render(); toast("Example deleted.", () => store.set("evidence/" + id, old)); },
   "rehearse": () => { const id = pickEv(null); if(id){ ui.reh = { id, shown:false }; render(); window.scrollTo(0, 0); } },
   "reh-show": () => { ui.reh.shown = true; render(); },
@@ -926,7 +978,7 @@ const ACT = {
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.10", data:D }, null, 2), "application/json"),
+  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.11", data:D }, null, 2), "application/json"),
   "export-csv": () => {
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const rows = [["Company","Job title","Status","Salary","Closing date","Location","Working pattern","Hybrid details","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
@@ -1089,6 +1141,13 @@ function seedIfNew(){
   up["settings/seeded"] = true;
   db.ref("jobs/data").update(up).catch(saveErr);
 }
+const EV_SEED = ["You influenced senior colleagues","You went above expectations","You had to manage conflicting priorities"];
+function seedEvidence(){
+  if(D.settings.evSeeded) return;
+  const up = { "settings/evSeeded":true }, t = Date.now();
+  EV_SEED.forEach((q, i) => { up["evidence/seed" + (i + 1)] = { q, at:t + i }; });
+  db.ref("jobs/data").update(up).catch(saveErr);
+}
 function purgeOld(){
   if(purged) return; purged = true;
   const cut = Date.now() - KEEP_REMOVED_DAYS * 864e5;
@@ -1101,7 +1160,7 @@ function subscribe(){
     clearTimeout(bootTimer);
     const first = !live; live = true; readOnly = false;
     D = norm(s.val()); ls("jobs-cache", JSON.stringify(D)); applyLook(D.settings.theme);
-    seedIfNew(); purgeOld();
+    seedIfNew(); seedEvidence(); purgeOld();
     if(first){ banner(""); showApp(); } else onData();
   }, () => {
     // The rules refused us: the passcode was changed or removed in the console.
@@ -1137,8 +1196,8 @@ function demoData(){
     r5:{ company:"Future Publishing", title:"Production Assistant", status:"s1", created:t - 2e8 },
     r6:{ company:"Komedia", title:"Office Manager", status:"s3", created:t - 12e8, closed:{ type:"unsuccessful", at:t - 2e8 } }
   };
-  d.evidence = { e1:{ q:"A time you dealt with a difficult customer", s:"Saturday shift, a visitor was upset about a cancelled tour.", t:"Calm things down and keep the queue moving.", a:"Listened, apologised, offered the next slot and a cafe voucher.", r:"They stayed, and left a five-star review that week.", at:1 },
-    e2:{ q:"A time you improved a process", a:"Replaced the paper rota with a shared sheet.", r:"Cut swap requests by about half.", at:2 } };
+  d.evidence = { e1:{ q:"You dealt with a difficult customer", s:"Saturday shift, a visitor was upset about a cancelled tour.", t:"Calm things down and keep the queue moving.", a:"Listened, apologised, offered the next slot and a cafe voucher.", r:"They stayed, and left a five-star review that week.", at:1 } };
+  EV_SEED.forEach((q, i) => { d.evidence["seed" + (i + 1)] = { q, at:10 + i }; });
   return d;
 }
 
