@@ -5,6 +5,9 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.3 (20/11/2026): Notebook items are now "notes" and can be formatted: bold, italic, heading,
+          bullet and numbered lists. Stored as a cleaned subset of HTML; older plain-text notes
+          keep their line breaks. Pasting into a note brings plain text only.
   v1.2 (20/11/2026): Help button beside every page title opens a one-line explanation of the
           page (This week, Saved jobs, Evidence, Notebook, Settings). Research help uses the
           same icon.
@@ -194,6 +197,11 @@ table.jobs{width:100%;border-collapse:collapse;font-size:.95rem}
 .inline{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
 .inline.d3{grid-template-columns:minmax(0,1fr)}
 @media (min-width:520px){.inline.d3{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr) auto}}
+.fmtbar{display:flex;gap:2px}
+.fmtbar .icb{min-width:40px;justify-content:center;font-size:1rem}
+.rich{background:var(--bg);border-bottom:1px solid var(--line);border-radius:var(--ctl);padding:10px 12px;min-height:6em;overflow-wrap:anywhere}
+.rich h3{font-size:1.05rem;margin:8px 0 4px}
+.rich ul,.rich ol{padding-left:24px;margin:4px 0}
 .srcs a{color:var(--accent);overflow-wrap:anywhere;font-size:.9rem;display:block}
 .page{padding:16px 0;border-top:var(--rule);display:flex;flex-direction:column;gap:8px}
 .looks{display:flex;gap:8px;flex-wrap:wrap}
@@ -349,7 +357,7 @@ const roleName = r => (r.company || "Untitled") + (r.title ? ", " + r.title : ""
    ===================================================================== */
 function editing(){
   const a = document.activeElement;
-  return !!(a && a.closest && a.closest("#home,#pane") && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== "checkbox");
+  return !!(a && a.closest && a.closest("#home,#pane") && (a.isContentEditable || (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== "checkbox")));
 }
 // Remote or local data changed. Never rebuild the page under someone who is typing.
 function onData(){ if(editing()){ pending = true; return; } render(); }
@@ -369,7 +377,7 @@ const TIPS = {
   week:"Dates you add to a job show here for the next seven days. Tick one off when it's done.",
   jobs:"Every job you've saved. Filter by status, tap a column heading to sort, tap a job to open it. Past holds closed jobs.",
   evidence:"Your own stories for interviews. Write one per question or skill: Situation, Task, Action, Result. Rehearse shows a question and hides your answer until you've said it aloud.",
-  notebook:"Free pages for anything not tied to one job.",
+  notebook:"Free notes for anything not tied to one job. Select text and use the buttons above a note to format it.",
   settings:"Change the look, edit the statuses, download a backup, restore removed jobs."
 };
 function head(k, label){
@@ -425,12 +433,12 @@ function jobsHtml(roles){
 function searchHtml(roles){
   const n = q.toLowerCase();
   const hit = r => [r.company, r.title, r.location, r.salary, r.notes, r.advert].concat(Object.values(r.research || {}), todoList(r).map(t => t.t), dateList(r).map(d => d.label)).some(v => v && String(v).toLowerCase().includes(n));
-  const rs = roles.filter(hit), ps = Object.keys(D.notebook).map(id => D.notebook[id]).filter(p => ((p.title||"") + " " + (p.body||"")).toLowerCase().includes(n));
+  const rs = roles.filter(hit), ps = Object.keys(D.notebook).map(id => D.notebook[id]).filter(p => ((p.title||"") + " " + String(p.body||"").replace(/<[^>]+>/g, " ")).toLowerCase().includes(n));
   let h = `<div class="panel"><h2>Search results</h2>`;
   const es = evList().filter(e => [e.q].concat(STAR.map(x => e[x[0]])).some(v => v && String(v).toLowerCase().includes(n)));
   if(!rs.length && !ps.length && !es.length) h += `<p class="empty">No results.</p>`;
   h += rs.map(r => `<div class="role"><button class="rowmain" data-act="open" data-id="${r.id}"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>${esc(r.closed ? (CLOSED[r.closed.type] || "Closed") : statusOf(r).name)}</span></button></div>`).join("");
-  h += ps.map(p => `<div class="role"><button class="rowmain" data-act="nav" data-v="notebook"><strong>${esc(p.title || "Untitled page")}</strong><span>Notebook</span></button></div>`).join("");
+  h += ps.map(p => `<div class="role"><button class="rowmain" data-act="nav" data-v="notebook"><strong>${esc(p.title || "Untitled note")}</strong><span>Notebook</span></button></div>`).join("");
   h += es.map(e => `<div class="role"><button class="rowmain" data-act="nav" data-v="evidence"><strong>${esc(e.q || "Untitled example")}</strong><span>Evidence</span></button></div>`).join("");
   return h + `</div>`;
 }
@@ -477,12 +485,36 @@ function roleHtml(id){
   return h + `</div>`;
 }
 
+// Notebook formatting. Notes are stored as a small, cleaned subset of HTML: only the tags
+// below survive, with every attribute stripped, both when saving and when showing.
+const FMT = [["bold","Bold","<b>B</b>"],["italic","Italic","<i>I</i>"],["h","Heading","<b>H</b>"],
+  ["ul","Bullet list",'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7h11M9 12h11M9 17h11M4.5 7h.01M4.5 12h.01M4.5 17h.01"/></svg>'],
+  ["ol","Numbered list",'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 7h10M10 12h10M10 17h10M4 6l1.5-1v4M4 15h2.5L4 18h2.5"/></svg>']];
+const RICH_OK = { B:1, STRONG:1, I:1, EM:1, U:1, H3:1, UL:1, OL:1, LI:1, P:1, DIV:1, BR:1 };
+function cleanHtml(html){
+  const doc = new DOMParser().parseFromString("<div>" + String(html || "") + "</div>", "text/html"), out = doc.createElement("div");
+  (function walk(from, to){
+    from.childNodes.forEach(n => {
+      if(n.nodeType === 3){ to.appendChild(doc.createTextNode(n.nodeValue)); return; }
+      if(n.nodeType !== 1 || /^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|LINK|META)$/.test(n.tagName)) return;
+      if(RICH_OK[n.tagName]){ const el = doc.createElement(n.tagName); to.appendChild(el); walk(n, el); } else walk(n, to);
+    });
+  })(doc.body.firstChild, out);
+  return out.innerHTML;
+}
+// Notes written before formatting existed are plain text: keep their line breaks.
+const richHtml = pg => pg.fmt === "html" ? cleanHtml(pg.body) : esc(pg.body || "").replace(/\n/g, "<br>");
+function saveRich(el, now){
+  const path = el.dataset.rich, key = path + "/body"; clearTimeout(timers[key]);
+  const run = () => store.update(path, { body:cleanHtml(el.innerHTML), fmt:"html" });
+  if(now) run(); else timers[key] = setTimeout(run, 600);
+}
 function notebookHtml(){
   const pages = Object.keys(D.notebook).map(id => Object.assign({ id }, D.notebook[id])).sort((a,b) => (a.at||0) - (b.at||0));
   let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button>${head("notebook", "Notebook")}`;
-  if(!pages.length) h += `<p class="empty">No pages yet.</p>`;
-  h += pages.map(pg => `<div class="page"><label class="fld big"><span>Page title</span><input type="text" id="nt-${pg.id}" data-path="notebook/${pg.id}" data-f="title" value="${esc(pg.title)}"></label>${area("Notes", "notebook/" + pg.id, "body", pg.body, "", "nb-" + pg.id)}<div><button class="icb" aria-label="Delete" title="Delete" data-act="del-page" data-id="${pg.id}">${ic("bin")}</button></div></div>`).join("");
-  return h + `<div class="sec"><div><button class="ghost" data-act="add-page">${ic("plus")}Add page</button></div></div></div>`;
+  if(!pages.length) h += `<p class="empty">No notes.</p>`;
+  h += pages.map(pg => `<div class="page"><label class="fld big"><span>Title</span><input type="text" id="nt-${pg.id}" data-path="notebook/${pg.id}" data-f="title" value="${esc(pg.title)}"></label><div class="fmtbar" role="toolbar" aria-label="Formatting">${FMT.map(f => `<button class="icb" data-fmt="${f[0]}" aria-label="${f[1]}" title="${f[1]}">${f[2]}</button>`).join("")}</div><div class="rich" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Note" id="nb-${pg.id}" data-rich="notebook/${pg.id}">${richHtml(pg)}</div><div><button class="icb" aria-label="Delete" title="Delete" data-act="del-page" data-id="${pg.id}">${ic("bin")}</button></div></div>`).join("");
+  return h + `<div class="sec"><div><button class="ghost" data-act="add-page">${ic("plus")}Add note</button></div></div></div>`;
 }
 
 const evList = () => Object.keys(D.evidence).map(id => Object.assign({ id }, D.evidence[id])).sort((a,b) => (a.at||0) - (b.at||0));
@@ -518,7 +550,7 @@ function settingsHtml(){
   h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">${ic("download")}Backup</button><button class="ghost" data-act="export-csv">${ic("download")}Spreadsheet</button></div></div>`;
   h += `<div class="sec"><h3>Recently removed</h3>`;
   h += removed.length ? `<p class="hint">Deleted after ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Removed ${fmtStamp(r.removedAt)}</span></div><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button></div>`).join("") : `<p class="empty">None.</p>`;
-  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("lock")}Lock</button></div><p class="hint">Jobs v1.2</p></div>`;
+  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("lock")}Lock</button></div><p class="hint">Jobs v1.3</p></div>`;
   return h + `</div>`;
 }
 
@@ -678,7 +710,7 @@ const ACT = {
   "reh-next": () => { const id = pickEv(ui.reh.id); if(id){ ui.reh = { id, shown:false }; render(); window.scrollTo(0, 0); } },
   "reh-stop": () => { ui.reh = null; render(); },
   "add-page": () => { const id = newId(); store.set("notebook/" + id, { title:"", body:"", at:Date.now() }); render("nt-" + id); },
-  "del-page": el => { const id = el.dataset.id, old = D.notebook[id]; store.remove("notebook/" + id); render(); toast("Page deleted.", () => store.set("notebook/" + id, old)); },
+  "del-page": el => { const id = el.dataset.id, old = D.notebook[id]; store.remove("notebook/" + id); render(); toast("Note deleted.", () => store.set("notebook/" + id, old)); },
   "look": el => { store.update("settings", { theme:el.dataset.l }); applyLook(el.dataset.l); render(); },
   "st-move": el => {
     const s = statusList(), i = s.findIndex(x => x.id === el.dataset.id), j = i + (+el.dataset.dir);
@@ -694,7 +726,7 @@ const ACT = {
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.2", data:D }, null, 2), "application/json"),
+  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.3", data:D }, null, 2), "application/json"),
   "export-csv": () => {
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const rows = [["Company","Job title","Status","Salary","Location","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
@@ -747,8 +779,24 @@ document.addEventListener("submit", e => {
   e.preventDefault();
   const f = e.target, fn = FORMS[f.dataset.form]; if(fn) fn(f);
 });
+// Formatting buttons act on the selection, so they must not take focus away from the note.
+document.addEventListener("mousedown", e => { if(e.target.closest("[data-fmt]")) e.preventDefault(); });
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-fmt]"); if(!b) return;
+  const box = b.closest(".page").querySelector(".rich"), c = b.dataset.fmt;
+  if(!box.contains(document.activeElement) && document.activeElement !== box) box.focus();
+  if(c === "h") document.execCommand("formatBlock", false, document.queryCommandValue("formatBlock").toLowerCase() === "h3" ? "div" : "h3");
+  else document.execCommand(c === "ul" ? "insertUnorderedList" : c === "ol" ? "insertOrderedList" : c);
+  saveRich(box, false);
+});
+// Pasting brings plain text only, so nothing odd from other apps ends up in a note.
+document.addEventListener("paste", e => {
+  if(!e.target.closest || !e.target.closest(".rich")) return;
+  e.preventDefault(); document.execCommand("insertText", false, (e.clipboardData || window.clipboardData).getData("text/plain"));
+});
 document.addEventListener("input", e => {
   const el = e.target;
+  if(el.dataset && el.dataset.rich){ saveRich(el, false); return; }
   if(el.id === "search"){ q = el.value.trim(); if(q && view.name !== "home") go("home"); else render(); return; }
   if(el.tagName === "TEXTAREA") grow(el);
   if(el.dataset.f && el.type !== "checkbox") saveField(el, false);
