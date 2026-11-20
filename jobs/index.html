@@ -5,6 +5,9 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.2 (20/11/2026): Help button beside every page title opens a one-line explanation of the
+          page (This week, Saved jobs, Evidence, Notebook, Settings). Research help uses the
+          same icon.
   v1.1 (20/11/2026): Restyle following the Impeccable guidance. Pipeline replaced by "Saved jobs":
           one table with status filters and sortable columns; Past is a quiet filter at the end.
           Proper tab bar (fixed to the bottom on a phone). Pills removed: squared controls, status
@@ -132,6 +135,8 @@ textarea{resize:vertical;line-height:1.5;min-height:2.8em}
 #home,#pane{min-width:0}
 .panel{display:flex;flex-direction:column;gap:12px;min-width:0}
 .panel>h2{font-size:1.3rem}
+.head{display:flex;align-items:center;gap:4px}
+.tipbox{background:var(--bg);border-radius:var(--ctl);padding:10px 12px;font-size:.92rem;max-width:60ch}
 @media (max-width:979px){
   body[data-view="home"] #pane{display:none}
   body:not([data-view="home"]) #home{display:none}
@@ -297,6 +302,7 @@ const ICONS = {
   link:'<path d="M10 5H5v14h14v-5M14 5h5v5M19 5l-8 8"/>', bin:'<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',
   copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V4H4v11h5"/>', play:'<path d="M8 5l11 7-11 7z"/>',
   download:'<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>', lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.4c-.8.5-1.2 1-1.2 1.9M12 16.8v.2"/>',
   spark:'<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>'
 };
 const ic = n => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ""}</svg>`;
@@ -358,6 +364,18 @@ function render(focusId){
   if(focusId && $(focusId)) $(focusId).focus();
 }
 function grow(t){ if(!t.offsetParent) return; t.style.height = "auto"; t.style.height = (t.scrollHeight + 2) + "px"; }
+// Each page title carries a small help button that opens a one-line explanation.
+const TIPS = {
+  week:"Dates you add to a job show here for the next seven days. Tick one off when it's done.",
+  jobs:"Every job you've saved. Filter by status, tap a column heading to sort, tap a job to open it. Past holds closed jobs.",
+  evidence:"Your own stories for interviews. Write one per question or skill: Situation, Task, Action, Result. Rehearse shows a question and hides your answer until you've said it aloud.",
+  notebook:"Free pages for anything not tied to one job.",
+  settings:"Change the look, edit the statuses, download a backup, restore removed jobs."
+};
+function head(k, label){
+  const open = ui.tip === k;
+  return `<h2 class="head">${label}<button class="icb" data-act="tip" data-k="${k}" aria-expanded="${open}" aria-label="About ${label}">${ic("help")}</button></h2>` + (open ? `<p class="tipbox">${TIPS[k]}</p>` : "");
+}
 function paneEmpty(){ return `<div class="panel"><p class="empty">No job selected.</p></div>`; }
 
 function dayChip(s){
@@ -377,7 +395,7 @@ function weekHtml(roles){
   const li = x => `<li>${dayChip(x.d.date)}<div><strong>${esc(x.d.label || "Date")}${x.d.time ? ", " + esc(x.d.time) : ""}</strong>
     <button class="lnk" data-act="open" data-id="${x.r.id}">${esc(roleName(x.r))}</button><span class="when">${rel(x.d.date)}</span></div>
     <button class="icb" aria-label="Mark done" title="Mark done" data-act="date-done" data-id="${x.r.id}" data-d="${x.d.id}">${ic("check")}</button></li>`;
-  let h = `<div class="panel"><h2>This week</h2>`;
+  let h = `<div class="panel">${head("week", "This week")}`;
   h += soon.length ? `<ul class="week">${soon.map(li).join("")}</ul>` : `<p class="empty">No dates this week.</p>`;
   if(later.length) h += `<div><button class="lnk" data-act="toggle-later" aria-expanded="${ui.later}">Later</button></div>` + (ui.later ? `<ul class="week">${later.map(li).join("")}</ul>` : "");
   return h + `</div>`;
@@ -387,7 +405,7 @@ function jobsHtml(roles){
   const act = roles.filter(isLive), sts = statusList();
   const cur = (ui.filter === "past" || sts.some(s => s.id === ui.filter)) ? ui.filter : "all";
   const fb = (id, label, n) => `<button class="filt" data-act="filter" data-k="${id}" aria-pressed="${cur === id}">${esc(label)}${n == null ? "" : `<em>${n}</em>`}</button>`;
-  let h = `<div class="panel"><h2>Saved jobs</h2><div class="filters" role="group" aria-label="Filter by status">${fb("all", "All", act.length)}${sts.map(s => fb(s.id, s.name, act.filter(r => statusOf(r).id === s.id).length)).join("")}${roles.some(r => r.closed) ? fb("past", "Past", null) : ""}</div>`;
+  let h = `<div class="panel">${head("jobs", "Saved jobs")}<div class="filters" role="group" aria-label="Filter by status">${fb("all", "All", act.length)}${sts.map(s => fb(s.id, s.name, act.filter(r => statusOf(r).id === s.id).length)).join("")}${roles.some(r => r.closed) ? fb("past", "Past", null) : ""}</div>`;
   const rows = cur === "past" ? roles.filter(r => r.closed) : cur === "all" ? act : act.filter(r => statusOf(r).id === cur);
   if(!rows.length) return h + (roles.length ? `<p class="empty">No jobs here.</p>` : `<p class="empty">No saved jobs.</p><div><button class="ghost" data-act="add-role">${ic("plus")}Add job</button></div>`) + `</div>`;
   const next = r => dateList(r).find(d => !d.done && d.date), ord = {}; sts.forEach((s, i) => { ord[s.id] = i; });
@@ -440,7 +458,7 @@ function roleHtml(id){
 
   h += `<div class="sec"><h3>Advert</h3>${area("", p, "advert", r.advert, "Paste advert text")}</div>`;
 
-  h += `<div class="sec"><h3>Research</h3><div class="row"><button class="add" data-act="prepare" data-id="${id}">${ic("spark")}Research this job</button><button class="ghost" data-act="help" aria-label="How it works">?</button></div>`;
+  h += `<div class="sec"><h3>Research</h3><div class="row"><button class="add" data-act="prepare" data-id="${id}">${ic("spark")}Research this job</button><button class="icb" data-act="help" aria-label="How it works" title="How it works">${ic("help")}</button></div>`;
   const got = RESEARCH.filter(x => res[x[0]]);
   got.forEach(x => { h += area(x[1], p + "/research", x[0], res[x[0]], "", "r-" + x[0]); });
   const urls = (res.sources || "").match(/https?:\/\/[^\s)>\]]+/g);
@@ -461,7 +479,7 @@ function roleHtml(id){
 
 function notebookHtml(){
   const pages = Object.keys(D.notebook).map(id => Object.assign({ id }, D.notebook[id])).sort((a,b) => (a.at||0) - (b.at||0));
-  let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button><h2>Notebook</h2>`;
+  let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button>${head("notebook", "Notebook")}`;
   if(!pages.length) h += `<p class="empty">No pages yet.</p>`;
   h += pages.map(pg => `<div class="page"><label class="fld big"><span>Page title</span><input type="text" id="nt-${pg.id}" data-path="notebook/${pg.id}" data-f="title" value="${esc(pg.title)}"></label>${area("Notes", "notebook/" + pg.id, "body", pg.body, "", "nb-" + pg.id)}<div><button class="icb" aria-label="Delete" title="Delete" data-act="del-page" data-id="${pg.id}">${ic("bin")}</button></div></div>`).join("");
   return h + `<div class="sec"><div><button class="ghost" data-act="add-page">${ic("plus")}Add page</button></div></div></div>`;
@@ -480,7 +498,7 @@ function evidenceHtml(){
       <div class="sec"><div class="row">${ui.reh.shown ? "" : `<button class="add" data-act="reh-show">Show my answer</button>`}${ready.length > 1 ? `<button class="${ui.reh.shown ? "add" : "ghost"}" data-act="reh-next">Next question</button>` : ""}<button class="ghost" data-act="reh-stop">Finish</button></div></div></div>`;
     ui.reh = null;
   }
-  let h = `<div class="panel">${back}<h2>Evidence</h2>
+  let h = `<div class="panel">${back}${head("evidence", "Evidence")}
     <div class="row" style="margin-top:12px"><button class="add" data-act="add-ev">${ic("plus")}Add example</button>${ready.length ? `<button class="ghost" data-act="rehearse">${ic("play")}Rehearse</button>` : ""}</div>`;
   if(!all.length) h += `<p class="empty">No examples yet.</p>`;
   h += all.map(e => `<div class="page"><label class="fld big"><span>Question or skill</span><input type="text" id="ev-${e.id}" data-path="evidence/${e.id}" data-f="q" value="${esc(e.q)}" placeholder="e.g. Led a project"></label>
@@ -492,7 +510,7 @@ function pickEv(not){ const r = evList().filter(evReady).filter(e => e.id !== no
 function settingsHtml(){
   const sts = statusList(), look = D.settings.theme || "allotment";
   const removed = roleList().filter(r => r.removedAt).sort((a,b) => b.removedAt - a.removedAt);
-  let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button><h2>Settings</h2>`;
+  let h = `<div class="panel"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button>${head("settings", "Settings")}`;
   h += `<div class="sec"><h3>Look</h3><div class="looks">${LOOKS.map(l => `<button class="ghost" data-act="look" data-l="${l[0]}" aria-pressed="${l[0] === look}">${l[1]}</button>`).join("")}</div></div>`;
   h += `<div class="sec"><h3>Statuses</h3><div>${sts.map((s,i) => `<div class="strow"><input type="text" id="st-${s.id}" aria-label="Status name" data-path="statuses/${s.id}" data-f="name" value="${esc(s.name)}"><button class="ghost" data-act="st-move" data-id="${s.id}" data-dir="-1" aria-label="Move ${esc(s.name)} up"${i === 0 ? " disabled" : ""}>Up</button><button class="ghost" data-act="st-move" data-id="${s.id}" data-dir="1" aria-label="Move ${esc(s.name)} down"${i === sts.length - 1 ? " disabled" : ""}>Down</button><button class="icb" aria-label="Delete" title="Delete" data-act="st-del" data-id="${s.id}"${sts.length < 2 ? " disabled" : ""}>${ic("bin")}</button></div>`).join("")}</div>
     <form class="inline" data-form="new-status"><input type="text" name="name" id="status-new" placeholder="New status" aria-label="New status" required><button class="ghost">Add</button></form></div>`;
@@ -500,7 +518,7 @@ function settingsHtml(){
   h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">${ic("download")}Backup</button><button class="ghost" data-act="export-csv">${ic("download")}Spreadsheet</button></div></div>`;
   h += `<div class="sec"><h3>Recently removed</h3>`;
   h += removed.length ? `<p class="hint">Deleted after ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Removed ${fmtStamp(r.removedAt)}</span></div><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button></div>`).join("") : `<p class="empty">None.</p>`;
-  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("lock")}Lock</button></div><p class="hint">Jobs v1.1</p></div>`;
+  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("lock")}Lock</button></div><p class="hint">Jobs v1.2</p></div>`;
   return h + `</div>`;
 }
 
@@ -633,6 +651,7 @@ const ACT = {
   "dlg-close": closeDlg,
   "help": helpDlg,
   "undo": () => { const u = toastUndo; $("toast").hidden = true; toastUndo = null; if(u){ u(); render(); } },
+  "tip": el => { ui.tip = ui.tip === el.dataset.k ? null : el.dataset.k; render(); },
   "filter": el => { ui.filter = el.dataset.k; render(); },
   "sort": el => { ui.sort = el.dataset.k; render(); },
   "toggle-later": () => { ui.later = !ui.later; render(); },
@@ -675,7 +694,7 @@ const ACT = {
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.1", data:D }, null, 2), "application/json"),
+  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.2", data:D }, null, 2), "application/json"),
   "export-csv": () => {
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const rows = [["Company","Job title","Status","Salary","Location","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
