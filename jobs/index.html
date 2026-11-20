@@ -5,6 +5,11 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.10 (20/11/2026): "Delete job" button on every job with an "are you sure" dialog; deleted jobs
+          stay restorable in Settings for 30 days and can be deleted for good from there. Stickers
+          are now stuck down by default and cannot be nudged by accident; the Stickers button
+          opens an arrange mode (add, drag, resize, remove) that ends with Done. The Stickers
+          button itself now shows three real stickers on the highlight colour.
   v1.9 (20/11/2026): Hand-drawn greyhounds removed. Sticker tray now holds the full nature and
           outdoors set (227), grouped and searchable. Removing is easier: drag a sticker onto the
           Remove target that appears, or tap it and press the bin. Dotted selection outline gone.
@@ -115,6 +120,7 @@ svg.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-wid
 /* controls: squared, one radius, three kinds (primary, secondary, icon-only) */
 .add{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--accent);color:var(--on-accent);border:0;border-radius:var(--ctl);padding:10px 16px;font-weight:700;min-height:44px}
 .add:hover{filter:brightness(1.1)}
+.add.danger{background:#A4262C;color:#fff}
 .ghost{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:transparent;border:var(--rule);border-radius:var(--ctl);padding:8px 14px;font-size:.92rem;min-height:40px;text-decoration:none}
 a.ghost{color:var(--ink)}
 .ghost:hover:not(:disabled){background:var(--bg)}
@@ -253,7 +259,23 @@ table.jobs{width:100%;border-collapse:collapse;font-size:.95rem}
 .titlebar .day i{background:var(--ink);color:var(--surface)}
 .titlebar .day b,.titlebar .day span{color:var(--on-hi)}
 .jobpanel{position:relative}
-.stk{position:absolute;z-index:5;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;transition:filter .15s ease-out}
+/* the Stickers button shows three real stickers fanned out, and they lift on hover */
+.stkbtn{display:inline-flex;align-items:center;gap:6px;background:var(--hi);color:var(--on-hi);border:0;border-radius:var(--ctl);padding:4px 16px 4px 6px;font-weight:700;min-height:44px}
+.stkbtn .mini{display:flex;pointer-events:none}
+.stkbtn .mini svg{width:34px;height:34px;margin-right:-14px;transition:transform .18s ease-out}
+.stkbtn .mini svg:nth-child(1){transform:rotate(-14deg)}
+.stkbtn .mini svg:nth-child(2){transform:translateY(-3px) rotate(6deg)}
+.stkbtn .mini svg:nth-child(3){transform:rotate(16deg);margin-right:2px}
+.stkbtn:hover .mini svg:nth-child(1){transform:translate(-2px,-3px) rotate(-22deg)}
+.stkbtn:hover .mini svg:nth-child(2){transform:translateY(-7px) rotate(2deg)}
+.stkbtn:hover .mini svg:nth-child(3){transform:translate(2px,-3px) rotate(24deg)}
+/* stuck down: part of the page, not a control. Only "arrange" mode makes them movable. */
+.stk{position:absolute;z-index:5;pointer-events:none;user-select:none;-webkit-user-select:none;transition:filter .15s ease-out}
+.arrange .stk{pointer-events:auto;cursor:grab;touch-action:none}
+.arrange .stk svg{animation:stkwig .5s ease-in-out infinite alternate}
+.arrange .stk:nth-of-type(2n) svg{animation-delay:-.25s}
+@keyframes stkwig{from{transform:rotate(-1.6deg)}to{transform:rotate(1.6deg)}}
+@media (prefers-reduced-motion:reduce){.arrange .stk svg{animation:none}}
 .stk.lift{cursor:grabbing;filter:drop-shadow(0 8px 7px rgba(0,0,0,.28))}
 .stk svg{display:block;width:100%;height:auto;pointer-events:none}
 .stkbar{position:absolute;z-index:6;display:flex;background:var(--surface);border:var(--rule);border-radius:var(--ctl)}
@@ -378,7 +400,7 @@ const KEEP_REMOVED_DAYS = 30;
    STATE AND HELPERS
    ===================================================================== */
 let D = blank(), db = null, uid = null, who = "", readOnly = false, pending = false, live = false;
-let q = "", ui = { later:false, reh:null, filter:"all", sort:"date", stk:null, tip:null }, listTab = "week", view = { name:"home", id:null }, bootTimer = null, purged = false;
+let q = "", ui = { later:false, reh:null, filter:"all", sort:"date", stk:null, tip:null, arrange:false }, listTab = "week", view = { name:"home", id:null }, bootTimer = null, purged = false;
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -474,7 +496,7 @@ const TIPS = {
   jobs:"Every job you've saved. Filter by status, tap a column heading to sort, tap a job to open it. Past holds closed jobs.",
   evidence:"Your own stories for interviews. Write one per question or skill: Situation, Task, Action, Result. Rehearse shows a question and hides your answer until you've said it aloud.",
   notebook:"Free notes for anything not tied to one job. Select text and use the buttons above a note to format it.",
-  settings:"Change the look, edit the statuses, download a backup, restore removed jobs, sign out."
+  settings:"Change the look, edit the statuses, download a backup, restore deleted jobs, sign out."
 };
 function head(k, label){
   const open = ui.tip === k;
@@ -571,7 +593,7 @@ function roleHtml(id){
   const r = D.roles[id];
   if(!r || r.removedAt) return `<div class="panel"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button><p class="empty">Job not found.</p></div>`;
   const p = "roles/" + id, cur = statusOf(r).id, res = r.research || {};
-  let h = `<div class="panel jobpanel"><div class="row"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button><span style="flex:1"></span><button class="ghost" data-act="stickers" data-id="${id}">${ic("sticker")}Stickers</button></div>`;
+  let h = `<div class="panel jobpanel${ui.arrange ? " arrange" : ""}"><div class="row"><button class="ghost back" data-act="nav" data-v="home">${ic("back")}Back</button><span style="flex:1"></span>${ui.arrange ? `<button class="ghost" data-act="stickers" data-id="${id}">${ic("plus")}Add sticker</button><button class="add" data-act="stk-done">${ic("check")}Done</button>` : `<button class="stkbtn" data-act="stk-mode" data-id="${id}"><span class="mini" aria-hidden="true">${["t1f986", "t1f33b", "t2b50"].map(stkArt).join("")}</span>Stickers</button>`}</div>`;
   if(r.closed) h += `<p class="closed">${CLOSED[r.closed.type] || "Closed"}, ${fmtStamp(r.closed.at)} <button class="ghost" data-act="reopen" data-id="${id}">Reopen</button></p>`;
   h += `<div class="pair big">${fld("Company", p, "company", r.company)}${fld("Job title", p, "title", r.title)}</div>`;
   if(!r.closed) h += `<label class="fld"><span>Status</span><select id="f-status" data-chg="status" data-id="${id}">${statusList().map(s => `<option value="${s.id}"${s.id === cur ? " selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label>`;
@@ -605,7 +627,7 @@ function roleHtml(id){
   if(ts.length) h += `<ul class="list">${ts.map(t => `<li><input type="checkbox" id="td-${t.id}" data-path="${p}/todos/${t.id}" data-f="done"${t.done ? " checked" : ""}><label for="td-${t.id}">${esc(t.t)}</label><button class="icb" aria-label="Delete" title="Delete" data-act="del-todo" data-id="${id}" data-d="${t.id}">${ic("bin")}</button></li>`).join("")}</ul>`;
   h += `<form class="inline" data-form="new-todo" data-id="${id}"><input type="text" name="t" id="todo-new" placeholder="Add a task" aria-label="Add a task" required><button class="ghost">Add</button></form></div>`;
 
-  if(!r.closed) h += `<div class="sec"><div><button class="ghost" data-act="close-role" data-id="${id}">Close job</button></div></div>`;
+  h += `<div class="sec"><div class="row">${r.closed ? "" : `<button class="ghost" data-act="close-role" data-id="${id}">Close job</button>`}<button class="ghost" data-act="delete-role" data-id="${id}">${ic("bin")}Delete job</button></div></div>`;
   return h + stickersHtml(id, r) + `</div>`;
 }
 
@@ -638,7 +660,7 @@ function saveRich(el, now){
 function stickersHtml(id, r){
   return Object.keys(r.stickers || {}).map(sid => {
     const k = r.stickers[sid], art = STICKERS[k.k]; if(!art) return "";
-    const sz = STK_SIZES[k.s == null ? 2 : k.s] || 72, on = ui.stk === sid;
+    const sz = STK_SIZES[k.s == null ? 2 : k.s] || 72, on = ui.arrange && ui.stk === sid;
     return `<div class="stk${on ? " on" : ""}" data-sid="${sid}" data-id="${id}" role="img" aria-label="${esc(art[0])} sticker" style="left:${+k.x || 0}%;top:${+k.y || 0}px;width:${sz}px;transform:rotate(${+k.r || 0}deg)">${stkArt(k.k)}</div>`
       + (on ? `<div class="stkbar" style="left:${+k.x || 0}%;top:${(+k.y || 0) + sz + 8}px"><button class="icb" data-act="stk-size" data-d="-1" aria-label="Smaller" title="Smaller"${(k.s == null ? 2 : k.s) <= 0 ? " disabled" : ""}>${ic("minus")}</button><button class="icb" data-act="stk-size" data-d="1" aria-label="Bigger" title="Bigger"${(k.s == null ? 2 : k.s) >= STK_SIZES.length - 1 ? " disabled" : ""}>${ic("plus")}</button><button class="icb" data-act="stk-del" aria-label="Remove sticker" title="Remove">${ic("bin")}</button></div>` : "");
   }).join("");
@@ -688,9 +710,9 @@ function settingsHtml(){
     <form class="inline" data-form="new-status"><input type="text" name="name" id="status-new" placeholder="New status" aria-label="New status" required><button class="ghost">Add</button></form></div>`;
   h += `<div class="sec"><h3>AI research</h3><div class="check"><input type="checkbox" id="set-cv" data-path="settings" data-f="cv"${D.settings.cv ? " checked" : ""}><label for="set-cv">My AI has my CV<span class="hint" style="display:block">Needs a ChatGPT project holding your CV. <button class="lnk" data-act="help">Setup</button></span></label></div></div>`;
   h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">${ic("download")}Backup</button><button class="ghost" data-act="export-csv">${ic("download")}Spreadsheet</button></div></div>`;
-  h += `<div class="sec"><h3>Recently removed</h3>`;
-  h += removed.length ? `<p class="hint">Deleted after ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Removed ${fmtStamp(r.removedAt)}</span></div><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button></div>`).join("") : `<p class="empty">None.</p>`;
-  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.9. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
+  h += `<div class="sec"><h3>Recently deleted</h3>`;
+  h += removed.length ? `<p class="hint">Kept for ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Deleted ${fmtStamp(r.removedAt)}</span></div><span class="row"><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button><button class="icb" data-act="purge-ask" data-id="${r.id}" aria-label="Delete for good" title="Delete for good">${ic("bin")}</button></span></div>`).join("") : `<p class="empty">None.</p>`;
+  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.10. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
   return h + `</div>`;
 }
 
@@ -720,8 +742,19 @@ function closeRoleDlg(id){
   openDlg(`<h2>Close job</h2><div class="dbody"><p>${esc(roleName(r))}</p>
     <button class="choice" data-act="close-as" data-id="${id}" data-t="notforme"><b>Not for me</b><span>Kept in Past</span></button>
     <button class="choice" data-act="close-as" data-id="${id}" data-t="unsuccessful"><b>Unsuccessful</b><span>Kept in Past</span></button>
-    <button class="choice" data-act="remove" data-id="${id}"><b>Remove</b><span>Deleted after ${KEEP_REMOVED_DAYS} days</span></button>
+
     <div><button class="ghost" data-act="dlg-close">Cancel</button></div></div>`);
+}
+function deleteRoleDlg(id){
+  const r = D.roles[id]; if(!r) return;
+  openDlg(`<h2>Delete this job?</h2><div class="dbody"><p><b>${esc(roleName(r))}</b></p>
+    <p class="hint">Its notes, dates, research and stickers go with it. It can be restored from Settings for ${KEEP_REMOVED_DAYS} days.</p>
+    <div class="row"><button class="add danger" data-act="remove" data-id="${id}">${ic("bin")}Delete job</button><button class="ghost" data-act="dlg-close">Cancel</button></div></div>`);
+}
+function purgeDlg(id){
+  const r = D.roles[id]; if(!r) return;
+  openDlg(`<h2>Delete for good?</h2><div class="dbody"><p><b>${esc(roleName(r))}</b></p><p class="hint">This can't be undone.</p>
+    <div class="row"><button class="add danger" data-act="purge" data-id="${id}">${ic("bin")}Delete for good</button><button class="ghost" data-act="dlg-close">Cancel</button></div></div>`);
 }
 function helpDlg(){
   openDlg(`<h2>Research this job</h2><div class="dbody">
@@ -808,10 +841,11 @@ function go(name, id){ location.hash = name === "role" ? "role-" + id : name ===
 function route(){
   const hsh = location.hash.replace(/^#/, ""), m = /^role-(.+)$/.exec(hsh);
   if(hsh === "week" || hsh === "jobs") listTab = hsh;
+  ui.arrange = false; ui.stk = null;
   view = m ? { name:"role", id:m[1] } : (hsh === "notebook" || hsh === "settings" || hsh === "evidence") ? { name:hsh, id:null } : { name:"home", id:null };
   const paint = () => { render(); window.scrollTo(0, 0); $("pane").scrollTop = 0; };
   // A short cross-fade between views, built into the browser. Skipped if motion is reduced.
-  if(document.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.startViewTransition(paint); else paint();
+  if(document.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) { const t = document.startViewTransition(paint); [t.ready, t.finished, t.updateCallbackDone].forEach(x => x && x.catch(() => {})); } else paint();
 }
 function download(name, text, type){
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name;
@@ -827,6 +861,8 @@ const ACT = {
   "help": helpDlg,
   "undo": () => { const u = toastUndo; $("toast").hidden = true; toastUndo = null; if(u){ u(); render(); } },
   "stickers": el => stickerDlg(el.dataset.id),
+  "stk-mode": el => { ui.arrange = true; render(); if(!Object.keys((D.roles[el.dataset.id] || {}).stickers || {}).length) stickerDlg(el.dataset.id); },
+  "stk-done": () => { ui.arrange = false; ui.stk = null; render(); },
   "stk-add": el => {
     const id = el.dataset.id, host = document.querySelector("#pane .jobpanel"), top = host ? host.getBoundingClientRect().top : 0, sid = newId();
     // drop it where she is looking, a little to the right, at a slight random tilt
@@ -854,7 +890,10 @@ const ACT = {
   "del-todo": el => { store.remove("roles/" + el.dataset.id + "/todos/" + el.dataset.d); render(); },
   "close-role": el => closeRoleDlg(el.dataset.id),
   "close-as": el => { const id = el.dataset.id; store.update("roles/" + id, { closed:{ type:el.dataset.t, at:Date.now() } }); closeDlg(); go("home"); render(); toast("Moved to Past.", () => store.update("roles/" + id, { closed:null })); },
-  "remove": el => { const id = el.dataset.id; store.update("roles/" + id, { removedAt:Date.now() }); closeDlg(); go("home"); render(); toast("Removed.", () => store.update("roles/" + id, { removedAt:null })); },
+  "delete-role": el => deleteRoleDlg(el.dataset.id),
+  "purge-ask": el => purgeDlg(el.dataset.id),
+  "purge": el => { store.remove("roles/" + el.dataset.id); closeDlg(); render(); toast("Deleted for good."); },
+  "remove": el => { const id = el.dataset.id; store.update("roles/" + id, { removedAt:Date.now() }); closeDlg(); go("home"); render(); toast("Job deleted.", () => store.update("roles/" + id, { removedAt:null })); },
   "reopen": el => { store.update("roles/" + el.dataset.id, { closed:null }); render(); },
   "restore": el => { store.update("roles/" + el.dataset.id, { removedAt:null }); render(); toast("Restored."); },
   "prepare": el => prepareDlg(el.dataset.id),
@@ -887,7 +926,7 @@ const ACT = {
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.9", data:D }, null, 2), "application/json"),
+  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.10", data:D }, null, 2), "application/json"),
   "export-csv": () => {
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const rows = [["Company","Job title","Status","Salary","Closing date","Location","Working pattern","Hybrid details","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
@@ -943,7 +982,7 @@ document.addEventListener("submit", e => {
 // Stickers: drag to move, tap to select. Positions are saved when the finger or mouse lifts.
 let drag = null;
 document.addEventListener("pointerdown", e => {
-  const el = e.target.closest && e.target.closest(".stk");
+  const el = e.target.closest && e.target.closest(".arrange .stk");
   if(!el){ if(ui.stk && !(e.target.closest && e.target.closest(".stkbar"))){ ui.stk = null; document.querySelectorAll(".stk.on").forEach(x => x.classList.remove("on")); document.querySelectorAll(".stkbar").forEach(x => x.remove()); } return; }
   e.preventDefault();
   const r = el.getBoundingClientRect();
