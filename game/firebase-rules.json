@@ -71,6 +71,24 @@
           }
         }
       }
+    },
+    "jobs": {
+      "access": {
+        "$code": {
+          ".read": "auth != null"
+        }
+      },
+      "grants": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && root.child('jobs/access').child(newData.val()).exists()"
+        }
+      },
+      "data": {
+        ".read": "auth != null && root.child('jobs/grants').child(auth.uid).exists() && root.child('jobs/access').child(root.child('jobs/grants').child(auth.uid).val()).exists()",
+        ".write": "auth != null && root.child('jobs/grants').child(auth.uid).exists() && root.child('jobs/access').child(root.child('jobs/grants').child(auth.uid).val()).exists()"
+      }
     }
   }
 }

@@ -1,0 +1,16 @@
+{
+  "id": "/jobs/",
+  "name": "Jobs",
+  "short_name": "Jobs",
+  "description": "A private job-search home base",
+  "start_url": "/jobs/",
+  "scope": "/jobs/",
+  "display": "standalone",
+  "background_color": "#E4EBDD",
+  "theme_color": "#1F5F3F",
+  "lang": "en-GB",
+  "icons": [
+    { "src": "/jobs/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/jobs/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
