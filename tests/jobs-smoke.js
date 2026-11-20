@@ -11,6 +11,7 @@
   v1.0 (20/11/2026): First version. Tabs, Notebook formatting, job read/edit, add job,
           Examples read/edit, reading panel, delete confirmation, stickers by mouse and touch.
   v1.1 (20/11/2026): Checks that pasted formatting is kept and unsafe content is stripped.
+  v1.2 (20/11/2026): Saved note, back closes a panel, delete lands on the list, list keeps its place.
 */
 const http = require("http"), fs = require("fs"), path = require("path");
 const { chromium, devices } = require("playwright");
@@ -71,6 +72,26 @@ async function common(p, tag){
   check(tag + " example reads", await p.locator(".accbody textarea").count() === 0);
   await p.click("[data-act='ev-edit']"); await p.waitForTimeout(150); await p.fill(".star textarea >> nth=0", "A situation."); await p.click("[data-act='ev-done']"); await p.waitForTimeout(300);
   check(tag + " example saved", (await p.locator(".accbody").innerText()).includes("A situation."));
+  // saving is announced
+  await p.click("#nav-jobs"); await p.waitForTimeout(300); await p.click("table.jobs tbody tr >> text=Holburne"); await p.waitForTimeout(500);
+  await p.click("[data-act='job-edit']"); await p.waitForTimeout(200); await p.fill("#f-location", "Bath, BA2"); await p.waitForTimeout(650);
+  check(tag + " says saved", (await p.locator("#savechip").innerText()).includes("Saved"));
+  check(tag + " done at foot", await p.locator("[data-act='job-done']").count() === 2);
+  await p.click("[data-act='job-done'] >> nth=0"); await p.waitForTimeout(300);
+  // back closes a panel and stays on the job
+  await p.click("[data-act='read-advert']"); await p.waitForTimeout(400); await p.goBack(); await p.waitForTimeout(500);
+  check(tag + " back closes panel", !(await p.evaluate(() => document.getElementById("dlg").open)) && (await p.evaluate(() => location.hash)).startsWith("#role-"));
+  // closing a dialog and changing page at the same moment ends on the right page
+  await p.click("[data-act='delete-role']"); await p.waitForTimeout(300); await p.click("#dlg [data-act='remove']"); await p.waitForTimeout(800);
+  check(tag + " delete lands on list", (await p.evaluate(() => location.hash)) === "#jobs" && await p.locator("table.jobs:visible").count() === 1, await p.evaluate(() => location.hash));
+  await p.click("[data-act='undo']").catch(() => {}); await p.waitForTimeout(300);
+  // returning to the list keeps its place
+  const full = p.viewportSize();
+  await p.setViewportSize({ width:full.width, height:420 }); await p.waitForTimeout(200);
+  await p.evaluate(() => window.scrollTo(0, 260)); await p.waitForTimeout(150); const y0 = await p.evaluate(() => scrollY);
+  await p.click("table.jobs tbody tr >> text=Julian"); await p.waitForTimeout(500); await p.goBack(); await p.waitForTimeout(600);
+  check(tag + " list keeps its place", y0 > 50 && Math.abs((await p.evaluate(() => scrollY)) - y0) < 12, y0 + " then " + await p.evaluate(() => scrollY));
+  await p.setViewportSize(full); await p.waitForTimeout(200);
   check(tag + " no sideways scroll", !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
 }
 
