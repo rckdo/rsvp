@@ -5,6 +5,10 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.5 (20/11/2026): Flourishes. Dates drawn as small calendar leaves (This week and the Next
+          date column), with today's leaf picked out. Seven-day strip at the top of This week
+          with a dot per thing due. Progress bar of steps under each status in Saved jobs.
+          A short confetti burst when a job reaches the last status.
   v1.4 (20/11/2026): "Lock" is now "Sign out". Salary example removed. Closing date is its own
           field and feeds This week and the Next date column. Working pattern (On site / Hybrid /
           Remote) with hybrid details. Dates are editable rows with an Add date button. Laptop
@@ -168,9 +172,28 @@ textarea{resize:vertical;line-height:1.5;min-height:2.8em}
 
 /* this week */
 .week{list-style:none;padding:0}
-.week li{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px 0;border-bottom:var(--rule)}
-.day{background:var(--hi);color:var(--on-hi);border-radius:var(--ctl);text-align:center;padding:5px 4px;font-size:.78rem;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
-.day b{display:block;font-family:var(--display);font-size:1.15rem;font-weight:var(--display-weight)}
+.week li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px 0;border-bottom:var(--rule)}
+.day{width:60px;flex:none;border:var(--rule);border-radius:var(--ctl);overflow:hidden;text-align:center;background:var(--bg);line-height:1.2;font-variant-numeric:tabular-nums}
+.day i{display:block;font-style:normal;background:var(--accent);color:var(--on-accent);font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 0}
+.day b{display:block;font-family:var(--display);font-size:1.3rem;font-weight:var(--display-weight);color:var(--ink);padding-top:3px}
+.day span{display:block;font-size:.75rem;color:var(--muted);padding-bottom:4px}
+.day.today i{background:var(--hi);color:var(--on-hi)}
+.day.sm{width:48px}
+.day.sm b{font-size:1.05rem;padding-top:2px}
+.nd{display:flex;gap:8px;align-items:center;white-space:normal}
+.nd>span{min-width:0}
+.strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.sd{text-align:center;padding:6px 0 4px;border-radius:var(--ctl);line-height:1.25}
+.sd span{display:block;font-size:.75rem;color:var(--muted)}
+.sd b{display:block;font-family:var(--display);font-weight:var(--display-weight);font-size:1.05rem}
+.sd em{display:flex;gap:3px;justify-content:center;height:6px;margin-top:3px}
+.sd em i{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.sd.now{background:var(--ink)}
+.sd.now span,.sd.now b{color:var(--surface)}
+.sd.now em i{background:var(--hi)}
+.prog{display:flex;gap:3px;margin-top:6px}
+.prog i{width:14px;height:4px;border-radius:2px;background:var(--line)}
+.prog i.on{background:var(--accent)}
 .week strong{display:block}
 .when{display:block;color:var(--muted);font-size:.8rem;font-weight:700;margin-top:2px}
 
@@ -411,9 +434,34 @@ function head(k, label){
 }
 function paneEmpty(){ return `<div class="panel"><p class="empty">No job selected.</p></div>`; }
 
-function dayChip(s){
-  const d = parseIso(s);
-  return `<div class="day">${DAYS[d.getDay()]}<b>${d.getDate()}</b>${MONTHS[d.getMonth()]}${otherYear(d) ? " " + d.getFullYear() : ""}</div>`;
+// A date drawn as a small calendar leaf: month band, day number, weekday (plus year if not this one).
+function dayChip(s, sm){
+  const d = parseIso(s); if(!d) return "";
+  return `<div class="day${sm ? " sm" : ""}${daysFrom(s) === 0 ? " today" : ""}" title="${fmtDate(s)}"><i>${MONTHS[d.getMonth()]}</i><b>${d.getDate()}</b><span>${DAYS[d.getDay()]}${otherYear(d) ? " " + d.getFullYear() : ""}</span></div>`;
+}
+// Seven days at a glance, with a dot for each thing due. Decorative: the list below says it all.
+function weekStrip(soon){
+  const t = parseIso(iso(new Date())).getTime();
+  return `<div class="strip" aria-hidden="true">` + Array.from({ length:7 }, (_, i) => {
+    const d = new Date(t + i * 864e5), n = Math.min(3, soon.filter(x => x.d.date === iso(d)).length);
+    return `<div class="sd${i === 0 ? " now" : ""}"><span>${DAYS[d.getDay()]}</span><b>${d.getDate()}</b><em>${"<i></i>".repeat(n)}</em></div>`;
+  }).join("") + `</div>`;
+}
+// One happy moment: a short burst of confetti in the look's own colours when a job reaches the last status.
+function burst(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c = document.createElement("canvas"), g = c.getContext("2d"), cs = getComputedStyle(document.documentElement);
+  const cols = ["--accent","--hi","--ink","--line"].map(v => cs.getPropertyValue(v).trim()), W = c.width = innerWidth, H = c.height = innerHeight;
+  c.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:30";
+  document.body.appendChild(c);
+  const ps = Array.from({ length:70 }, () => ({ x:W / 2, y:H * .35, vx:(Math.random() - .5) * 14, vy:-Math.random() * 12 - 3, r:Math.random() * 5 + 3, c:cols[Math.floor(Math.random() * cols.length)], a:Math.random() * 6 }));
+  const t0 = performance.now();
+  (function step(now){
+    const k = (now - t0) / 1400; g.clearRect(0, 0, W, H);
+    if(k >= 1){ c.remove(); return; }
+    ps.forEach(p => { p.vy += .35; p.x += p.vx; p.y += p.vy; p.a += .2; g.globalAlpha = 1 - k; g.fillStyle = p.c; g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); g.restore(); });
+    requestAnimationFrame(step);
+  })(t0);
 }
 function homeHtml(){
   const roles = roleList().filter(r => !r.removedAt);
@@ -428,7 +476,7 @@ function weekHtml(roles){
   const li = x => `<li>${dayChip(x.d.date)}<div><strong>${esc(x.d.label || "Date")}${x.d.time ? ", " + esc(x.d.time) : ""}</strong>
     <button class="lnk" data-act="open" data-id="${x.r.id}">${esc(roleName(x.r))}</button><span class="when">${rel(x.d.date)}</span></div>
     <button class="icb" aria-label="Mark done" title="Mark done" data-act="date-done" data-id="${x.r.id}" data-d="${x.d.id}">${ic("check")}</button></li>`;
-  let h = `<div class="panel">${head("week", "This week")}`;
+  let h = `<div class="panel">${head("week", "This week")}${weekStrip(soon)}`;
   h += soon.length ? `<ul class="week">${soon.map(li).join("")}</ul>` : `<p class="empty">No dates this week.</p>`;
   if(later.length) h += `<div><button class="lnk" data-act="toggle-later" aria-expanded="${ui.later}">Later</button></div>` + (ui.later ? `<ul class="week">${later.map(li).join("")}</ul>` : "");
   return h + `</div>`;
@@ -452,7 +500,7 @@ function jobsHtml(roles){
   h += `<table class="jobs"><thead><tr>${th("job", "Job")}${showSt ? th("status", cur === "past" ? "Outcome" : "Status") : ""}${th("date", cur === "past" ? "Closed" : "Next date")}</tr></thead><tbody>`;
   h += rows.map(r => { const nd = next(r);
     return `<tr class="${view.id === r.id ? "sel" : ""}" data-act="open" data-id="${r.id}"><td><button class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span></button></td>
-      ${showSt ? `<td class="n">${esc(r.closed ? (CLOSED[r.closed.type] || "Closed") : statusOf(r).name)}</td>` : ""}<td class="n">${r.closed ? fmtStamp(r.closed.at) : nd ? esc(nd.label || "Date") + "<br>" + fmtDate(nd.date) : ""}</td></tr>`; }).join("");
+      ${showSt ? `<td class="n">${esc(r.closed ? (CLOSED[r.closed.type] || "Closed") : statusOf(r).name)}${r.closed || sts.length > 8 ? "" : `<span class="prog" aria-hidden="true">${sts.map((x, i) => `<i${i <= ord[statusOf(r).id] ? ' class="on"' : ""}></i>`).join("")}</span>`}</td>` : ""}<td class="n">${r.closed ? fmtStamp(r.closed.at) : nd ? `<div class="nd">${dayChip(nd.date, true)}<span>${esc(nd.label || "Date")}</span></div>` : ""}</td></tr>`; }).join("");
   return h + `</tbody></table></div>`;
 }
 function searchHtml(roles){
@@ -578,7 +626,7 @@ function settingsHtml(){
   h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">${ic("download")}Backup</button><button class="ghost" data-act="export-csv">${ic("download")}Spreadsheet</button></div></div>`;
   h += `<div class="sec"><h3>Recently removed</h3>`;
   h += removed.length ? `<p class="hint">Deleted after ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Removed ${fmtStamp(r.removedAt)}</span></div><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button></div>`).join("") : `<p class="empty">None.</p>`;
-  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.4</p></div>`;
+  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.5</p></div>`;
   return h + `</div>`;
 }
 
@@ -762,7 +810,7 @@ const ACT = {
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.4", data:D }, null, 2), "application/json"),
+  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.5", data:D }, null, 2), "application/json"),
   "export-csv": () => {
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const rows = [["Company","Job title","Status","Salary","Closing date","Location","Working pattern","Hybrid details","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
@@ -840,7 +888,12 @@ document.addEventListener("input", e => {
 document.addEventListener("change", e => {
   const el = e.target;
   if(el.dataset.chg === "status"){
-    if(el.value === "__close"){ closeRoleDlg(el.dataset.id); render(); } else { store.update("roles/" + el.dataset.id, { status:el.value }); render(); }
+    if(el.value === "__close"){ closeRoleDlg(el.dataset.id); render(); }
+    else {
+      const sl = statusList(), last = sl[sl.length - 1], was = statusOf(D.roles[el.dataset.id] || {}).id;
+      store.update("roles/" + el.dataset.id, { status:el.value }); render();
+      if(sl.length > 1 && last && el.value === last.id && was !== last.id) burst();
+    }
     return;
   }
   if(el.dataset.f){
