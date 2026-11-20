@@ -5,6 +5,9 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.18 (20/11/2026): Stickers can be picked up directly. With a finger, press and hold one to start
+          arranging; with a mouse, just drag it. A quick tap on a sticker still goes through to
+          whatever is underneath, so nothing gets nudged by accident.
   v1.17 (20/11/2026): Reading panel. On a job, a long job spec or research shows its first lines
           with a Read button. Read opens a panel that fills most of a phone screen and scrolls by
           itself, with section shortcuts for research and an Edit button. "Advert" text is now
@@ -304,8 +307,8 @@ table.jobs{width:100%;border-collapse:collapse;font-size:.95rem}
 .stkbtn:hover .mini svg:nth-child(2){transform:translateY(-7px) rotate(2deg)}
 .stkbtn:hover .mini svg:nth-child(3){transform:translate(2px,-3px) rotate(24deg)}
 /* stuck down: part of the page, not a control. Only "arrange" mode makes them movable. */
-.stk{position:absolute;z-index:5;pointer-events:none;user-select:none;-webkit-user-select:none;transition:filter .15s ease-out}
-.arrange .stk{pointer-events:auto;cursor:grab;touch-action:none}
+.stk{position:absolute;z-index:5;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:filter .15s ease-out}
+.arrange .stk{touch-action:none}
 .arrange .stk svg{animation:stkwig .5s ease-in-out infinite alternate}
 .arrange .stk:nth-of-type(2n) svg{animation-delay:-.25s}
 @keyframes stkwig{from{transform:rotate(-1.6deg)}to{transform:rotate(1.6deg)}}
@@ -840,7 +843,7 @@ function settingsHtml(){
   h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">${ic("download")}Backup</button><button class="ghost" data-act="export-csv">${ic("download")}Spreadsheet</button></div></div>`;
   h += `<div class="sec"><h3>Recently deleted</h3>`;
   h += removed.length ? `<p class="hint">Kept for ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Deleted ${fmtStamp(r.removedAt)}</span></div><span class="row"><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button><button class="icb" data-act="purge-ask" data-id="${r.id}" aria-label="Delete for good" title="Delete for good">${ic("bin")}</button></span></div>`).join("") : `<p class="empty">None.</p>`;
-  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.17. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
+  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.18. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
   return h + `</div>`;
 }
 
@@ -1101,7 +1104,7 @@ const ACT = {
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.17", data:D }, null, 2), "application/json"),
+  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.18", data:D }, null, 2), "application/json"),
   "export-csv": () => {
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const rows = [["Company","Job title","Status","Salary","Closing date","Location","Working pattern","Hybrid details","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
@@ -1174,9 +1177,24 @@ document.addEventListener("submit", e => {
   const f = e.target, fn = FORMS[f.dataset.form]; if(fn) fn(f);
 });
 // Stickers: drag to move, tap to select. Positions are saved when the finger or mouse lifts.
-let drag = null;
+let drag = null, hold = null;
+// A tap on a stuck-down sticker goes through to whatever is underneath it.
+function passThrough(el, x, y){
+  el.style.pointerEvents = "none"; const under = document.elementFromPoint(x, y); el.style.pointerEvents = "";
+  const t = under && under.closest("input,textarea,select,button,a,label,summary,[data-act]"); if(!t) return;
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) && t.type !== "checkbox") t.focus(); else t.click();
+}
+function startArranging(sid){ ui.arrange = true; ui.edit = null; ui.stk = sid || null; }
+document.addEventListener("contextmenu", e => { if(e.target.closest && e.target.closest(".stk")) e.preventDefault(); });
 document.addEventListener("pointerdown", e => {
   const el = e.target.closest && e.target.closest(".arrange .stk");
+  const stuck = !el && e.target.closest && e.target.closest(".stk");
+  if(stuck){
+    // Stuck down, but still hers to move: press and hold (finger) or just drag (mouse) picks it up.
+    const h = hold = { el:stuck, x:e.clientX, y:e.clientY, mouse:e.pointerType === "mouse", pid:e.pointerId, t:null };
+    if(!h.mouse) h.t = setTimeout(() => { if(hold !== h) return; hold = null; startArranging(stuck.dataset.sid); render(); }, 450);
+    return;
+  }
   if(!el){ if(ui.stk && !(e.target.closest && e.target.closest(".stkbar,dialog"))){ ui.stk = null; document.querySelectorAll(".stk.on").forEach(x => x.classList.remove("on")); document.querySelectorAll(".stkbar").forEach(x => x.remove()); } return; }
   e.preventDefault();
   const r = el.getBoundingClientRect();
@@ -1184,6 +1202,15 @@ document.addEventListener("pointerdown", e => {
   try{ el.setPointerCapture(e.pointerId); }catch(err){}
 });
 document.addEventListener("pointermove", e => {
+  if(hold && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 8){
+    const h = hold; hold = null; clearTimeout(h.t);
+    if(h.mouse){                                            // a mouse drag picks the sticker straight up
+      startArranging(null); h.el.closest(".jobpanel").classList.add("arrange");
+      const r = h.el.getBoundingClientRect();
+      drag = { el:h.el, dx:h.x - r.left - r.width / 2, dy:h.y - r.top - r.height / 2, sx:h.x, sy:h.y, moved:false, pid:h.pid, fresh:true };
+      try{ h.el.setPointerCapture(h.pid); }catch(err){}
+    }                                                      // a moving finger is scrolling the page: leave it be
+  }
   if(!drag) return;
   if(!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < (e.pointerType === "mouse" ? 5 : 14)) return;
   if(!drag.moved){ drag.moved = true; drag.el.classList.add("lift"); const bin = $("stkbin"); bin.innerHTML = ic("bin") + "Remove"; bin.hidden = false; }
@@ -1196,7 +1223,8 @@ document.addEventListener("pointermove", e => {
   drag.el.style.left = drag.x + "%"; drag.el.style.top = drag.y + "px";
   document.querySelectorAll(".stkbar").forEach(b => b.remove());
 });
-function endDrag(){
+function endDrag(e){
+  if(hold){ const h = hold; hold = null; clearTimeout(h.t); if(e && e.type === "pointerup") passThrough(h.el, h.x, h.y); return; }
   if(!drag) return;
   const d = drag; drag = null;
   try{ d.el.releasePointerCapture(d.pid); }catch(err){}
@@ -1205,7 +1233,7 @@ function endDrag(){
   const path = "roles/" + d.el.dataset.id + "/stickers/" + d.el.dataset.sid;
   // stickers are throwaway: no "are you sure", just an Undo
   if(d.moved && d.bin){ const old = ((D.roles[d.el.dataset.id] || {}).stickers || {})[d.el.dataset.sid]; ui.stk = null; store.remove(path); toast("Sticker removed.", () => store.set(path, old)); }
-  else if(d.moved){ store.update(path, { x:d.x, y:d.y }); return; }   // already in place on screen: no rebuild needed
+  else if(d.moved){ store.update(path, { x:d.x, y:d.y }); if(d.fresh) render(); return; }   // already in place on screen: no rebuild needed
   else ui.stk = ui.stk === d.el.dataset.sid ? null : d.el.dataset.sid;
   render();
 }
