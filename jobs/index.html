@@ -5,6 +5,9 @@
   under /jobs (separate from the wedding tracker).
 
   Changelog
+  v1.14 (20/11/2026): Fix: STAR boxes now grow with the text instead of hiding the top of a long
+          answer. Fix: the first click on a button straight after typing is no longer swallowed,
+          and moving from one field to the next (Tab or tap) no longer drops focus.
   v1.13 (20/11/2026): Every destructive action now asks first in a dialog: deleting a note, example,
           date, task or status, clearing research, and signing out. Stickers are the exception:
           they go straight away, with Undo. Notes
@@ -329,7 +332,7 @@ table.jobs{width:100%;border-collapse:collapse;font-size:.95rem}
 .star{position:relative;overflow:hidden;background:var(--bg);border-radius:var(--ctl);padding:10px 12px;min-height:150px;display:flex;flex-direction:column;gap:4px}
 .star::before{content:attr(data-l);position:absolute;right:4px;bottom:-22px;font-family:var(--display);font-weight:var(--display-weight);font-size:8rem;line-height:1;color:var(--ink);opacity:.04;pointer-events:none}
 .star>span{font-size:.82rem;font-weight:700;color:var(--muted)}
-.star textarea{position:relative;flex:1;background:transparent;border:0;border-radius:0;padding:0;min-height:96px;resize:none}
+.star textarea{position:relative;flex:none;background:transparent;border:0;border-radius:0;padding:0;min-height:96px;resize:none;overflow:hidden}
 .star textarea:hover{border-color:transparent}
 .star textarea:focus-visible{outline:none}
 .star:focus-within{outline:3px solid var(--accent);outline-offset:2px}
@@ -498,8 +501,8 @@ function localSet(path, val){
 function saveErr(){ toast("Couldn't save."); }
 const store = {
   ok(){ if(readOnly){ toast("Offline. Can't save."); return false; } return true; },
-  set(p, v){ if(!this.ok()) return; if(DEMO){ localSet(p, v); return; } db.ref(BASE + p).set(v).catch(saveErr); },
-  update(p, o){ if(!this.ok()) return; if(DEMO){ Object.keys(o).forEach(k => localSet(p + "/" + k, o[k])); return; } db.ref(BASE + p).update(o).catch(saveErr); },
+  set(p, v){ if(!this.ok()) return; if(DEMO){ localSet(p, v); onData(); return; } db.ref(BASE + p).set(v).catch(saveErr); },
+  update(p, o){ if(!this.ok()) return; if(DEMO){ Object.keys(o).forEach(k => localSet(p + "/" + k, o[k])); onData(); return; } db.ref(BASE + p).update(o).catch(saveErr); },
   remove(p){ this.set(p, null); }
 };
 
@@ -525,7 +528,14 @@ function editing(){
   return !!(a && a.closest && a.closest("#home,#pane") && (a.isContentEditable || (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== "checkbox")));
 }
 // Remote or local data changed. Never rebuild the page under someone who is typing.
-function onData(){ if(editing()){ pending = true; return; } render(); }
+// The rebuild waits a beat: when focus is moving from one field to the next (Tab, or a tap on
+// another box) the old field has already let go but the new one has not yet taken focus.
+let dataTimer = null;
+function onData(){
+  if(editing() || pressing){ pending = true; return; }
+  clearTimeout(dataTimer);
+  dataTimer = setTimeout(() => { if(editing() || pressing){ pending = true; return; } render(); }, 0);
+}
 function render(focusId){
   pending = false;
   document.body.dataset.view = view.name;
@@ -771,7 +781,7 @@ function settingsHtml(){
   h += `<div class="sec"><h3>Backup</h3><div class="row"><button class="ghost" data-act="export-json">${ic("download")}Backup</button><button class="ghost" data-act="export-csv">${ic("download")}Spreadsheet</button></div></div>`;
   h += `<div class="sec"><h3>Recently deleted</h3>`;
   h += removed.length ? `<p class="hint">Kept for ${KEEP_REMOVED_DAYS} days.</p>` + removed.map(r => `<div class="role"><div class="rowmain"><strong>${esc(r.company || "Untitled")}</strong><span>${esc(r.title || "")}</span><span>Deleted ${fmtStamp(r.removedAt)}</span></div><span class="row"><button class="ghost" data-act="restore" data-id="${r.id}">Restore</button><button class="icb" data-act="purge-ask" data-id="${r.id}" aria-label="Delete for good" title="Delete for good">${ic("bin")}</button></span></div>`).join("") : `<p class="empty">None.</p>`;
-  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.13. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
+  h += `</div><div class="sec"><h3>This device</h3><p class="hint">${DEMO ? "Demo" : esc(who)}</p><div><button class="ghost" data-act="lock">${ic("out")}Sign out</button></div><p class="hint">Jobs v1.14. Sticker artwork: Twemoji, CC BY 4.0.</p></div>`;
   return h + `</div>`;
 }
 
@@ -1008,7 +1018,7 @@ const ACT = {
     used.forEach(r => store.update("roles/" + r.id, { status:other.id }));
     store.remove("statuses/" + id); render();
   },
-  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.13", data:D }, null, 2), "application/json"),
+  "export-json": () => download("jobs-backup-" + iso(new Date()) + ".json", JSON.stringify({ exported:new Date().toISOString(), version:"1.14", data:D }, null, 2), "application/json"),
   "export-csv": () => {
     const cell = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const rows = [["Company","Job title","Status","Salary","Closing date","Location","Working pattern","Hybrid details","Link","Added","Outcome","Notes"]].concat(roleList().filter(r => !r.removedAt).map(r =>
@@ -1145,7 +1155,12 @@ document.addEventListener("change", e => {
     if(el.type === "checkbox" || el.dataset.rr) render(el.dataset.rr ? el.id : undefined);
   }
 });
-document.addEventListener("focusout", () => setTimeout(() => { if(pending && !editing()) render(); }, 0));
+// A page rebuild that is waiting for typing to finish must not land in the middle of a click:
+// swapping the button out between press and release would swallow the click.
+let pressing = false;
+document.addEventListener("pointerdown", () => { pressing = true; }, true);
+["pointerup","pointercancel"].forEach(t => document.addEventListener(t, () => setTimeout(() => { pressing = false; if(pending && !editing()) render(); }, 0), true));
+document.addEventListener("focusout", () => setTimeout(() => { if(pending && !editing() && !pressing) render(); }, 0));
 window.addEventListener("hashchange", route);
 
 /* =====================================================================
